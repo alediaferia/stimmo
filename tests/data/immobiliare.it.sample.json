@@ -1,0 +1,78 @@
+{
+  "id": "000000000",
+  "elevator": true,
+  "bathrooms": "2",
+  "buildingYear": 1970,
+  "caption": "APPARTAMENTO VIA SINTETICA 10",
+  "category": {"id": 1, "name": "Residenziale"},
+  "conditionId": 2,
+  "condition": "Buono / Abitabile",
+  "description": "Appartamento sintetico a scopo di test. Luminoso e ben distribuito su quattro piani.",
+  "energy": {
+    "zeroEnergyBuilding": false,
+    "heatingType": "centralizzato, a radiatori, alimentato a gas",
+    "airConditioning": "autonomo, freddo",
+    "class": {"name": "E", "color": "#e67300"},
+    "epi": 97.0,
+    "epiUm": "m²"
+  },
+  "features": [],
+  "floor": {"abbreviation": "4", "value": "4°, con ascensore", "floorOnlyValue": "4"},
+  "floors": "4 piani",
+  "ga4features": ["balcone", "cantina"],
+  "location": {
+    "latitude": 45.48,
+    "longitude": 9.20,
+    "nation": {"id": "IT", "name": "Italia"},
+    "region": "Lombardia",
+    "province": "Milano",
+    "provinceId": "MI",
+    "city": "Milano",
+    "cityId": 8042,
+    "macrozone": "Zona Test",
+    "microzone": "Microzona Test",
+    "address": "Via Sintetica",
+    "streetNumber": "10",
+    "marker": "marker"
+  },
+  "mainFeatures": [
+    {"type": "rooms", "label": "4 locali", "compactLabel": "4"},
+    {"type": "surface", "label": "120 m²"},
+    {"type": "bathrooms", "label": "2 bagni", "compactLabel": "2"},
+    {"type": "floor", "label": "Piano 4", "compactLabel": "4"},
+    {"type": "elevator", "label": "Ascensore", "compactLabel": "Sì"},
+    {"type": "balcony", "label": "Balcone"},
+    {"type": "basement", "label": "Cantina"}
+  ],
+  "price": {
+    "visible": true,
+    "value": 400000,
+    "formattedValue": "€ 400.000",
+    "priceRange": "oltre 300.000 €",
+    "pricePerSquareMeter": "3.333 €/m²"
+  },
+  "primaryFeatures": [
+    {"id": null, "name": "balcone", "value": null, "isVisible": true, "codeName": "balcony"},
+    {"id": null, "name": "cantina", "value": 1, "isVisible": true, "codeName": "basement"}
+  ],
+  "rooms": "4",
+  "surface": "120 m²",
+  "surfaceValue": "120 m²",
+  "surfaceConstitution": {
+    "surfaceConstitutionElements": [
+      {
+        "constitution": "Abitazione",
+        "surface": "120,0 m²",
+        "percentage": 100,
+        "commercialSurface": "120,0 m²",
+        "floor": {"value": "4", "abbreviation": "4"},
+        "surfaceType": "Principale"
+      }
+    ],
+    "totalMainSurface": "120,0 m²"
+  },
+  "typology": {"id": 4, "name": "Appartamento"},
+  "typologyV2": {"id": 14, "name": "Appartamento"},
+  "typologyValue": "Appartamento | Classe immobile signorile",
+  "typologyGA4Translation": "Appartamento"
+}

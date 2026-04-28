@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}stimmo — error{% endblock %}
+{% block content %}
+<div class="panel bad">
+  <strong class="err">Could not produce an estimate</strong>
+  <ul>
+    {% for e in errors %}<li>{{ e }}</li>{% endfor %}
+  </ul>
+</div>
+<a class="back" href="/">← Back to form</a>
+{% endblock %}

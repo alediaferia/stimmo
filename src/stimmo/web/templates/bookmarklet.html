@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}stimmo — bookmarklet{% endblock %}
+{% block content %}
+<h2 style="margin-top:0">📋 stimmo bookmarklet</h2>
+
+<div style="background:#e7f3ff;border:1px solid #b3d9ff;padding:12px;margin-bottom:16px;border-radius:4px">
+  <strong>Drag this link to your bookmarks bar:</strong>
+  <p style="margin:8px 0">
+    <a href="{{ bookmarklet_href | safe }}" style="display:inline-block;padding:8px 12px;background:#0066cc;color:white;text-decoration:none;border-radius:4px">📋 stimmo</a>
+  </p>
+  <p style="margin:8px 0;font-size:0.9em;color:#333">
+    <strong>How it works:</strong> Click the bookmarklet while viewing an immobiliare.it listing.
+    The script runs in your browser, extracts the listing details, and opens stimmo with the form prefilled.
+    No data is sent to immobiliare.it — only to stimmo for estimation.
+  </p>
+</div>
+
+<h3>Paste HTML fallback</h3>
+<p>If you can't use bookmarklets, copy the full page source of an immobiliare.it listing and paste it below:</p>
+
+<form method="post" action="/import" style="margin-top:16px">
+  <input type="hidden" name="src" value="immobiliare">
+  <div style="margin-bottom:12px">
+    <label for="html" style="display:block;margin-bottom:8px">Listing page HTML:</label>
+    <textarea id="html" name="html" rows="6" placeholder="Paste the full page source here (Ctrl+A, Ctrl+C on the immobiliare.it page)" style="width:100%;font-family:monospace;font-size:0.9em"></textarea>
+  </div>
+  <button type="submit">Import from HTML</button>
+</form>
+{% endblock %}
