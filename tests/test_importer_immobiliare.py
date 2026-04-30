@@ -249,3 +249,8 @@ class TestRoutes:
         r = client.get("/import?src=immobiliare&v=1&p=")
 
         assert r.status_code == 400
+
+    def test_import_post_oversized_html(self):
+        client = TestClient(app)
+        r = client.post("/import", data={"src": "immobiliare", "html": "x" * 300_000})
+        assert r.status_code == 400

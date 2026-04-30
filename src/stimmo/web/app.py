@@ -251,6 +251,9 @@ def import_post(
     if src not in _IMPORT_REGISTRY or not html:
         return _error(request, ["Missing source or HTML content"])
 
+    if len(html) > 256_000:
+        return _error(request, ["Pasted HTML too large"])
+
     m = re.search(
         r'<script[^>]+id=["\']__NEXT_DATA__["\'][^>]*>(.*?)</script>',
         html,
