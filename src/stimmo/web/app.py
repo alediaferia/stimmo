@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import binascii
 import json
 import re
 from datetime import date
@@ -235,7 +236,7 @@ def import_get(request: Request, src: str = "", v: str = "1", p: str = "") -> HT
         if len(raw) > 32_768:
             return _error(request, ["Payload too large"])
         payload = json.loads(raw)
-    except Exception:
+    except (binascii.Error, ValueError, UnicodeDecodeError, json.JSONDecodeError):
         return _error(request, ["Malformed import payload"])
 
     prefill = _IMPORT_REGISTRY[src](payload)
