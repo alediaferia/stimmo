@@ -11,7 +11,7 @@ def _parse_port(raw: str) -> int:
         return int(raw)
     except ValueError:
         sys.stderr.write(f"STIMMO_PORT must be an integer, got {raw!r}\n")
-        raise SystemExit(2)
+        raise SystemExit(2) from None
 
 
 def main() -> None:

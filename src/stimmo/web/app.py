@@ -191,7 +191,7 @@ def about(request: Request) -> HTMLResponse:
         request,
         "about.html",
         {
-            "semester": omi.SEMESTER,
+            "semester": omi.semester(),
             "zone_count": len(omi.available_zones()),
         },
     )

@@ -86,6 +86,9 @@ def refresh_valori() -> str:
     out = ASSETS / "milano_omi_valori.csv"
     df.to_csv(out, index=False)
     print(f"    → {out} ({out.stat().st_size:,} bytes, {len(df)} rows)")
+    manifest = ASSETS / "manifest.json"
+    manifest.write_text(f'{{"semester": "{latest_sem[0]}-{latest_sem[1]}"}}\n')
+    print(f"    → {manifest}")
 
     # Historical bundle: last N semesters concatenated with a `semester` column.
     print(f"  history: last {HISTORY_SEMESTERS} semesters")
@@ -214,7 +217,7 @@ def main() -> int:
     refresh_zones()
     refresh_ntn()
     print()
-    print(f"Done. Update SEMESTER constant in src/stimmo/data/omi.py to {sem!r} if it changed.")
+    print(f"Done. Bundled assets updated to semester {sem!r}.")
     return 0
 
 

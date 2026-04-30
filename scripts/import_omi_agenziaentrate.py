@@ -77,6 +77,9 @@ def import_valori(src: Path) -> tuple[pd.DataFrame, str]:
     df.to_csv(out, index=False)
     print(f"  valori: {csv.name} (semester {semester})")
     print(f"    → {out} ({out.stat().st_size:,} bytes, {len(df)} rows)")
+    manifest = ASSETS / "manifest.json"
+    manifest.write_text(f'{{"semester": "{semester}"}}\n')
+    print(f"    → {manifest}")
     return df, semester
 
 
@@ -177,7 +180,7 @@ def main() -> int:
     import_zones(src, old_zone_codes)
 
     print()
-    print(f"Done. Update SEMESTER constant in src/stimmo/data/omi.py to {semester!r}.")
+    print(f"Done. Bundled assets updated to semester {semester!r}.")
     return 0
 
 

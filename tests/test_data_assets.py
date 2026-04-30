@@ -16,7 +16,7 @@ def test_zone_for_point_finds_milano_centre():
     # Piazza Duomo
     z = zones.zone_for_point(45.4642, 9.1900)
     assert z is not None
-    code, descr = z
+    code, _descr = z
     assert code  # non-empty
 
 

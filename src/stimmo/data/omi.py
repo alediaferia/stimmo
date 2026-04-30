@@ -6,6 +6,7 @@ ondata mirror — see README) and exposes a typed lookup.
 
 from __future__ import annotations
 
+import json
 from functools import cache
 from importlib.resources import files
 
@@ -14,7 +15,13 @@ import pandas as pd
 from stimmo.models import OmiCondition, OmiQuote, PropertyType
 
 ASSET = files("stimmo.data.assets") / "milano_omi_valori.csv"
-SEMESTER = "2025-2"
+_MANIFEST = files("stimmo.data.assets") / "manifest.json"
+
+
+@cache
+def semester() -> str:
+    with _MANIFEST.open("rb") as fh:
+        return json.load(fh)["semester"]
 
 
 @cache
@@ -52,7 +59,7 @@ def lookup(zone_code: str, ptype: PropertyType, condition: OmiCondition) -> OmiQ
         condition=OmiCondition(r["Stato"]),
         eur_m2_min=float(r["Compr_min"]),
         eur_m2_max=float(r["Compr_max"]),
-        semester=SEMESTER,
+        semester=semester(),
     )
 
 
