@@ -54,22 +54,11 @@ time.
 
 ## Architecture
 
-```text
-src/stimmo/
-  data/
-    omi.py          # bundled MILANO OMI quotations (semester 2024-2)
-    zones.py        # bundled MILANO OMI zone polygons (point-in-polygon)
-    history.py      # last 8 semesters of OMI €/m² for the trend panel
-    ntn.py          # quarterly NTN transaction volumes (Milano capoluogo)
-    geocode.py      # Nominatim
-    amenities.py    # Overpass (500 m + 500–1000 m bands)
-    assets/         # baked GeoJSON + CSV
-  valuation/
-    adjustments.py  # ALL coefficients live here — single tuning surface
-    engine.py       # orchestrates: zone → base €/m² → adjustments → range
-    verdict.py      # under / fair / over with ±5% tolerance
-  web/              # FastAPI app + Jinja templates (`stimmo-web` script)
-```
+- `src/stimmo/data/` — bundled OMI quotations, zone polygons, and history CSV; live calls to Nominatim and Overpass.
+- `src/stimmo/valuation/` — the estimation pipeline: adjustments (single tuning surface), engine, and verdict classifier.
+- `src/stimmo/web/` — FastAPI app and Jinja templates; `stimmo-web` entry point.
+- `scripts/` — data refresh tooling (pulls latest OMI assets from the CKAN API).
+- `tests/` — pytest suite.
 
 ## Refreshing the data
 
