@@ -94,7 +94,7 @@ ORIENTATION_LABELS: dict[Orientation, str] = {
 
 
 class Property(BaseModel):
-    address: str
+    address: str = Field(max_length=200)
     surface_m2: PositiveFloat
     property_type: PropertyType
     omi_condition: OmiCondition
@@ -134,7 +134,7 @@ class AmenityScore(BaseModel):
     supermarkets_500_1000m: int = 0
     schools_500_1000m: int = 0
     pharmacies_500_1000m: int = 0
-    score_pct: float = 0.0  # additive %, capped
+    score_pct: NonNegativeFloat = 0.0  # additive %, capped
 
 
 class AdjustmentBreakdown(BaseModel):
