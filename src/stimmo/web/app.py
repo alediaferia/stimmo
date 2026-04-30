@@ -53,6 +53,8 @@ def _semester_months_old(semester: str) -> int:
         return 0
 
 
+_IMPORT_REGISTRY = {"immobiliare": immobiliare.parse}
+
 VERDICT_STYLE = {
     "under": (
         "UNDER-PRICED",
@@ -224,9 +226,7 @@ def _find_listing(node: dict | list | None, depth: int = 0) -> dict | None:
 
 @app.get("/import", response_class=HTMLResponse)
 def import_get(request: Request, src: str = "", v: str = "1", p: str = "") -> HTMLResponse:
-    _REGISTRY = {"immobiliare": immobiliare.parse}
-
-    if src not in _REGISTRY or not p:
+    if src not in _IMPORT_REGISTRY or not p:
         return _error(request, ["Invalid import request"])
 
     try:
@@ -238,7 +238,7 @@ def import_get(request: Request, src: str = "", v: str = "1", p: str = "") -> HT
     except Exception:
         return _error(request, ["Malformed import payload"])
 
-    prefill = _REGISTRY[src](payload)
+    prefill = _IMPORT_REGISTRY[src](payload)
     ctx = _form_context(request, prefill, import_source=src)
     return templates.TemplateResponse(request, "form.html", ctx)
 
@@ -247,9 +247,7 @@ def import_get(request: Request, src: str = "", v: str = "1", p: str = "") -> HT
 def import_post(
     request: Request, src: str = Form("immobiliare"), html: str = Form("")
 ) -> HTMLResponse:
-    _REGISTRY = {"immobiliare": immobiliare.parse}
-
-    if src not in _REGISTRY or not html:
+    if src not in _IMPORT_REGISTRY or not html:
         return _error(request, ["Missing source or HTML content"])
 
     m = re.search(
@@ -269,7 +267,7 @@ def import_post(
     if not listing:
         return _error(request, ["Could not locate listing fields in pasted data"])
 
-    prefill = _REGISTRY[src](listing)
+    prefill = _IMPORT_REGISTRY[src](listing)
     ctx = _form_context(request, prefill, import_source=src)
     return templates.TemplateResponse(request, "form.html", ctx)
 
