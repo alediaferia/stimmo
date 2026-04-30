@@ -139,5 +139,3 @@ gitignored — only `CLAUDE.md` and shared agent config are version-controlled.
 stimmo is a fairness check, not an official appraisal (perizia). It does
 not replace a qualified professional valuation (perito) and should not be
 used as the basis for legal, fiscal, or contractual decisions.
-
-<!-- TODO: add screenshot of result page -->
