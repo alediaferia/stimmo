@@ -35,4 +35,5 @@ def test_estimate_renders_result(monkeypatch):
     assert r.status_code == 200
     body = r.text
     assert "Estimate" in body
-    assert any(v in body for v in ("Verdict · Under-priced", "Verdict · Fair", "Verdict · Over-priced"))
+    verdicts = ("Verdict · Under-priced", "Verdict · Fair", "Verdict · Over-priced")
+    assert any(v in body for v in verdicts)

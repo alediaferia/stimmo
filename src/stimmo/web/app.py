@@ -385,13 +385,19 @@ def estimate(
         return (v - g_lo) / (g_hi - g_lo) * 100
 
     gauge = {
-        "omi_band": {"left": _x(est.range_low_eur), "width": _x(est.range_high_eur) - _x(est.range_low_eur)},
-        "ask_band": {"left": _x(est.ask_range_low_eur), "width": _x(est.ask_range_high_eur) - _x(est.ask_range_low_eur)},
+        "omi_band": {
+            "left": _x(est.range_low_eur),
+            "width": _x(est.range_high_eur) - _x(est.range_low_eur),
+        },
+        "ask_band": {
+            "left": _x(est.ask_range_low_eur),
+            "width": _x(est.ask_range_high_eur) - _x(est.ask_range_low_eur),
+        },
         "ticks": [
             {"label": "OMI low",  "value": est.range_low_eur,       "x": _x(est.range_low_eur)},
             {"label": "Ask low",  "value": est.ask_range_low_eur,   "x": _x(est.ask_range_low_eur)},
             {"label": "Ask mid",  "value": est.ask_range_mid_eur,   "x": _x(est.ask_range_mid_eur)},
-            {"label": "Ask high", "value": est.ask_range_high_eur,  "x": _x(est.ask_range_high_eur)},
+            {"label": "Ask high", "value": est.ask_range_high_eur, "x": _x(est.ask_range_high_eur)},
             {"label": "OMI high", "value": est.range_high_eur,      "x": _x(est.range_high_eur)},
         ],
         "asking_x": _x(asking),
