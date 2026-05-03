@@ -1,179 +1,296 @@
 {% extends "base.html" %}
-{% block title %}stimmo — result{% endblock %}
+{% block title %}stimmo — {{ p.address.split(',')[0] }}{% endblock %}
 {% block content %}
 
-{% if amenity_warning %}
-<div class="panel warn"><strong>Note:</strong> {{ amenity_warning }}</div>
-{% endif %}
-
-<div class="panel {{ verdict_style }}">
-  <div class="verdict {{ verdict_style }}">{{ verdict_label }}</div>
-  <div class="muted">{{ verdict_hint }}</div>
+<div class="pagehead">
+  <div>
+    <div class="stepper">
+      <span class="step"><span class="num">1</span> Listing</span>
+      <span class="sep"></span>
+      <span class="step on"><span class="num">2</span> Verdict</span>
+    </div>
+    <h1>Report · <em>{{ p.address.split(',')[0] }}</em></h1>
+    <p class="sub">
+      {{ p.surface_m2 }} m² · {{ p.property_type.value.lower() }} · floor {{ p.floor }} of {{ p.total_floors }}{% if p.has_lift %} · with lift{% endif %}{% if p.has_box %} · box auto{% endif %}
+    </p>
+  </div>
+  <div class="meta">
+    Zone <b>{{ est.omi_quote.zone_code }}</b><br>
+    {{ est.omi_quote.zone_descr or "" }}<br>
+    <span style="opacity:0.7">Semester {{ est.omi_quote.semester }}</span>
+    <div style="margin-top:10px">
+      <a href="/" class="btn btn-ghost" style="padding:6px 12px;font-size:12px">← Edit listing</a>
+    </div>
+  </div>
 </div>
 
-<h2>Estimate</h2>
-<div class="panel">
-  <dl class="grid-kv">
-    <dt>Address</dt><dd>{{ p.address }}</dd>
-    <dt>Coordinates</dt><dd>{{ "%.5f"|format(lat) }}, {{ "%.5f"|format(lon) }}</dd>
-    <dt>Surface</dt><dd>{{ p.surface_m2 }} m²</dd>
-    <dt>OMI zone</dt><dd>{{ est.omi_quote.zone_code }} — {{ est.omi_quote.zone_descr or "" }}</dd>
-    <dt>OMI data</dt><dd>Semester {{ est.omi_quote.semester }}{% if semester_months_old %} — <strong style="color:var(--warn)">~{{ semester_months_old }} months old</strong>{% endif %}. OMI reflects <em>transacted</em> prices (rogiti); asking prices typically run 5–10 % above the eventual sale price in a normal market.</dd>
-    <dt>OMI base €/m²</dt><dd>{{ "{:,.0f}".format(est.base_eur_m2_min).replace(",", ".") }} – {{ "{:,.0f}".format(est.base_eur_m2_max).replace(",", ".") }}</dd>
-    <dt>Adjusted €/m²</dt><dd>{{ "{:,.0f}".format(est.adjusted_eur_m2_min).replace(",", ".") }} – {{ "{:,.0f}".format(est.adjusted_eur_m2_max).replace(",", ".") }} (mult ×{{ "%.3f"|format(est.multiplier) }})</dd>
-    {% if est.flat_extras_eur %}
-    <dt>Property range</dt><dd>{{ (est.range_low_eur - est.flat_extras_eur)|eur }} – {{ (est.range_high_eur - est.flat_extras_eur)|eur }}</dd>
-    <dt>Box auto</dt><dd>+ {{ est.flat_extras_eur|eur }} <span class="muted">(avg Milano; higher in Centro, lower in periphery)</span></dd>
-    <dt>OMI rogito range</dt><dd>{{ est.range_low_eur|eur }} – {{ est.range_high_eur|eur }}</dd>
-    {% else %}
-    <dt>OMI rogito range</dt><dd>{{ est.range_low_eur|eur }} – {{ est.range_high_eur|eur }}</dd>
+{% set verdict_copy = {
+  "under": {"eyebrow": "Verdict · Under-priced", "main": "a rare", "em": "good deal",
+    "sub": "Asking price sits below the OMI-shifted ask range — verify there are no hidden costs (spese straordinarie, lavori deliberati) before celebrating."},
+  "fair":  {"eyebrow": "Verdict · Fair", "main": "the asking price reads", "em": "fair",
+    "sub": "Within the typical Milano ask range for this zone × type × condition. Negotiate on the margins (spese, finiture, condominio) rather than the headline number."},
+  "over":  {"eyebrow": "Verdict · Over-priced", "main": "this listing is", "em": "over-priced",
+    "sub": "Asking price runs above the typical Milano ask band even after every favourable adjustment is applied. Plenty of room to negotiate — or to walk away."}
+} %}
+{% set vc = verdict_copy[est.verdict] %}
+
+<div class="verdict-hero" data-v="{{ est.verdict }}">
+  <div class="verdict-eyebrow"><span class="dot"></span> {{ vc.eyebrow }}</div>
+  <h2 class="verdict-label">{{ vc.main }} <em>{{ vc.em }}</em>.</h2>
+  <p class="verdict-sub">{{ vc.sub }}</p>
+
+  <div class="gauge">
+    <div class="scale">
+      <div class="track"></div>
+
+      <div class="band" style="left:{{ '%.2f' | format(gauge.omi_band.left) }}%;width:{{ '%.2f' | format(gauge.omi_band.width) }}%"></div>
+      <div class="band ask" style="left:{{ '%.2f' | format(gauge.ask_band.left) }}%;width:{{ '%.2f' | format(gauge.ask_band.width) }}%"></div>
+
+      {% for tick in gauge.ticks %}
+      <div class="tick boundary" style="left:{{ '%.2f' | format(tick.x) }}%">
+        <div class="pin"></div>
+        <div>{{ tick.value | eur }}</div>
+        <div style="color:var(--ink-fade);font-size:10px">{{ tick.label }}</div>
+      </div>
+      {% endfor %}
+
+      <div class="marker asking" style="left:{{ '%.2f' | format(gauge.asking_x) }}%">
+        <div class="flag">Asking · {{ p.asking_price_eur | eur }}</div>
+        <div class="stem"></div>
+      </div>
+    </div>
+    <div class="legend">
+      <span><span class="swatch omi"></span> OMI rogito band (€/m² × surface + box)</span>
+      <span><span class="swatch ask"></span> Typical Milano ask band (+{{ est.ask_premium_pct | int }} %)</span>
+      <span><span class="swatch you"></span> Asking price</span>
+    </div>
+  </div>
+
+  <div class="verdict-stats">
+    <div class="vstat">
+      <div class="lbl">Δ vs typical ask mid</div>
+      <div class="val {% if est.asking_vs_ask_mid_pct > 0 %}delta-up{% elif est.asking_vs_ask_mid_pct < 0 %}delta-down{% endif %}">
+        {{ est.asking_vs_ask_mid_pct | pct }}
+      </div>
+    </div>
+    <div class="vstat">
+      <div class="lbl">Adjusted €/m²</div>
+      <div class="val mono">{{ "{:,.0f}".format(est.adjusted_eur_m2_mid).replace(",", ".") }}</div>
+    </div>
+    <div class="vstat">
+      <div class="lbl">Multiplier on OMI band</div>
+      <div class="val mono">×{{ "%.3f" | format(est.multiplier) }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="grid-2" style="margin-top:24px">
+  <div>
+    <div class="doc">
+      <div class="doc-head">
+        <h2 class="doc-title">Adjustments</h2>
+        <span class="doc-eyebrow">§ One coefficients file · valuation/adjustments.py</span>
+      </div>
+      <table class="t">
+        <thead>
+          <tr><th>Factor</th><th class="num">Δ %</th><th></th></tr>
+        </thead>
+        <tbody>
+          {% for b in est.breakdown %}
+          {% set w = [100, (b.delta_pct | abs * 14) | int] | min %}
+          <tr>
+            <td>{{ b.name }}</td>
+            <td class="num {% if b.delta_pct > 0 %}delta-pos{% elif b.delta_pct < 0 %}delta-neg{% endif %}">
+              {{ "%+.2f" | format(b.delta_pct) }}
+            </td>
+            <td style="width:130px">
+              <span class="factor-bar {% if b.delta_pct > 0 %}pos{% elif b.delta_pct < 0 %}neg{% endif %}" style="width:{{ w }}%"></span>
+            </td>
+          </tr>
+          {% endfor %}
+          <tr>
+            <td><b>Compound multiplier</b></td>
+            <td class="num"><b>×{{ "%.3f" | format(est.multiplier) }}</b></td>
+            <td></td>
+          </tr>
+          {% if est.flat_extras_eur %}
+          <tr>
+            <td>Box auto · flat extra</td>
+            <td class="num">+ {{ est.flat_extras_eur | eur }}</td>
+            <td></td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if history_series %}
+    {% set mids = history_series | map(attribute='eur_m2_mid') | list %}
+    {% set max_mid = mids | max %}
+    {% set min_mid = mids | min %}
+    <div class="doc">
+      <div class="doc-head">
+        <h2 class="doc-title">OMI €/m² · zone {{ est.omi_quote.zone_code }}</h2>
+        <span class="doc-eyebrow">8 semesters · mid value</span>
+      </div>
+      <div class="strip">
+        {% for hp in history_series %}
+        {% set denom = max_mid - min_mid * 0.85 %}
+        {% set h = ((hp.eur_m2_mid - min_mid * 0.85) / denom * 100) | round(1) %}
+        {% set is_cur = loop.last %}
+        <div class="col{% if is_cur %} cur{% endif %}" style="height:{{ h }}%">
+          <span class="v">{{ "{:,.0f}".format(hp.eur_m2_mid).replace(",", ".") }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="strip-axis">
+        {% for hp in history_series %}<div>{{ hp.semester }}</div>{% endfor %}
+      </div>
+      <div style="margin-top:14px;font-family:var(--mono);font-size:11px;color:var(--ink-muted);display:flex;justify-content:space-between">
+        <span>min € {{ "{:,.0f}".format(min_mid).replace(",", ".") }}</span>
+        <span>last semester highlighted</span>
+        <span>max € {{ "{:,.0f}".format(max_mid).replace(",", ".") }}</span>
+      </div>
+    </div>
     {% endif %}
-    <dt>Typical Milano ask <span class="muted">(+{{ est.ask_premium_pct|int }}%)</span></dt><dd>{{ est.ask_range_low_eur|eur }} – {{ est.ask_range_high_eur|eur }}</dd>
-    <dt>Estimated ask mid</dt><dd>{{ est.ask_range_mid_eur|eur }}</dd>
-    <dt>Asking price</dt><dd>{{ p.asking_price_eur|eur }}</dd>
-    <dt>Δ vs typical ask</dt>
-    <dd class="{% if est.asking_vs_ask_mid_pct > 0 %}delta-neg{% elif est.asking_vs_ask_mid_pct < 0 %}delta-pos{% endif %}">
-      {{ "%+.1f"|format(est.asking_vs_ask_mid_pct) }}%
-    </dd>
-  </dl>
+
+    {% if ntn_total %}
+    {% set ntn_vals = [] %}
+    {% for p_ in ntn_total %}{% set _ = ntn_vals.append(p_.ntn) %}{% endfor %}
+    {% set ntn_max = ntn_vals | max %}
+    {% set ntn_min = ntn_vals | min %}
+    <div class="doc">
+      <div class="doc-head">
+        <h2 class="doc-title">Market activity</h2>
+        <span class="doc-eyebrow">§ NTN · {{ bucket_label }} · context only · not a pricing input</span>
+      </div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--ink-muted);margin-bottom:10px">
+        Milano total last 8 quarters
+      </div>
+      <div class="strip">
+        {% for p_ in ntn_total %}
+        {% set denom = ntn_max - ntn_min * 0.85 %}
+        {% set h = ((p_.ntn - ntn_min * 0.85) / denom * 100) | round(1) %}
+        {% set is_cur = loop.last %}
+        <div class="col{% if is_cur %} cur{% endif %}" style="height:{{ h }}%">
+          <span class="v">{{ "{:,.0f}".format(p_.ntn).replace(",", ".") }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="strip-axis">
+        {% for p_ in ntn_total %}<div>{{ p_.quarter }}</div>{% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div>
+    <div class="doc">
+      <div class="doc-head">
+        <h2 class="doc-title">Numbers</h2>
+        <span class="doc-eyebrow">§ The maths in plain sight</span>
+      </div>
+      <dl class="kv">
+        <dt>OMI base</dt>
+        <dd class="mono">€ {{ "{:,.0f}".format(est.base_eur_m2_min).replace(",", ".") }} – {{ "{:,.0f}".format(est.base_eur_m2_max).replace(",", ".") }} / m²</dd>
+        <dt>Adjusted</dt>
+        <dd class="mono">€ {{ "{:,.0f}".format(est.adjusted_eur_m2_min).replace(",", ".") }} – {{ "{:,.0f}".format(est.adjusted_eur_m2_max).replace(",", ".") }} / m² · ×{{ "%.3f" | format(est.multiplier) }}</dd>
+        <dt>Surface</dt>
+        <dd class="mono">{{ p.surface_m2 }} m²</dd>
+        <dt>OMI rogito range</dt>
+        <dd class="mono">{{ est.range_low_eur | eur }} – {{ est.range_high_eur | eur }}</dd>
+        {% if est.flat_extras_eur %}
+        <dt>Box auto</dt>
+        <dd class="mono">+ {{ est.flat_extras_eur | eur }}</dd>
+        {% endif %}
+        <dt>Typical ask range</dt>
+        <dd class="mono">{{ est.ask_range_low_eur | eur }} – {{ est.ask_range_high_eur | eur }} <span style="color:var(--ink-fade)">(+{{ est.ask_premium_pct | int }} %)</span></dd>
+        <dt>Asking price</dt>
+        <dd class="mono" style="font-weight:600">{{ p.asking_price_eur | eur }}</dd>
+        <dt>Δ vs ask mid</dt>
+        <dd class="mono {% if est.asking_vs_ask_mid_pct > 0 %}delta-up{% elif est.asking_vs_ask_mid_pct < 0 %}delta-down{% endif %}">
+          {{ est.asking_vs_ask_mid_pct | pct }}
+        </dd>
+      </dl>
+    </div>
+
+    <div class="doc">
+      <div class="doc-head">
+        <h2 class="doc-title">Amenities · 500 m</h2>
+        <span class="doc-eyebrow">OpenStreetMap · Overpass</span>
+      </div>
+      <div class="amen-grid">
+        <div class="amen">
+          <div class="nm">Metro</div>
+          <div class="v">{{ est.amenity_score.metro_within_500m }}</div>
+          <div class="far">within 500 m</div>
+        </div>
+        <div class="amen">
+          <div class="nm">Tram</div>
+          <div class="v">{{ est.amenity_score.tram_within_500m }}</div>
+          <div class="far">within 500 m</div>
+        </div>
+        <div class="amen">
+          <div class="nm">Parks</div>
+          <div class="v">{{ est.amenity_score.parks_large_within_500m }}</div>
+          <div class="far">within 500 m</div>
+        </div>
+        <div class="amen">
+          <div class="nm">Markets</div>
+          <div class="v">{{ est.amenity_score.supermarkets_within_500m }}</div>
+          <div class="far">within 500 m</div>
+        </div>
+        <div class="amen">
+          <div class="nm">Schools</div>
+          <div class="v">{{ est.amenity_score.schools_within_500m }}</div>
+          <div class="far">within 500 m</div>
+        </div>
+        <div class="amen">
+          <div class="nm">Pharmacies</div>
+          <div class="v">{{ est.amenity_score.pharmacies_within_500m }}</div>
+          <div class="far">within 500 m</div>
+        </div>
+      </div>
+      <div style="margin-top:12px;display:flex;justify-content:space-between;font-family:var(--mono);font-size:12px;color:var(--ink-muted)">
+        <span>Combined amenity score</span>
+        <span style="color:var(--good)">+{{ "%.2f" | format(est.amenity_score.score_pct) }} %</span>
+      </div>
+    </div>
+
+    <div class="note" style="margin-top:18px">
+      <b>What this estimate does not cover.</b> Spese condominiali, extraordinary works already deliberated, piano nobile premium, street noise, view, cortile vs giardino — these can drive ±5–10 % inside the same building and are invisible to OMI.
+    </div>
+
+    {% if amenity_warning %}
+    <div class="note" style="margin-top:12px;border-left-color:var(--warn)">
+      <b>Amenity data unavailable.</b> {{ amenity_warning }}
+    </div>
+    {% endif %}
+
+    {% if semester_months_old > 12 %}
+    <div class="note" style="margin-top:12px;border-left-color:var(--warn)">
+      <b>OMI data is {{ semester_months_old }} months old.</b> Semester {{ est.omi_quote.semester }} — consider refreshing the bundled data with <span class="mono" style="font-size:12px">scripts/refresh_omi.py</span>.
+    </div>
+    {% endif %}
+  </div>
 </div>
 
-<div class="panel muted" style="font-size:0.875rem">
-  <strong style="color:var(--text)">What this estimate does not cover</strong>
-  <ul style="margin:0.5rem 0 0;padding-left:1.25rem;line-height:1.6">
-    <li><em>Spese condominiali</em> and extraordinary works (<em>lavori straordinari deliberati</em>) — routinely shift true cost by €10–50 k and are invisible to OMI.</li>
-    <li>Ask-level factors not modelled: piano nobile premium, street noise, view, cortile vs giardino — these can drive ±5–10 % inside the same building.</li>
-  </ul>
+<div class="explainer">
+  <div class="e">
+    <span class="num-big">01</span>
+    <h3 class="ttl">OMI band, not a model</h3>
+    <p class="desc">Italian per-transaction sale data isn't public. The €/m² Compr min–max band — built from observed sales by the Agenzia delle Entrate — is the spine of every estimate.</p>
+  </div>
+  <div class="e">
+    <span class="num-big">02</span>
+    <h3 class="ttl">One file of coefficients</h3>
+    <p class="desc">Floor, lift, energy, outdoor, era, orientation, amenities — every multiplier lives in <span class="mono" style="font-size:12px">valuation/adjustments.py</span>. No black box, nothing learned, nothing hidden.</p>
+  </div>
+  <div class="e">
+    <span class="num-big">03</span>
+    <h3 class="ttl">Ask-shifted, not rogito</h3>
+    <p class="desc">Verdicts compare the asking price to an ask-shifted band (rogito +6 %) — a normal-market premium from listing to closing. ±5 % around it is "fair".</p>
+  </div>
 </div>
 
-{% if est.breakdown or est.flat_extras_eur %}
-<h2>Adjustments</h2>
-<div class="panel">
-  <table>
-    <thead><tr><th>Factor</th><th class="num">Δ %</th></tr></thead>
-    <tbody>
-      {% for b in est.breakdown %}
-      <tr>
-        <td>{{ b.name }}</td>
-        <td class="num {% if b.delta_pct > 0 %}delta-pos{% elif b.delta_pct < 0 %}delta-neg{% endif %}">{{ "%+.2f"|format(b.delta_pct) }}</td>
-      </tr>
-      {% endfor %}
-      {% if est.flat_extras_eur %}
-      <tr><td>flat extras (box auto)</td><td class="num">+{{ est.flat_extras_eur|eur }}</td></tr>
-      {% endif %}
-    </tbody>
-  </table>
-</div>
-{% endif %}
-
-<h2>Amenities within 500 m</h2>
-<div class="panel">
-  <table>
-    <tbody>
-      <tr><td>Metro stations</td><td class="num">{{ est.amenity_score.metro_within_500m }}</td></tr>
-      <tr><td>Tram stops</td><td class="num">{{ est.amenity_score.tram_within_500m }}</td></tr>
-      <tr><td>Parks (large)</td><td class="num">{{ est.amenity_score.parks_large_within_500m }}</td></tr>
-      <tr><td>Supermarkets</td><td class="num">{{ est.amenity_score.supermarkets_within_500m }}</td></tr>
-      <tr><td>Schools</td><td class="num">{{ est.amenity_score.schools_within_500m }}</td></tr>
-      <tr><td>Pharmacies</td><td class="num">{{ est.amenity_score.pharmacies_within_500m }}</td></tr>
-    </tbody>
-  </table>
-</div>
-
-<h2>Amenities 500–1000 m</h2>
-<div class="panel">
-  <table>
-    <tbody>
-      <tr><td>Metro stations</td><td class="num">{{ est.amenity_score.metro_500_1000m }}</td></tr>
-      <tr><td>Tram stops</td><td class="num">{{ est.amenity_score.tram_500_1000m }}</td></tr>
-      <tr><td>Parks (large)</td><td class="num">{{ est.amenity_score.parks_large_500_1000m }}</td></tr>
-      <tr><td>Supermarkets</td><td class="num">{{ est.amenity_score.supermarkets_500_1000m }}</td></tr>
-      <tr><td>Schools</td><td class="num">{{ est.amenity_score.schools_500_1000m }}</td></tr>
-      <tr><td>Pharmacies</td><td class="num">{{ est.amenity_score.pharmacies_500_1000m }}</td></tr>
-    </tbody>
-  </table>
-</div>
-
-<div class="panel">
-  <table>
-    <tbody>
-      <tr><td><strong>Amenity score (combined)</strong></td><td class="num"><strong>+{{ "%.2f"|format(est.amenity_score.score_pct) }}%</strong></td></tr>
-    </tbody>
-  </table>
-</div>
-
-{% if history_series %}
-<h2>OMI €/m² history — zone {{ est.omi_quote.zone_code }}</h2>
-<div class="panel">
-  <table>
-    <thead>
-      <tr><th>Semester</th><th class="num">€/m² min</th><th class="num">€/m² max</th><th class="num">€/m² mid</th><th class="num">Δ mid vs prev</th></tr>
-    </thead>
-    <tbody>
-      {% set prev = namespace(mid=None) %}
-      {% for hp in history_series %}
-      <tr>
-        <td>{{ hp.semester }}</td>
-        <td class="num">{{ "{:,.0f}".format(hp.eur_m2_min).replace(",", ".") }}</td>
-        <td class="num">{{ "{:,.0f}".format(hp.eur_m2_max).replace(",", ".") }}</td>
-        <td class="num">{{ "{:,.0f}".format(hp.eur_m2_mid).replace(",", ".") }}</td>
-        <td class="num">
-          {% if prev.mid %}
-            {% set d = (hp.eur_m2_mid / prev.mid - 1) * 100 %}
-            <span class="{% if d > 0 %}delta-pos{% elif d < 0 %}delta-neg{% endif %}">{{ "%+.1f"|format(d) }}%</span>
-          {% endif %}
-        </td>
-      </tr>
-      {% set prev.mid = hp.eur_m2_mid %}
-      {% endfor %}
-    </tbody>
-  </table>
-  <p class="muted">Official OMI band (built from observed sales) per semester.</p>
-</div>
-{% endif %}
-
-{% if ntn_total %}
-<h2>Recent residential transactions — Milano (capoluogo)</h2>
-<div class="panel">
-  <table>
-    <thead>
-      <tr>
-        <th>Quarter</th>
-        <th class="num">NTN total</th>
-        <th class="num">Δ vs prev</th>
-        <th class="num">NTN {{ bucket_label }} m²</th>
-        <th class="num">Δ vs prev</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% set pt = namespace(total=None, bucket=None) %}
-      {% for p_ in ntn_total %}
-      <tr>
-        <td>{{ p_.quarter }}</td>
-        <td class="num">{{ "{:,.0f}".format(p_.ntn).replace(",", ".") }}</td>
-        <td class="num">
-          {% if pt.total %}
-            {% set d = (p_.ntn / pt.total - 1) * 100 %}
-            <span class="{% if d > 0 %}delta-pos{% elif d < 0 %}delta-neg{% endif %}">{{ "%+.1f"|format(d) }}%</span>
-          {% endif %}
-        </td>
-        {% set b_val = bucket_by_q.get(p_.quarter) %}
-        <td class="num">{% if b_val is not none %}{{ "{:,.0f}".format(b_val).replace(",", ".") }}{% else %}<span class="muted">–</span>{% endif %}</td>
-        <td class="num">
-          {% if b_val is not none and pt.bucket %}
-            {% set d = (b_val / pt.bucket - 1) * 100 %}
-            <span class="{% if d > 0 %}delta-pos{% elif d < 0 %}delta-neg{% endif %}">{{ "%+.1f"|format(d) }}%</span>
-          {% endif %}
-        </td>
-      </tr>
-      {% set pt.total = p_.ntn %}
-      {% if b_val is not none %}{% set pt.bucket = b_val %}{% endif %}
-      {% endfor %}
-    </tbody>
-  </table>
-  <p class="muted">NTN = Numero Transazioni Normalizzate (Agenzia Entrate, open data).</p>
-</div>
-{% endif %}
-
-<a class="back" href="/">← Run another estimate</a>
 {% endblock %}

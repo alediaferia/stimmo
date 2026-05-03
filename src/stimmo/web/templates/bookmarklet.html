@@ -1,29 +1,218 @@
 {% extends "base.html" %}
 {% block title %}stimmo — bookmarklet{% endblock %}
 {% block content %}
-<h2 style="margin-top:0">📋 stimmo bookmarklet</h2>
 
-<div style="background:#e7f3ff;border:1px solid #b3d9ff;padding:12px;margin-bottom:16px;border-radius:4px">
-  <strong>Drag this link to your bookmarks bar:</strong>
-  <p style="margin:8px 0">
-    <a href="{{ bookmarklet_href | safe }}" style="display:inline-block;padding:8px 12px;background:#0066cc;color:white;text-decoration:none;border-radius:4px">📋 stimmo</a>
-  </p>
-  <p style="margin:8px 0;font-size:0.9em;color:#333">
-    <strong>How it works:</strong> Click the bookmarklet while viewing an immobiliare.it listing.
-    The script runs in your browser, extracts the listing details, and opens stimmo with the form prefilled.
-    No data is sent to immobiliare.it — only to stimmo for estimation.
-  </p>
+<div class="pagehead">
+  <div>
+    <div class="stepper">
+      <span class="step on"><span class="num">⌘</span> Import</span>
+      <span class="sep"></span>
+      <span class="step"><span class="num">1</span> Listing</span>
+      <span class="sep"></span>
+      <span class="step"><span class="num">2</span> Verdict</span>
+    </div>
+    <h1>One click, <em>prefilled</em>.</h1>
+    <p class="sub">
+      Drag the pill below to your bookmarks bar. Click it on any
+      <span class="mono" style="font-size:13px">immobiliare.it</span> Milano listing — stimmo opens with
+      address, surface, price, floor, lift, energy class, condition, outdoor space, era and bathrooms already filled in.
+    </p>
+  </div>
+  <div class="meta">
+    Privacy<br>
+    <b>browser-only</b><br>
+    <span style="opacity:0.7">no immobiliare<br>request from us</span>
+  </div>
 </div>
 
-<h3>Paste HTML fallback</h3>
-<p>If you can't use bookmarklets, copy the full page source of an immobiliare.it listing and paste it below:</p>
+<div class="grid-2">
+  <div>
+    <div class="doc bm-drag">
+      <div class="doc-head">
+        <h2 class="doc-title">Drag to your bookmarks bar</h2>
+        <span class="doc-eyebrow">§ 01 · Install</span>
+      </div>
+      <div class="bm-pill-wrap">
+        <a class="bm-pill" href="{{ bookmarklet_href | safe }}" draggable="true">
+          <span class="bm-clip" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="6" y="3" width="12" height="18" rx="1.5"/><path d="M9 3v3h6V3"/>
+            </svg>
+          </span>
+          <span class="bm-pill-text"><em>stimmo</em> · check this listing</span>
+        </a>
+        <button class="btn btn-ghost bm-copy" type="button" id="bm-copy-btn"
+          onclick="copyBookmarklet()">Copy link</button>
+      </div>
+      <div class="bm-arrow">
+        <svg width="160" height="56" viewBox="0 0 160 56" fill="none" stroke="var(--ink-fade)" stroke-width="1.5">
+          <path d="M4 50 C 30 50, 70 30, 130 12" stroke-dasharray="3 4"/>
+          <path d="M122 8 L132 12 L126 20" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="bm-arrow-lbl">your bookmarks bar</span>
+      </div>
+    </div>
 
-<form method="post" action="/import" style="margin-top:16px">
-  <input type="hidden" name="src" value="immobiliare">
-  <div style="margin-bottom:12px">
-    <label for="html" style="display:block;margin-bottom:8px">Listing page HTML:</label>
-    <textarea id="html" name="html" rows="6" placeholder="Paste the full page source here (Ctrl+A, Ctrl+C on the immobiliare.it page)" style="width:100%;font-family:monospace;font-size:0.9em"></textarea>
+    <div class="doc">
+      <div class="doc-head">
+        <h2 class="doc-title">How it works</h2>
+        <span class="doc-eyebrow">§ 02 · Three steps</span>
+      </div>
+      <ol class="bm-steps">
+        <li>
+          <span class="bm-n">1</span>
+          <div>
+            <b>Drag the pill</b> above to your browser's bookmarks bar.
+            <div class="bm-hint">Show it with <span class="kbd">⌘</span><span class="kbd">⇧</span><span class="kbd">B</span> on Mac, <span class="kbd">Ctrl</span><span class="kbd">⇧</span><span class="kbd">B</span> on Windows.</div>
+          </div>
+        </li>
+        <li>
+          <span class="bm-n">2</span>
+          <div>
+            <b>Open any listing</b> on <span class="mono" style="font-size:13px">immobiliare.it</span> in Milano.
+            <div class="bm-hint">Works on the public listing detail page (/annunci/…). Map / search pages aren't supported.</div>
+          </div>
+        </li>
+        <li>
+          <span class="bm-n">3</span>
+          <div>
+            <b>Click <em>stimmo</em></b> in your bookmarks bar.
+            <div class="bm-hint">The script reads the listing's <span class="mono" style="font-size:13px">__NEXT_DATA__</span> JSON inside your tab and opens stimmo with the form prefilled. Nothing leaves your browser until you submit.</div>
+          </div>
+        </li>
+      </ol>
+    </div>
+
+    <div class="doc">
+      <div class="doc-head">
+        <h2 class="doc-title">Can't use bookmarklets?</h2>
+        <span class="doc-eyebrow">§ Paste fallback</span>
+      </div>
+      <p style="margin:0 0 12px;color:var(--ink-2);font-size:14px">
+        Some browsers (mobile Safari, locked-down work laptops) don't allow custom bookmarklets.
+        Copy the full page source of the listing and paste it here instead.
+      </p>
+      <button type="button" class="btn btn-ghost" id="paste-toggle-btn"
+        onclick="togglePaste()">Use paste fallback</button>
+      <div id="paste-section" style="display:none;margin-top:14px">
+        <form method="post" action="/import">
+          <input type="hidden" name="src" value="immobiliare">
+          <textarea class="input" name="html" rows="5"
+            style="font-family:var(--mono);font-size:12px;resize:vertical"
+            placeholder="Paste the full page HTML here (Ctrl+A, Ctrl+C on the immobiliare.it page)…"></textarea>
+          <div style="display:flex;gap:10px;margin-top:12px">
+            <button type="submit" class="btn">Import &amp; prefill <span class="arrow">→</span></button>
+            <button type="button" class="btn btn-ghost" onclick="togglePaste()">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
-  <button type="submit">Import from HTML</button>
-</form>
+
+  <div>
+    <div class="doc" style="padding:0;overflow:hidden">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--paper-rule);display:flex;align-items:baseline;justify-content:space-between">
+        <h2 class="doc-title" style="margin:0">What you'll see</h2>
+        <span class="doc-eyebrow">Demo</span>
+      </div>
+      <div class="bm-browser">
+        <div class="bm-chrome">
+          <div class="bm-tl">
+            <span class="bm-dot r"></span><span class="bm-dot y"></span><span class="bm-dot g"></span>
+          </div>
+          <div class="bm-url">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>
+            </svg>
+            immobiliare.it/annunci/milano/via-bligny-16
+          </div>
+        </div>
+        <div class="bm-bookmarks">
+          <span class="bm-bk">Mail</span>
+          <span class="bm-bk">Drive</span>
+          <span class="bm-bk">News</span>
+          <span class="bm-bk active">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <rect x="6" y="3" width="12" height="18" rx="1.5"/><path d="M9 3v3h6V3"/>
+            </svg>
+            <em>stimmo</em>
+          </span>
+        </div>
+        <div class="bm-page">
+          <div class="bm-listing">
+            <div class="bm-photo">
+              <span class="bm-photo-tag">€ 545.000</span>
+            </div>
+            <div class="bm-listing-meta">
+              <div style="font-family:var(--serif);font-size:18px;line-height:1.2;color:#1a1a1a">
+                Trilocale Via Bligny 16
+              </div>
+              <div style="font-size:11px;color:#666;margin-top:4px">
+                Milano · Bocconi / Porta Ludovica
+              </div>
+              <div style="display:flex;gap:12px;margin-top:10px;flex-wrap:wrap">
+                <div><div style="font-family:var(--mono);font-size:13px;font-weight:600;color:#1a1a1a">78 m²</div><div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:0.06em">Surface</div></div>
+                <div><div style="font-family:var(--mono);font-size:13px;font-weight:600;color:#1a1a1a">3°</div><div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:0.06em">Floor</div></div>
+                <div><div style="font-family:var(--mono);font-size:13px;font-weight:600;color:#1a1a1a">Sì</div><div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:0.06em">Lift</div></div>
+                <div><div style="font-family:var(--mono);font-size:13px;font-weight:600;color:#1a1a1a">D</div><div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:0.06em">Energy</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="bm-cursor">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--ink)" stroke="var(--paper)" stroke-width="1.5">
+              <path d="M5 3 L5 19 L9 15 L11 21 L13 20 L11 14 L17 14 Z"/>
+            </svg>
+          </div>
+          <div class="bm-flash">
+            <div class="bm-flash-inner">
+              <span class="bm-flash-eye">stimmo</span>
+              <span class="bm-flash-msg">Reading <span class="mono" style="font-size:11px">__NEXT_DATA__</span> · 12 fields found</span>
+            </div>
+          </div>
+        </div>
+        <div class="bm-foot">Click to simulate <span class="arrow">→</span></div>
+      </div>
+    </div>
+
+    <div class="note" style="margin-top:18px">
+      <b>Privacy.</b> The bookmarklet runs entirely in your browser tab.
+      stimmo never makes a server-side request to immobiliare.it. The only network call
+      is from <em>your</em> browser to <em>stimmo</em>, with the parsed form fields —
+      you can review every prefilled field before estimating.
+    </div>
+
+    <div class="explainer" style="grid-template-columns:1fr;margin-top:18px">
+      <div class="e">
+        <span class="num-big">·</span>
+        <h3 class="ttl">Schema drift is expected</h3>
+        <p class="desc">
+          immobiliare.it changes its internal JSON shape every few months. Always
+          review the prefilled fields before you submit — surface and floor are the
+          two that drift most often.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function copyBookmarklet() {
+  const href = {{ bookmarklet_href | tojson }};
+  navigator.clipboard.writeText(href).then(() => {
+    const btn = document.getElementById('bm-copy-btn');
+    btn.textContent = 'Copied ✓';
+    setTimeout(() => { btn.textContent = 'Copy link'; }, 1600);
+  }).catch(() => {});
+}
+function togglePaste() {
+  const sec = document.getElementById('paste-section');
+  const btn = document.getElementById('paste-toggle-btn');
+  const hidden = sec.style.display === 'none';
+  sec.style.display = hidden ? 'block' : 'none';
+  btn.style.display = hidden ? 'none' : '';
+}
+</script>
 {% endblock %}

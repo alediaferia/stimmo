@@ -40,7 +40,13 @@ def _eur(n: float) -> str:
     return f"€ {n:,.0f}".replace(",", ".")
 
 
+def _pct(n: float, d: int = 1) -> str:
+    sign = "+" if n >= 0 else ""
+    return f"{sign}{n:.{d}f}%"
+
+
 templates.env.filters["eur"] = _eur
+templates.env.filters["pct"] = _pct
 
 
 def _semester_months_old(semester: str) -> int:
@@ -182,6 +188,8 @@ def _form_context(
         "orientations": [{"value": e.value, "label": ORIENTATION_LABELS[e]} for e in Orientation],
         "defaults": defaults,
         "import_source": import_source,
+        "omi_semester": omi.semester(),
+        "zone_count": len(omi.available_zones()),
     }
 
 
@@ -369,6 +377,26 @@ def estimate(
     label, style, hint = VERDICT_STYLE[est.verdict]
     bucket_by_q = {p.quarter: p.ntn for p in ntn_bucket}
 
+    asking = prop.asking_price_eur
+    g_lo = min(est.ask_range_low_eur, est.range_low_eur) * 0.92
+    g_hi = max(est.ask_range_high_eur, asking, est.range_high_eur) * 1.06
+
+    def _x(v: float) -> float:
+        return (v - g_lo) / (g_hi - g_lo) * 100
+
+    gauge = {
+        "omi_band": {"left": _x(est.range_low_eur), "width": _x(est.range_high_eur) - _x(est.range_low_eur)},
+        "ask_band": {"left": _x(est.ask_range_low_eur), "width": _x(est.ask_range_high_eur) - _x(est.ask_range_low_eur)},
+        "ticks": [
+            {"label": "OMI low",  "value": est.range_low_eur,       "x": _x(est.range_low_eur)},
+            {"label": "Ask low",  "value": est.ask_range_low_eur,   "x": _x(est.ask_range_low_eur)},
+            {"label": "Ask mid",  "value": est.ask_range_mid_eur,   "x": _x(est.ask_range_mid_eur)},
+            {"label": "Ask high", "value": est.ask_range_high_eur,  "x": _x(est.ask_range_high_eur)},
+            {"label": "OMI high", "value": est.range_high_eur,      "x": _x(est.range_high_eur)},
+        ],
+        "asking_x": _x(asking),
+    }
+
     return templates.TemplateResponse(
         request,
         "result.html",
@@ -386,6 +414,7 @@ def estimate(
             "verdict_hint": hint,
             "amenity_warning": amenity_warning,
             "semester_months_old": _semester_months_old(est.omi_quote.semester),
+            "gauge": gauge,
         },
     )
 

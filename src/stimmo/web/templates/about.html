@@ -1,97 +1,276 @@
 {% extends "base.html" %}
-{% block title %}stimmo — about the data{% endblock %}
+{% block title %}stimmo — about{% endblock %}
 {% block content %}
-<p class="muted">How stimmo turns an address + asking price into an UNDER / FAIR / OVER verdict, and what data backs it.</p>
 
-<h2>The pipeline</h2>
-<ol>
-  <li><strong>Geocode</strong> the address via OSM Nominatim to get latitude / longitude.</li>
-  <li><strong>Locate the OMI zone</strong> by point-in-polygon against Milano's official zone boundaries.</li>
-  <li><strong>Look up the €/m² band</strong> (<code>Compr_min</code>–<code>Compr_max</code>) for that zone, property type, and condition bucket.</li>
-  <li><strong>Count nearby amenities</strong> within a 500 m radius via OSM Overpass.</li>
-  <li><strong>Adjust</strong> the band with a single coefficients table (floor, lift, fine condition, energy class, outdoor, box, amenity score).</li>
-  <li><strong>Multiply by surface</strong> to get the estimated price range, then classify the asking price as UNDER / FAIR / OVER with a ±5% tolerance.</li>
-</ol>
-
-<h2>Data sources</h2>
-
-<div class="panel">
-  <h3>OMI quotations — Agenzia delle Entrate</h3>
-  <p>Per-zone €/m² ranges for sales, split by property type (residential subtypes, shops, offices, etc.) and condition bucket (<em>Normale</em>, <em>Scadente</em>, <em>Ottimo</em>).</p>
-  <dl class="grid-kv">
-    <dt>Semester</dt><dd>{{ semester }}</dd>
-    <dt>Coverage</dt><dd>Comune di Milano only ({{ zone_count }} OMI microzones)</dd>
-    <dt>Source</dt><dd><a href="https://www.agenziaentrate.gov.it/portale/web/guest/schede/fabbricatiterreni/omi" target="_blank" rel="noopener">Osservatorio Mercato Immobiliare</a> (CKAN)</dd>
-    <dt>Bundled file</dt><dd><code>data/assets/milano_omi_valori.csv</code></dd>
-  </dl>
-  <p class="muted">Italian per-transaction sale prices are not public, so OMI bands are the spine of the estimate. There is no "comparable listings" stage — the absence is by design.</p>
+<div class="pagehead">
+  <div>
+    <div class="stepper">
+      <span class="step on"><span class="num">§</span> About</span>
+    </div>
+    <h1>How stimmo turns an address<br>into <em>a verdict</em>.</h1>
+    <p class="sub">A six-step pipeline, one coefficients file, no machine learning. Same inputs, same output — every time.</p>
+  </div>
+  <div class="meta">
+    Methodology<br>
+    <b>v0.4 · {{ semester }}</b><br>
+    <span style="opacity:0.7">{{ zone_count }} OMI<br>microzones · Milano</span>
+  </div>
 </div>
 
-<div class="panel">
-  <h3>OMI zone polygons</h3>
-  <p>Shapes for each microzone, used for point-in-polygon zone assignment.</p>
-  <dl class="grid-kv">
-    <dt>Format</dt><dd>GeoJSON</dd>
-    <dt>Bundled file</dt><dd><code>data/assets/milano_omi_zones.geojson</code></dd>
-  </dl>
-  <p class="muted">Addresses that geocode outside the Milano comune (metropolitan belt, neighbouring municipalities) are rejected — this tool is Milano-only.</p>
+<!-- BrandStrip -->
+<div class="brand-row">
+  <div class="brand-card">
+    <div class="small">Wordmark · Instrument Serif</div>
+    <div class="wm-big"><span>stimm</span><em>o</em><span class="dot"></span></div>
+    <div class="brand-tag">
+      A transparent, OMI-anchored fair-price check<br>
+      for Milan apartment listings.
+    </div>
+  </div>
+  <div class="brand-card dark">
+    <div class="small">Numerals · JetBrains Mono</div>
+    <div style="font-family:var(--mono);font-size:38px;margin-top:14px;line-height:1;font-variant-numeric:tabular-nums">
+      € 6 825 / m²
+    </div>
+    <div style="font-family:var(--mono);font-size:14px;margin-top:14px;color:oklch(0.78 0.01 250)">
+      OMI band <span style="color:var(--paper)">5 800 – 7 200</span> €/m² · zone <span style="color:var(--paper)">B5</span> · semester <span style="color:var(--paper)">{{ semester }}</span>
+    </div>
+    <div style="margin-top:22px;display:flex;gap:16px;align-items:baseline">
+      <span style="font-family:var(--serif);font-style:italic;font-size:22px;color:var(--paper)">fair</span>
+      <span style="font-family:var(--serif);font-style:italic;font-size:22px;color:oklch(0.65 0.10 75)">over</span>
+      <span style="font-family:var(--serif);font-style:italic;font-size:22px;color:oklch(0.7 0.10 145)">under</span>
+      <span style="font-family:var(--mono);font-size:11px;color:oklch(0.7 0.01 250);letter-spacing:0.1em;text-transform:uppercase;margin-left:auto">Verdicts</span>
+    </div>
+  </div>
 </div>
 
-<div class="panel">
-  <h3>OMI history — 8 semesters</h3>
-  <p>Trailing band for the trend panel on the result page.</p>
-  <dl class="grid-kv">
-    <dt>Window</dt><dd>8 semesters (~4 years)</dd>
-    <dt>Bundled file</dt><dd><code>data/assets/milano_omi_history.csv</code></dd>
-  </dl>
+<!-- Pipeline -->
+<div class="doc">
+  <div class="doc-head">
+    <h2 class="doc-title">The pipeline</h2>
+    <span class="doc-eyebrow">§ Address → verdict · 6 steps</span>
+  </div>
+  <ol class="pipeline">
+    <li>
+      <span class="pipeline-num">01</span>
+      <div><h3>Geocode</h3><p>OSM Nominatim resolves the address to lat / lon. Queries are restricted to Milano comune.</p></div>
+    </li>
+    <li>
+      <span class="pipeline-num">02</span>
+      <div><h3>Locate the OMI zone</h3><p>Point-in-polygon against Milano's official OMI microzone shapes.</p></div>
+    </li>
+    <li>
+      <span class="pipeline-num">03</span>
+      <div><h3>Pull the €/m² band</h3><p>Compr_min – Compr_max for that zone × property type × condition bucket.</p></div>
+    </li>
+    <li>
+      <span class="pipeline-num">04</span>
+      <div><h3>Count amenities</h3><p>OSM Overpass — schools, transit, markets, pharmacies, parks within 500 m.</p></div>
+    </li>
+    <li>
+      <span class="pipeline-num">05</span>
+      <div><h3>Adjust the band</h3><p>A single coefficients table multiplies floor, lift, energy, outdoor, era, orientation, amenities.</p></div>
+    </li>
+    <li>
+      <span class="pipeline-num">06</span>
+      <div><h3>Classify</h3><p>Compare asking price to an ask-shifted band (rogito + 6 %). ±5 % around it is fair.</p></div>
+    </li>
+  </ol>
 </div>
 
-<div class="panel">
-  <h3>NTN — transaction volumes</h3>
-  <p>Agenzia delle Entrate's <em>Numero di Transazioni Normalizzate</em>, used only to show market activity on the result page (not as a pricing input).</p>
-  <dl class="grid-kv">
-    <dt>Granularity</dt><dd>Quarterly, Milano total + by surface bucket</dd>
-    <dt>Bundled files</dt><dd><code>milano_ntn_total.csv</code>, <code>milano_ntn_by_size.csv</code></dd>
-  </dl>
+<!-- Data sources -->
+<h2 class="section-h">Data sources</h2>
+<div class="src-grid">
+  <div class="src">
+    <div class="src-head">
+      <span class="src-stat">{{ zone_count }}</span>
+      <span class="src-stat-l">microzones · Milano · {{ semester }}</span>
+    </div>
+    <h3 class="src-title">OMI quotations</h3>
+    <div class="src-org">Agenzia delle Entrate · Bundled · CKAN</div>
+    <p class="src-desc">Per-zone €/m² ranges for sales, split by property type and condition (Normale / Scadente / Ottimo). The spine of every estimate.</p>
+    <dl class="src-kv">
+      <dt>License</dt><dd>IODL 2.0</dd>
+      <dt>File</dt><dd class="mono" style="font-size:11px">data/assets/milano_omi_valori.csv</dd>
+    </dl>
+  </div>
+  <div class="src">
+    <div class="src-head">
+      <span class="src-stat">1</span>
+      <span class="src-stat-l">comune · no metropolitan belt</span>
+    </div>
+    <h3 class="src-title">OMI zone polygons</h3>
+    <div class="src-org">Comune di Milano · Bundled · GeoJSON</div>
+    <p class="src-desc">Microzone shapes used for point-in-polygon zone assignment. Comune di Milano only — addresses outside the comune are rejected.</p>
+    <dl class="src-kv">
+      <dt>License</dt><dd>IODL 2.0</dd>
+      <dt>File</dt><dd class="mono" style="font-size:11px">data/assets/milano_omi_zones.geojson</dd>
+    </dl>
+  </div>
+  <div class="src">
+    <div class="src-head">
+      <span class="src-stat">8</span>
+      <span class="src-stat-l">semesters · ~4 years</span>
+    </div>
+    <h3 class="src-title">OMI history</h3>
+    <div class="src-org">Agenzia delle Entrate · Bundled · CSV</div>
+    <p class="src-desc">Trailing 8 semesters (~4 years) of bands per zone × type × condition. Drives the trend strip on the report.</p>
+    <dl class="src-kv">
+      <dt>License</dt><dd>IODL 2.0</dd>
+      <dt>File</dt><dd class="mono" style="font-size:11px">data/assets/milano_omi_history.csv</dd>
+    </dl>
+  </div>
+  <div class="src">
+    <div class="src-head">
+      <span class="src-stat">Q</span>
+      <span class="src-stat-l">quarterly · by surface bucket</span>
+    </div>
+    <h3 class="src-title">NTN — transactions</h3>
+    <div class="src-org">Agenzia delle Entrate · Bundled · CSV</div>
+    <p class="src-desc">Numero di Transazioni Normalizzate, quarterly. Shown for market context only — never used as a pricing input.</p>
+    <dl class="src-kv">
+      <dt>License</dt><dd>IODL 2.0</dd>
+      <dt>File</dt><dd class="mono" style="font-size:11px">milano_ntn_total.csv · milano_ntn_by_size.csv</dd>
+    </dl>
+  </div>
+  <div class="src">
+    <div class="src-head">
+      <span class="src-stat">1×</span>
+      <span class="src-stat-l">request per estimate</span>
+    </div>
+    <h3 class="src-title">Nominatim — geocoding</h3>
+    <div class="src-org">OpenStreetMap · Live · 1 req/s</div>
+    <p class="src-desc">Free geocoder, called once per estimate. Queries are scoped to Milano to avoid stray matches.</p>
+    <dl class="src-kv">
+      <dt>License</dt><dd>ODbL</dd>
+      <dt>File</dt><dd class="mono" style="font-size:11px">nominatim.openstreetmap.org</dd>
+    </dl>
+  </div>
+  <div class="src">
+    <div class="src-head">
+      <span class="src-stat">500 m</span>
+      <span class="src-stat-l">radius · 6 categories</span>
+    </div>
+    <h3 class="src-title">Overpass — amenities</h3>
+    <div class="src-org">OpenStreetMap · Live · 500 m</div>
+    <p class="src-desc">Counts of schools, pharmacies, markets, transit stops and parks within 500 m. If unreachable, the estimate still renders with a zero amenity score and a warning.</p>
+    <dl class="src-kv">
+      <dt>License</dt><dd>ODbL</dd>
+      <dt>File</dt><dd class="mono" style="font-size:11px">overpass-api.de</dd>
+    </dl>
+  </div>
 </div>
 
-<div class="panel">
-  <h3>OSM Nominatim — geocoding</h3>
-  <p>Free geocoder, rate-limited to 1 req/s. Queries are restricted to Milano to avoid stray matches.</p>
-  <dl class="grid-kv">
-    <dt>When</dt><dd>Live, once per estimate</dd>
-    <dt>Endpoint</dt><dd><code>nominatim.openstreetmap.org</code></dd>
-    <dt>License</dt><dd><a href="https://www.openstreetmap.org/copyright" rel="noopener">&copy; OpenStreetMap contributors</a> (ODbL)</dd>
-  </dl>
+<!-- Two principles -->
+<div class="grid-2" style="margin-top:28px">
+  <div class="doc principle">
+    <div class="principle-eyebrow">Principle · 01</div>
+    <h2 class="principle-h">No machine learning.</h2>
+    <p class="principle-p">
+      stimmo has no trained model. The entire tuning surface is a single
+      file — <span class="mono">valuation/adjustments.py</span>. Every
+      multiplier (floor, lift, energy, outdoor, era, orientation, amenities)
+      lives there in plain Python.
+    </p>
+    <p class="principle-p">
+      The verdict is <em>deterministic</em>: same inputs, same output.
+      If you disagree with a coefficient, you can read the line where it lives,
+      change it, and re-run.
+    </p>
+    <div class="principle-foot">
+      <span class="kbd">valuation/adjustments.py</span>
+      <span class="src-arrow">→</span>
+      <span class="kbd">valuation/engine.py</span>
+      <span class="src-arrow">→</span>
+      <span class="kbd">verdict.classify()</span>
+    </div>
+  </div>
+
+  <div class="doc principle">
+    <div class="principle-eyebrow">Principle · 02</div>
+    <h2 class="principle-h">Ask-shifted, not rogito.</h2>
+    <p class="principle-p">
+      OMI publishes <em>transacted</em> prices — what changed hands at the
+      notary, after negotiation. In Milano, asking prices typically run
+      <b> 5–10 %</b> above the eventual sale price.
+    </p>
+
+    <div class="prem">
+      <div class="prem-row">
+        <span class="prem-lbl">OMI rogito</span>
+        <div class="prem-bar omi">
+          <span class="prem-tip lo">€ 6 090</span>
+          <span class="prem-tip hi">€ 7 560 / m²</span>
+        </div>
+      </div>
+      <div class="prem-row">
+        <span class="prem-lbl">+ 6 % ask</span>
+        <div class="prem-bar ask">
+          <span class="prem-tip lo">€ 6 456</span>
+          <span class="prem-tip hi">€ 8 014 / m²</span>
+        </div>
+      </div>
+      <div class="prem-shift">shift +6 %</div>
+    </div>
+
+    <p class="principle-p" style="margin-top:14px">
+      We shift the OMI band upward by a fixed <b>+6 %</b> ask-premium before
+      classifying. ±5 % around the shifted band is "fair". The constant lives
+      in <span class="mono">verdict.py::ASK_PREMIUM_PCT</span>.
+    </p>
+  </div>
 </div>
 
-<div class="panel">
-  <h3>OSM Overpass — amenities</h3>
-  <p>Counts of nearby schools, pharmacies, supermarkets, transit stops, parks, etc. within 500 m, folded into an <code>AmenityScore</code> that feeds the coefficients table.</p>
-  <dl class="grid-kv">
-    <dt>When</dt><dd>Live, once per estimate</dd>
-    <dt>Radius</dt><dd>500 m</dd>
-    <dt>Endpoint</dt><dd><code>overpass-api.de</code></dd>
-    <dt>License</dt><dd><a href="https://www.openstreetmap.org/copyright" rel="noopener">&copy; OpenStreetMap contributors</a> (ODbL)</dd>
-  </dl>
-  <p class="muted">If Overpass is unreachable the estimate still renders, with a zero amenity score and a visible warning.</p>
+<!-- What stimmo doesn't model -->
+<h2 class="section-h">What stimmo doesn't model</h2>
+<div class="not-grid">
+  <div class="not">
+    <div class="not-x" aria-hidden="true">×</div>
+    <h3>Spese condominiali</h3>
+    <p>Routine condominium fees and extraordinary works (lavori straordinari deliberati). Can shift true cost €10–50 k. Invisible to OMI.</p>
+  </div>
+  <div class="not">
+    <div class="not-x" aria-hidden="true">×</div>
+    <h3>Piano nobile</h3>
+    <p>The classic 1° piano premium in storied buildings. Inside the same building, can drive ±5–10 %.</p>
+  </div>
+  <div class="not">
+    <div class="not-x" aria-hidden="true">×</div>
+    <h3>Street noise &amp; view</h3>
+    <p>A unit on a quiet cortile vs. one on Corso Buenos Aires. OMI averages, doesn't see this.</p>
+  </div>
+  <div class="not">
+    <div class="not-x" aria-hidden="true">×</div>
+    <h3>Comparable listings</h3>
+    <p>Italian per-transaction sale data isn't public. We don't fit a model on stale asking prices — by design.</p>
+  </div>
+  <div class="not">
+    <div class="not-x" aria-hidden="true">×</div>
+    <h3>Metropolitan belt</h3>
+    <p>Sesto, Cinisello, Cologno, Rho — outside the Milano comune polygon. Will fail with "outside Milano".</p>
+  </div>
+  <div class="not">
+    <div class="not-x" aria-hidden="true">×</div>
+    <h3>Commercial property</h3>
+    <p>Shops, offices, ateliers — different OMI category, different dynamics. Residential subtypes only.</p>
+  </div>
 </div>
 
-<h2>No machine learning</h2>
-<p>
-  stimmo has no trained model. The entire tuning surface is a single coefficients file
-  (<code>valuation/adjustments.py</code>). The verdict is deterministic: same inputs, same output.
-</p>
+<!-- Disclaimer -->
+<div class="disclaimer">
+  <div class="disclaimer-stamp">
+    <div style="font-family:var(--serif);font-style:italic;font-size:22px;line-height:1">not a perizia</div>
+    <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.16em;text-transform:uppercase;margin-top:4px;color:var(--bad)">fairness check · v0.4</div>
+  </div>
+  <div class="disclaimer-body">
+    <h3>stimmo is a fairness check, not an official appraisal.</h3>
+    <p>It does not replace a qualified <em>perito</em> and should not be used as the basis for legal, fiscal, or contractual decisions. Use it to sanity-check an asking price, negotiate, or walk away — not to sign anything.</p>
+  </div>
+</div>
 
-<h2>Asking-vs-rogito premium</h2>
-<p>
-  OMI publishes <em>transacted</em> prices (rogiti from the notarial act). In Milano, asking prices
-  typically run 5–10% above the eventual sale price. We shift the OMI range upward by a fixed
-  <strong>+6% ask-premium</strong> before classifying the verdict, so a listing at rogito mid correctly
-  shows as mildly under-priced and a listing at rogito + 6% shows as fair. Both the rogito range and
-  the typical-Milano-ask range are visible on the result page. The constant lives in
-  <code>valuation/verdict.py::ASK_PREMIUM_PCT</code>.
-</p>
+<div style="margin-top:28px;display:flex;gap:12px">
+  <a href="/" class="btn">Run an estimate <span class="arrow">→</span></a>
+  <a href="/bookmarklet" class="btn btn-ghost">Install the bookmarklet</a>
+</div>
 
-<p><a class="back" href="/">← Back to estimate</a></p>
 {% endblock %}

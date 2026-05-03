@@ -1,173 +1,286 @@
 {% extends "base.html" %}
 {% block title %}stimmo — estimate{% endblock %}
 {% block content %}
+
+<div class="pagehead">
+  <div>
+    <div class="stepper">
+      <span class="step on"><span class="num">1</span> Listing</span>
+      <span class="sep"></span>
+      <span class="step"><span class="num">2</span> Verdict</span>
+    </div>
+    <h1>Is this Milan listing <em>fair</em>?</h1>
+    <p class="sub">Anchored to <b>OMI</b> €/m² bands per zone and a single, public coefficients table. No black box — every multiplier shows up in your report.</p>
+  </div>
+  <div class="meta">
+    OMI semester<br>
+    <b>{{ omi_semester }}</b>
+    <div style="margin-top:8px;opacity:0.7">Compr. min – max</div>
+  </div>
+</div>
+
 {% if import_source %}
-<div style="background:#fff3cd;border:1px solid #ffc107;padding:12px;margin-bottom:16px;border-radius:4px;color:#664d03">
-  ⚠ <strong>Prefilled from {{ import_source }}.it</strong> — please verify all fields before estimating.
+<div class="note" style="margin-bottom:22px">
+  <b>Prefilled from {{ import_source }}.it</b> — please verify all fields before estimating.
 </div>
 {% endif %}
-<h2 style="margin-top:0">Milano OMI zones</h2>
-<div id="zone-map" class="map"></div>
-<div class="map-legend">
-  <span>lower €/m²</span><span class="bar"></span><span>higher €/m²</span>
+
+<div class="grid-2">
+  <form method="post" action="/estimate">
+    <div class="doc">
+      <div class="doc-head">
+        <h2 class="doc-title">Listing</h2>
+        <span class="doc-eyebrow">§ 01 · Property &amp; price</span>
+      </div>
+      <div class="form-grid">
+
+        <div class="field col-12">
+          <label for="address">Address</label>
+          <input class="input" id="address" name="address" type="text"
+            value="{{ defaults.address or '' }}" required autofocus
+            placeholder="Via …, Milano">
+          <span class="hint" id="address_status">Street + civic number, Milano comune only.</span>
+        </div>
+
+        <div class="field col-4">
+          <label for="surface_m2">Surface</label>
+          <div class="input-affix">
+            <input class="input numeric" id="surface_m2" name="surface_m2" type="number"
+              step="0.1" min="10" value="{{ defaults.surface_m2 or '' }}" required>
+            <span class="affix right">m²</span>
+          </div>
+        </div>
+
+        <div class="field col-8">
+          <label for="asking_price_eur">Asking price</label>
+          <div class="input-affix">
+            <span class="affix">€</span>
+            <input class="input numeric" id="asking_price_eur" name="asking_price_eur"
+              type="number" step="1" min="10000"
+              value="{{ defaults.asking_price_eur or '' }}" required>
+          </div>
+        </div>
+
+        <div class="field col-8">
+          <label for="property_type">Property type</label>
+          <select class="select" id="property_type" name="property_type"
+            onchange="document.getElementById('property_type_hint').textContent = this.options[this.selectedIndex].dataset.hint;">
+            {% for pt in property_types %}
+            <option value="{{ pt.value }}" data-hint="{{ pt.hint }}"
+              {% if pt.value == defaults.property_type %}selected{% endif %}>{{ pt.value }}</option>
+            {% endfor %}
+          </select>
+          <span class="hint" id="property_type_hint">
+            {%- for pt in property_types -%}{%- if pt.value == defaults.property_type -%}{{ pt.hint }}{%- endif -%}{%- endfor -%}
+          </span>
+        </div>
+
+        <div class="field col-4">
+          <label>OMI condition</label>
+          <div class="seg" role="group">
+            {% for v in omi_conditions %}
+            <button type="button" class="seg-btn{% if v == defaults.omi_condition %} on{% endif %}"
+              data-value="{{ v }}" onclick="setOmiCond(this)">{{ v | lower }}</button>
+            {% endfor %}
+          </div>
+          <input type="hidden" id="omi_condition" name="omi_condition"
+            value="{{ defaults.omi_condition }}">
+        </div>
+
+      </div>
+    </div>
+
+    <div class="doc">
+      <div class="doc-head">
+        <h2 class="doc-title">Building &amp; unit</h2>
+        <span class="doc-eyebrow">§ 02 · Adjustments</span>
+      </div>
+      <div class="form-grid">
+
+        <div class="field col-6">
+          <label for="fine_condition">Fine condition</label>
+          <select class="select" id="fine_condition" name="fine_condition">
+            {% for v in fine_conditions %}
+            <option value="{{ v }}" {% if v == defaults.fine_condition %}selected{% endif %}>{{ v }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field col-6">
+          <label for="energy_class">Energy class</label>
+          <select class="select" id="energy_class" name="energy_class">
+            {% for v in energy_classes %}
+            <option value="{{ v }}" {% if v == defaults.energy_class %}selected{% endif %}>{{ v or "— unknown —" }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field col-3">
+          <label for="floor">Floor</label>
+          <input class="input numeric" id="floor" name="floor" type="number"
+            value="{{ defaults.floor }}" required>
+          <span class="hint">0 = ground · −1 = basement</span>
+        </div>
+
+        <div class="field col-3">
+          <label for="total_floors">Total floors</label>
+          <input class="input numeric" id="total_floors" name="total_floors"
+            type="number" min="1" value="{{ defaults.total_floors }}" required>
+        </div>
+
+        <div class="field col-6">
+          <label for="outdoor">Outdoor space</label>
+          <select class="select" id="outdoor" name="outdoor">
+            {% for v in outdoors %}
+            <option value="{{ v }}" {% if v == defaults.outdoor %}selected{% endif %}>{{ v }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field col-6">
+          <label for="construction_era">Construction era</label>
+          <select class="select" id="construction_era" name="construction_era">
+            {% for era in construction_eras %}
+            <option value="{{ era.value }}" {% if era.value == defaults.construction_era %}selected{% endif %}>{{ era.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field col-6">
+          <label for="orientation">Orientation</label>
+          <select class="select" id="orientation" name="orientation">
+            {% for ori in orientations %}
+            <option value="{{ ori.value }}" {% if ori.value == defaults.orientation %}selected{% endif %}>{{ ori.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field col-4">
+          <label>&nbsp;</label>
+          <label class="check">
+            <input type="checkbox" id="has_lift" name="has_lift"
+              {% if defaults.has_lift %}checked{% endif %}>
+            <span>Lift in building</span>
+          </label>
+        </div>
+
+        <div class="field col-4">
+          <label>&nbsp;</label>
+          <label class="check">
+            <input type="checkbox" id="has_box" name="has_box"
+              {% if defaults.has_box %}checked{% endif %}>
+            <span>Box auto / garage</span>
+          </label>
+        </div>
+
+        <div class="field col-4">
+          <label>&nbsp;</label>
+          <label class="check">
+            <input type="checkbox" id="has_second_bathroom" name="has_second_bathroom"
+              {% if defaults.has_second_bathroom %}checked{% endif %}>
+            <span>Second bathroom</span>
+          </label>
+        </div>
+
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;margin-top:18px;align-items:center">
+      <button class="btn" type="submit">
+        Run the check <span class="arrow">→</span>
+      </button>
+      <span style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--ink-fade);letter-spacing:0.08em;text-transform:uppercase">No data leaves your browser until submit</span>
+    </div>
+  </form>
+
+  <div>
+    <div class="doc" style="padding:0;overflow:hidden">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--paper-rule);display:flex;align-items:baseline;justify-content:space-between">
+        <h2 class="doc-title" style="margin:0">Milano · OMI zones</h2>
+        <span class="doc-eyebrow">€/m² mid · {{ omi_semester }}</span>
+      </div>
+      <div class="map-wrap" style="border:0;border-radius:0">
+        <div id="zone-map" class="map"></div>
+      </div>
+      <div class="map-foot">
+        <div class="legend">
+          <span>lower</span>
+          <span class="bar"></span>
+          <span>higher</span>
+        </div>
+        <span>{{ zone_count }} zones · click for €/m² band</span>
+      </div>
+    </div>
+
+    <div class="doc">
+      <div class="doc-head">
+        <h2 class="doc-title">How <em style="font-style:italic">stimmo</em> reads a listing</h2>
+        <span class="doc-eyebrow">Methodology</span>
+      </div>
+      <ol style="margin:0;padding-left:22px;color:var(--ink-2);font-size:14px;line-height:1.7">
+        <li>Geocode the address and pin its <b>OMI zone</b> via the official polygon.</li>
+        <li>Pull the <b>€/m² band</b> for that zone × type × condition (semester {{ omi_semester }}).</li>
+        <li>Apply a <b>transparent multiplier</b> from a single coefficients file — floor, lift, energy, outdoor, era, orientation, amenities.</li>
+        <li>Compare the asking price to an <b>ask-shifted band</b> (rogito +6 %) and classify under / fair / over.</li>
+      </ol>
+    </div>
+  </div>
 </div>
 
-<form method="post" action="/estimate">
-  <div class="full">
-    <label for="address">Address (street + number, Milano)</label>
-    <input id="address" name="address" type="text" value="{{ defaults.address or '' }}" required autofocus>
-  </div>
-
-  <div>
-    <label for="surface_m2">Surface (m²)</label>
-    <input id="surface_m2" name="surface_m2" type="number" step="0.1" min="10" value="{{ defaults.surface_m2 or '' }}" required>
-  </div>
-  <div>
-    <label for="asking_price_eur">Asking price (EUR)</label>
-    <input id="asking_price_eur" name="asking_price_eur" type="number" step="1" min="10000" value="{{ defaults.asking_price_eur or '' }}" required>
-  </div>
-
-  <div>
-    <label for="property_type">Property type <span class="hint">(OMI category)</span></label>
-    <select id="property_type" name="property_type" onchange="document.getElementById('property_type_hint').textContent = this.options[this.selectedIndex].dataset.hint;">
-      {% for pt in property_types %}
-      <option value="{{ pt.value }}" data-hint="{{ pt.hint }}" {% if pt.value == defaults.property_type %}selected{% endif %}>{{ pt.value }}</option>
-      {% endfor %}
-    </select>
-    <small id="property_type_hint" class="hint">
-      {%- for pt in property_types -%}{%- if pt.value == defaults.property_type -%}{{ pt.hint }}{%- endif -%}{%- endfor -%}
-    </small>
-  </div>
-  <div>
-    <label for="omi_condition">OMI condition bucket</label>
-    <select id="omi_condition" name="omi_condition">
-      {% for v in omi_conditions %}
-      <option value="{{ v }}" {% if v == defaults.omi_condition %}selected{% endif %}>{{ v }}</option>
-      {% endfor %}
-    </select>
-  </div>
-
-  <div>
-    <label for="fine_condition">Fine-grained condition</label>
-    <select id="fine_condition" name="fine_condition">
-      {% for v in fine_conditions %}
-      <option value="{{ v }}" {% if v == defaults.fine_condition %}selected{% endif %}>{{ v }}</option>
-      {% endfor %}
-    </select>
-  </div>
-  <div>
-    <label for="energy_class">Energy class (optional)</label>
-    <select id="energy_class" name="energy_class">
-      {% for v in energy_classes %}
-      <option value="{{ v }}" {% if v == defaults.energy_class %}selected{% endif %}>{{ v or "— unknown —" }}</option>
-      {% endfor %}
-    </select>
-  </div>
-
-  <div>
-    <label for="floor">Floor (0 = ground, -1 = basement)</label>
-    <input id="floor" name="floor" type="number" value="{{ defaults.floor }}" required>
-  </div>
-  <div>
-    <label for="total_floors">Total floors in building</label>
-    <input id="total_floors" name="total_floors" type="number" min="1" value="{{ defaults.total_floors }}" required>
-  </div>
-
-  <div>
-    <label for="outdoor">Outdoor space</label>
-    <select id="outdoor" name="outdoor">
-      {% for v in outdoors %}
-      <option value="{{ v }}" {% if v == defaults.outdoor %}selected{% endif %}>{{ v }}</option>
-      {% endfor %}
-    </select>
-  </div>
-  <div class="check">
-    <input id="has_lift" name="has_lift" type="checkbox" {% if defaults.has_lift %}checked{% endif %}>
-    <label for="has_lift" style="margin:0;color:var(--text)">Has lift</label>
-  </div>
-
-  <div class="check">
-    <input id="has_box" name="has_box" type="checkbox" {% if defaults.has_box %}checked{% endif %}>
-    <label for="has_box" style="margin:0;color:var(--text)">Includes box auto / garage</label>
-  </div>
-
-  <div>
-    <label for="construction_era">Construction era</label>
-    <select id="construction_era" name="construction_era">
-      {% for era in construction_eras %}
-      <option value="{{ era.value }}" {% if era.value == defaults.construction_era %}selected{% endif %}>{{ era.label }}</option>
-      {% endfor %}
-    </select>
-  </div>
-  <div>
-    <label for="orientation">Orientation</label>
-    <select id="orientation" name="orientation">
-      {% for ori in orientations %}
-      <option value="{{ ori.value }}" {% if ori.value == defaults.orientation %}selected{% endif %}>{{ ori.label }}</option>
-      {% endfor %}
-    </select>
-  </div>
-
-  <div class="check">
-    <input id="has_second_bathroom" name="has_second_bathroom" type="checkbox" {% if defaults.has_second_bathroom %}checked{% endif %}>
-    <label for="has_second_bathroom" style="margin:0;color:var(--text)">Second bathroom (≥ 75 m² only)</label>
-  </div>
-
-  <button type="submit">Estimate</button>
-</form>
 {% endblock %}
 
 {% block scripts %}
 <script>
 (function () {
-  const map = L.map('zone-map', { zoomControl: true, scrollWheelZoom: false })
+  function setOmiCond(btn) {
+    btn.closest('.seg').querySelectorAll('.seg-btn').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    document.getElementById('omi_condition').value = btn.dataset.value;
+  }
+  window.setOmiCond = setOmiCond;
+
+  const map = L.map('zone-map', { zoomControl: true, scrollWheelZoom: false, attributionControl: false })
     .setView([45.4642, 9.19], 12);
 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; <a href="https://openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-    subdomains: 'abcd', maxZoom: 19
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
+    subdomains: 'abcd', maxZoom: 19,
+  }).addTo(map);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
+    subdomains: 'abcd', maxZoom: 19, opacity: 0.85,
   }).addTo(map);
 
-  // 5-stop diverging-ish palette matching the legend gradient
-  const palette = ['#2c7bb6', '#abd9e9', '#ffffbf', '#fdae61', '#d7191c'];
+  const palette = [
+    'oklch(0.78 0.05 240)', 'oklch(0.86 0.06 200)',
+    'oklch(0.92 0.07 95)',  'oklch(0.74 0.13 60)',
+    'oklch(0.55 0.15 30)',
+  ];
 
   function quantiles(values, n) {
     const sorted = [...values].sort((a, b) => a - b);
     const out = [];
-    for (let i = 1; i < n; i++) {
-      out.push(sorted[Math.floor((i / n) * sorted.length)]);
-    }
+    for (let i = 1; i < n; i++) out.push(sorted[Math.floor((i / n) * sorted.length)]);
     return out;
   }
   function colorFor(mid, breaks) {
-    if (mid == null) return '#3a3f4b';
-    for (let i = 0; i < breaks.length; i++) {
-      if (mid <= breaks[i]) return palette[i];
-    }
+    if (mid == null) return 'oklch(0.88 0.01 82)';
+    for (let i = 0; i < breaks.length; i++) { if (mid <= breaks[i]) return palette[i]; }
     return palette[palette.length - 1];
   }
-  function fmtEur(n) {
-    return n == null ? '—' : '€ ' + Math.round(n).toLocaleString('it-IT');
-  }
+  function fmtEur(n) { return n == null ? '—' : '€ ' + Math.round(n).toLocaleString('it-IT'); }
 
-  let layer = null;
-  let breaks = [];
-  let highlighted = null;
-  let pin = null;
+  let layer = null, breaks = [], highlighted = null, pin = null;
 
   function styleFor(feature) {
     return {
-      color: '#1b1f2a',
-      weight: 1,
+      color: 'oklch(0.55 0.01 80)',
+      weight: 0.5,
       fillColor: colorFor(feature.properties.eur_m2_mid, breaks),
-      fillOpacity: 0.65,
+      fillOpacity: 0.55,
     };
   }
 
   fetch('/api/zones.geojson').then(r => r.json()).then(gj => {
-    const mids = gj.features
-      .map(f => f.properties.eur_m2_mid)
-      .filter(v => v != null);
+    const mids = gj.features.map(f => f.properties.eur_m2_mid).filter(v => v != null);
     breaks = quantiles(mids, palette.length);
 
     layer = L.geoJSON(gj, {
@@ -175,19 +288,13 @@
       onEachFeature: (f, lyr) => {
         const p = f.properties;
         const range = (p.eur_m2_min && p.eur_m2_max)
-          ? `${fmtEur(p.eur_m2_min)} – ${fmtEur(p.eur_m2_max)} / m²`
+          ? fmtEur(p.eur_m2_min) + ' – ' + fmtEur(p.eur_m2_max) + ' / m²'
           : 'no OMI quote';
-        lyr.bindPopup(
-          `<div class="zone-popup">
-             <strong>${p.CODZONA} — ${p.Zona_Descr || p.Name || ''}</strong>
-             ${range}
-           </div>`
-        );
-        lyr.on('mouseover', () => { if (lyr !== highlighted) lyr.setStyle({ weight: 2, color: '#e6e8ec' }); });
-        lyr.on('mouseout', () => { if (lyr !== highlighted) layer.resetStyle(lyr); });
+        lyr.bindPopup('<div class="zone-popup"><strong>' + p.CODZONA + ' — ' + (p.Zona_Descr || p.Name || '') + '</strong>' + range + '</div>');
+        lyr.on('mouseover', () => { if (lyr !== highlighted) lyr.setStyle({ weight: 1.5, color: 'oklch(0.22 0.012 250)' }); });
+        lyr.on('mouseout',  () => { if (lyr !== highlighted) layer.resetStyle(lyr); });
       },
     }).addTo(map);
-
     map.fitBounds(layer.getBounds(), { padding: [10, 10] });
   });
 
@@ -197,26 +304,20 @@
     if (!zoneCode) return;
     layer.eachLayer(lyr => {
       if (lyr.feature.properties.CODZONA === zoneCode) {
-        lyr.setStyle({ weight: 3, color: '#e6e8ec' });
+        lyr.setStyle({ weight: 2, color: 'oklch(0.22 0.012 250)' });
         lyr.bringToFront();
         highlighted = lyr;
       }
     });
   }
 
-  // --- live recenter on address input ---
-  const input = document.getElementById('address');
-  const status = document.createElement('small');
-  status.className = 'hint';
-  status.id = 'address_status';
-  input.parentNode.appendChild(status);
-
-  let timer = null;
-  let reqId = 0;
+  const input  = document.getElementById('address');
+  const status = document.getElementById('address_status');
+  let timer = null, reqId = 0;
 
   function setStatus(msg, isError) {
-    status.textContent = msg || '';
-    status.style.color = isError ? 'var(--bad)' : 'var(--muted)';
+    status.textContent = msg || 'Street + civic number, Milano comune only.';
+    status.style.color = isError ? 'var(--bad)' : '';
   }
 
   async function lookup(q) {
@@ -224,19 +325,20 @@
     setStatus('Locating…', false);
     try {
       const r = await fetch('/api/geocode?q=' + encodeURIComponent(q));
-      if (mine !== reqId) return;  // superseded
+      if (mine !== reqId) return;
       if (r.status === 404) { setStatus('Address not found in Milano', true); highlightZone(null); return; }
       if (!r.ok) { setStatus('Geocoding failed', true); return; }
       const data = await r.json();
       if (mine !== reqId || !data.found) return;
       if (pin) pin.remove();
-      pin = L.marker([data.lat, data.lon]).addTo(map);
+      pin = L.circleMarker([data.lat, data.lon], {
+        radius: 6, color: 'oklch(0.22 0.012 250)', weight: 2,
+        fillColor: 'oklch(0.56 0.13 38)', fillOpacity: 1,
+      }).addTo(map);
       map.setView([data.lat, data.lon], 15);
       highlightZone(data.zone_code);
       setStatus(
-        data.zone_code
-          ? `Zone ${data.zone_code} — ${data.zone_descr || ''}`
-          : 'Outside Milano comune — no OMI zone',
+        data.zone_code ? 'Zone ' + data.zone_code + ' — ' + (data.zone_descr || '') : 'Outside Milano comune — no OMI zone',
         !data.zone_code,
       );
     } catch (_) {
@@ -247,7 +349,7 @@
   input.addEventListener('input', () => {
     const q = input.value.trim();
     clearTimeout(timer);
-    if (q.length < 4) { setStatus(''); return; }
+    if (q.length < 4) { setStatus('', false); return; }
     timer = setTimeout(() => lookup(q), 700);
   });
   input.addEventListener('blur', () => {

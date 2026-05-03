@@ -1,11 +1,27 @@
 {% extends "base.html" %}
 {% block title %}stimmo — error{% endblock %}
 {% block content %}
-<div class="panel bad">
-  <strong class="err">Could not produce an estimate</strong>
-  <ul>
-    {% for e in errors %}<li>{{ e }}</li>{% endfor %}
-  </ul>
+
+<div class="pagehead">
+  <div>
+    <div class="stepper">
+      <span class="step on"><span class="num">!</span> Error</span>
+    </div>
+    <h1>Could not produce <em>an estimate</em>.</h1>
+  </div>
 </div>
-<a class="back" href="/">← Back to form</a>
+
+<div class="doc" style="max-width:640px">
+  <div class="doc-head">
+    <h2 class="doc-title">What went wrong</h2>
+    <span class="doc-eyebrow">§ Errors</span>
+  </div>
+  {% for e in errors %}
+  <div class="note error" style="margin-bottom:10px">{{ e }}</div>
+  {% endfor %}
+  <div style="margin-top:18px">
+    <a href="/" class="btn btn-ghost">← Back to form</a>
+  </div>
+</div>
+
 {% endblock %}
