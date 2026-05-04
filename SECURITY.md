@@ -16,3 +16,7 @@ persistent storage, and no user accounts. Reports we are most interested in:
 - Cross-site scripting via Jinja templates.
 - Denial-of-service vectors through unbounded input parsing.
 - Vulnerabilities in dependencies that materially affect stimmo.
+
+## Fair usage
+
+stimmo is rate-limited at the edge: using it as an unauthenticated proxy for Nominatim or Overpass is out of scope and we will block abusive IPs.

@@ -7,7 +7,7 @@ import time
 import requests
 
 NOMINATIM = "https://nominatim.openstreetmap.org/search"
-UA = "stimmo/0.1 (https://github.com/local; pos-research)"
+UA = "stimmo/0.1 (https://github.com/alediaferia/stimmo; stimmo.it)"
 
 _last_call = 0.0
 
