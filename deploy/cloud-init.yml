@@ -1,0 +1,133 @@
+#cloud-config
+
+# Stimmo production host provisioning for Hetzner CX22 / Debian 12.
+# Supply this file at instance creation. Idempotent — safe to re-run.
+
+users:
+  - name: deploy
+    groups: docker
+    shell: /bin/bash
+    sudo: false
+    ssh_authorized_keys:
+      - REPLACE_WITH_DEPLOY_PUBLIC_KEY
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - apt-transport-https
+  - ca-certificates
+  - curl
+  - gnupg
+  - ufw
+  - unattended-upgrades
+
+write_files:
+  - path: /etc/apt/apt.conf.d/20auto-upgrades
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+      APT::Periodic::AutocleanInterval "7";
+    owner: root:root
+    permissions: "0644"
+
+  - path: /etc/apt/apt.conf.d/50unattended-upgrades
+    content: |
+      Unattended-Upgrade::Allowed-Origins {
+          "${distro_id}:${distro_codename}-security";
+      };
+      Unattended-Upgrade::Automatic-Reboot "true";
+      Unattended-Upgrade::Automatic-Reboot-Time "04:00";
+    owner: root:root
+    permissions: "0644"
+
+  - path: /opt/stimmo/docker-compose.yml
+    content: |
+      services:
+        stimmo:
+          image: ghcr.io/alediaferia/stimmo:latest
+          restart: unless-stopped
+          healthcheck:
+            test: ["CMD", "curl", "-sf", "http://localhost:8000/"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 10s
+          networks:
+            - stimmo-net
+
+        cloudflared:
+          image: cloudflare/cloudflared:latest
+          command: tunnel run
+          env_file:
+            - /opt/stimmo/.env
+          restart: unless-stopped
+          depends_on:
+            stimmo:
+              condition: service_healthy
+          networks:
+            - stimmo-net
+
+      networks:
+        stimmo-net:
+          driver: bridge
+    owner: deploy:deploy
+    permissions: "0640"
+
+  - path: /opt/stimmo/.env
+    content: |
+      TUNNEL_TOKEN=REPLACE_WITH_TUNNEL_TOKEN
+      GHCR_PAT=REPLACE_WITH_GHCR_PAT
+    owner: deploy:deploy
+    permissions: "0600"
+
+  - path: /etc/systemd/system/stimmo.service
+    content: |
+      [Unit]
+      Description=Stimmo docker compose stack
+      After=docker.service network-online.target
+      Requires=docker.service
+
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      User=deploy
+      Group=deploy
+      WorkingDirectory=/opt/stimmo
+      ExecStartPre=/usr/bin/docker login ghcr.io -u alediaferia -p ${GHCR_PAT}
+      ExecStart=/usr/bin/docker compose -f /opt/stimmo/docker-compose.yml up -d
+      ExecStop=/usr/bin/docker compose -f /opt/stimmo/docker-compose.yml down
+      EnvironmentFile=/opt/stimmo/.env
+
+      [Install]
+      WantedBy=multi-user.target
+    owner: root:root
+    permissions: "0644"
+
+runcmd:
+  # Install Docker CE
+  - install -m 0755 -d /etc/apt/keyrings
+  - curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+  - chmod a+r /etc/apt/keyrings/docker.asc
+  - |
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
+      > /etc/apt/sources.list.d/docker.list
+  - apt-get update
+  - apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+  # Firewall: allow SSH only, deny all other inbound
+  - ufw --force reset
+  - ufw default deny incoming
+  - ufw default allow outgoing
+  - ufw allow 22/tcp
+  - ufw --force enable
+
+  # GHCR login for the deploy user (uses PAT from .env)
+  - |
+    source /opt/stimmo/.env
+    sudo -u deploy docker login ghcr.io -u alediaferia -p "$GHCR_PAT"
+
+  # Enable and start the stimmo service
+  - systemctl daemon-reload
+  - systemctl enable stimmo.service
+  - systemctl start stimmo.service

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "packageRules": [
+    {
+      "description": "Auto-merge patch-level Docker base image updates",
+      "matchManagers": ["dockerfile", "docker-compose"],
+      "matchUpdateTypes": ["patch", "digest"],
+      "automerge": true
+    }
+  ],
+  "dockerfile": {
+    "enabled": true
+  },
+  "docker-compose": {
+    "enabled": true,
+    "fileMatch": ["(^|/)deploy/docker-compose\\.yml$"]
+  },
+  "github-actions": {
+    "enabled": true
+  },
+  "pip_requirements": {
+    "enabled": false
+  },
+  "uv": {
+    "enabled": true
+  }
+}
