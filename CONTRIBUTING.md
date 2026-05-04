@@ -8,6 +8,15 @@ uv run pytest        # run tests
 uv run stimmo-web    # start the app on http://127.0.0.1:8000
 ```
 
+Install the secret-scanning pre-commit hook (one-time):
+
+```sh
+uv tool install pre-commit
+pre-commit install
+```
+
+CI runs the same `gitleaks` check on every push and PR.
+
 ## Key invariants
 
 - **All coefficients live in `src/stimmo/valuation/adjustments.py`.** Do not scatter multipliers into the engine, models, or renderers.
