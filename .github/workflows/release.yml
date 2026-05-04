@@ -1,22 +1,37 @@
-name: Deploy
+name: Release
 
 on:
-  workflow_run:
-    workflows: [CI]
-    branches: [main]
-    types: [completed]
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies
+        run: uv sync --all-groups
+
+      - name: Lint
+        run: |
+          uv run ruff check
+          uv run ruff format --check
+
+      - name: Test
+        run: uv run pytest
+
   build:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -32,7 +47,7 @@ jobs:
           images: ghcr.io/alediaferia/stimmo
           tags: |
             type=raw,value=latest
-            type=sha,prefix=sha-,format=short
+            type=raw,value=${{ github.ref_name }}
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -53,9 +68,21 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            SHA="${{ github.event.workflow_run.head_sha }}"
-            IMAGE="ghcr.io/alediaferia/stimmo:sha-${SHA::7}"
+            IMAGE="ghcr.io/alediaferia/stimmo:${{ github.ref_name }}"
             sed -i "s|image: ghcr.io/alediaferia/stimmo:.*|image: $IMAGE|" /opt/stimmo/docker-compose.yml
             docker compose -f /opt/stimmo/docker-compose.yml pull
             docker compose -f /opt/stimmo/docker-compose.yml up -d --remove-orphans
             docker image prune -f
+
+  github-release:
+    needs: deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create ${{ github.ref_name }} --verify-tag --generate-notes
