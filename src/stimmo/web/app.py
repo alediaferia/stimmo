@@ -6,6 +6,7 @@ import json
 import re
 from datetime import date
 from functools import lru_cache
+from importlib.metadata import version as _pkg_version
 from pathlib import Path
 
 from fastapi import FastAPI, Form, Request
@@ -47,6 +48,7 @@ def _pct(n: float, d: int = 1) -> str:
 
 templates.env.filters["eur"] = _eur
 templates.env.filters["pct"] = _pct
+templates.env.globals["app_version"] = "v" + _pkg_version("stimmo")
 
 
 def _semester_months_old(semester: str) -> int:
