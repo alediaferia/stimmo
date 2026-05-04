@@ -9,7 +9,7 @@ RUN uv sync --frozen --no-dev
 FROM python:3.13-slim AS runtime
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libgeos-c1v5 \
+    && apt-get install -y --no-install-recommends libgeos-c1v5 curl \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
