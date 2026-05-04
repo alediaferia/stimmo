@@ -46,10 +46,18 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "commitizen>=4.0",
     "httpx>=0.28.1",
     "pytest>=9.0.3",
     "ruff>=0.8",
 ]
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+tag_format = "v$version"
+version_scheme = "semver2"
+version_provider = "uv"
+update_changelog_on_bump = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
