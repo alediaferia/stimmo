@@ -32,3 +32,6 @@ src/stimmo/data/assets/omi-*/
 
 # Local docs scratchpad
 docs/plans/
+
+# Deployment runbook — personal ops docs, not relevant to contributors
+deploy/
