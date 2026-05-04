@@ -55,7 +55,7 @@ jobs:
           script: |
             SHA="${{ github.event.workflow_run.head_sha }}"
             IMAGE="ghcr.io/alediaferia/stimmo:sha-${SHA::7}"
-            sed -i "s|image: ghcr.io/alediaferia/stimmo:.*|image: $IMAGE|" /etc/stimmo/docker-compose.yml
-            docker compose -f /etc/stimmo/docker-compose.yml pull
-            docker compose -f /etc/stimmo/docker-compose.yml up -d --remove-orphans
+            sed -i "s|image: ghcr.io/alediaferia/stimmo:.*|image: $IMAGE|" /opt/stimmo/docker-compose.yml
+            docker compose -f /opt/stimmo/docker-compose.yml pull
+            docker compose -f /opt/stimmo/docker-compose.yml up -d --remove-orphans
             docker image prune -f
