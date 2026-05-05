@@ -1,19 +1,19 @@
 {% extends "base.html" %}
-{% block title %}stimmo — about{% endblock %}
+{% block title %}stimmo — {% trans %}about{% endtrans %}{% endblock %}
 {% block content %}
 
 <div class="pagehead">
   <div>
     <div class="stepper">
-      <span class="step on"><span class="num">§</span> About</span>
+      <span class="step on"><span class="num">§</span> {% trans %}About{% endtrans %}</span>
     </div>
-    <h1>How stimmo turns an address<br>into <em>a verdict</em>.</h1>
-    <p class="sub">A six-step pipeline, one coefficients file, no machine learning. Same inputs, same output — every time.</p>
+    <h1>{% trans %}How stimmo turns an address<br>into <em>a verdict</em>.{% endtrans %}</h1>
+    <p class="sub">{% trans %}A six-step pipeline, one coefficients file, no machine learning. Same inputs, same output — every time.{% endtrans %}</p>
   </div>
   <div class="meta">
-    Methodology<br>
+    {% trans %}Methodology{% endtrans %}<br>
     <b>{{ app_version }} · {{ semester }}</b><br>
-    <span style="opacity:0.7">{{ zone_count }} OMI<br>microzones · Milano</span>
+    <span style="opacity:0.7">{{ zone_count }} OMI<br>{% trans %}microzones · Milano{% endtrans %}</span>
   </div>
 </div>
 
@@ -23,8 +23,8 @@
     <div class="small">Wordmark · Instrument Serif</div>
     <div class="wm-big"><span>stimm</span><em>o</em><span class="dot"></span></div>
     <div class="brand-tag">
-      A transparent, OMI-anchored fair-price check<br>
-      for Milan apartment listings.
+      {% trans %}A transparent, OMI-anchored fair-price check<br>
+      for Milan apartment listings.{% endtrans %}
     </div>
   </div>
   <div class="brand-card dark">
@@ -36,10 +36,10 @@
       OMI band <span style="color:var(--paper)">5 800 – 7 200</span> €/m² · zone <span style="color:var(--paper)">B5</span> · semester <span style="color:var(--paper)">{{ semester }}</span>
     </div>
     <div style="margin-top:22px;display:flex;gap:16px;align-items:baseline">
-      <span style="font-family:var(--serif);font-style:italic;font-size:22px;color:var(--paper)">fair</span>
-      <span style="font-family:var(--serif);font-style:italic;font-size:22px;color:oklch(0.65 0.10 75)">over</span>
-      <span style="font-family:var(--serif);font-style:italic;font-size:22px;color:oklch(0.7 0.10 145)">under</span>
-      <span style="font-family:var(--mono);font-size:11px;color:oklch(0.7 0.01 250);letter-spacing:0.1em;text-transform:uppercase;margin-left:auto">Verdicts</span>
+      <span style="font-family:var(--serif);font-style:italic;font-size:22px;color:var(--paper)">{% trans %}fair{% endtrans %}</span>
+      <span style="font-family:var(--serif);font-style:italic;font-size:22px;color:oklch(0.65 0.10 75)">{% trans %}over{% endtrans %}</span>
+      <span style="font-family:var(--serif);font-style:italic;font-size:22px;color:oklch(0.7 0.10 145)">{% trans %}under{% endtrans %}</span>
+      <span style="font-family:var(--mono);font-size:11px;color:oklch(0.7 0.01 250);letter-spacing:0.1em;text-transform:uppercase;margin-left:auto">{% trans %}Verdicts{% endtrans %}</span>
     </div>
   </div>
 </div>
@@ -47,116 +47,116 @@
 <!-- Pipeline -->
 <div class="doc">
   <div class="doc-head">
-    <h2 class="doc-title">The pipeline</h2>
-    <span class="doc-eyebrow">§ Address → verdict · 6 steps</span>
+    <h2 class="doc-title">{% trans %}The pipeline{% endtrans %}</h2>
+    <span class="doc-eyebrow">§ {% trans %}Address → verdict · 6 steps{% endtrans %}</span>
   </div>
   <ol class="pipeline">
     <li>
       <span class="pipeline-num">01</span>
-      <div><h3>Geocode</h3><p>OSM Nominatim resolves the address to lat / lon. Queries are restricted to Milano comune.</p></div>
+      <div><h3>{% trans %}Geocode{% endtrans %}</h3><p>{% trans %}OSM Nominatim resolves the address to lat / lon. Queries are restricted to Milano comune.{% endtrans %}</p></div>
     </li>
     <li>
       <span class="pipeline-num">02</span>
-      <div><h3>Locate the OMI zone</h3><p>Point-in-polygon against Milano's official OMI microzone shapes.</p></div>
+      <div><h3>{% trans %}Locate the OMI zone{% endtrans %}</h3><p>{% trans %}Point-in-polygon against Milano's official OMI microzone shapes.{% endtrans %}</p></div>
     </li>
     <li>
       <span class="pipeline-num">03</span>
-      <div><h3>Pull the €/m² band</h3><p>Compr_min – Compr_max for that zone × property type × condition bucket.</p></div>
+      <div><h3>{% trans %}Pull the €/m² band{% endtrans %}</h3><p>{% trans %}Compr_min – Compr_max for that zone × property type × condition bucket.{% endtrans %}</p></div>
     </li>
     <li>
       <span class="pipeline-num">04</span>
-      <div><h3>Count amenities</h3><p>OSM Overpass — schools, transit, markets, pharmacies, parks within 500 m.</p></div>
+      <div><h3>{% trans %}Count amenities{% endtrans %}</h3><p>{% trans %}OSM Overpass — schools, transit, markets, pharmacies, parks within 500 m.{% endtrans %}</p></div>
     </li>
     <li>
       <span class="pipeline-num">05</span>
-      <div><h3>Adjust the band</h3><p>A single coefficients table multiplies floor, lift, energy, outdoor, era, orientation, amenities.</p></div>
+      <div><h3>{% trans %}Adjust the band{% endtrans %}</h3><p>{% trans %}A single coefficients table multiplies floor, lift, energy, outdoor, era, orientation, amenities.{% endtrans %}</p></div>
     </li>
     <li>
       <span class="pipeline-num">06</span>
-      <div><h3>Classify</h3><p>Compare asking price to an ask-shifted band (rogito + 6 %). ±5 % around it is fair.</p></div>
+      <div><h3>{% trans %}Classify{% endtrans %}</h3><p>{% trans %}Compare asking price to an ask-shifted band (rogito + 6 %). ±5 % around it is fair.{% endtrans %}</p></div>
     </li>
   </ol>
 </div>
 
 <!-- Data sources -->
-<h2 class="section-h">Data sources</h2>
+<h2 class="section-h">{% trans %}Data sources{% endtrans %}</h2>
 <div class="src-grid">
   <div class="src">
     <div class="src-head">
       <span class="src-stat">{{ zone_count }}</span>
-      <span class="src-stat-l">microzones · Milano · {{ semester }}</span>
+      <span class="src-stat-l">{% trans %}microzones · Milano · {{ semester }}{% endtrans %}</span>
     </div>
-    <h3 class="src-title">OMI quotations</h3>
-    <div class="src-org">Agenzia delle Entrate · Bundled · CKAN</div>
-    <p class="src-desc">Per-zone €/m² ranges for sales, split by property type and condition (Normale / Scadente / Ottimo). The spine of every estimate.</p>
+    <h3 class="src-title">{% trans %}OMI quotations{% endtrans %}</h3>
+    <div class="src-org">Agenzia delle Entrate · {% trans %}Bundled{% endtrans %} · CKAN</div>
+    <p class="src-desc">{% trans %}Per-zone €/m² ranges for sales, split by property type and condition (Normale / Scadente / Ottimo). The spine of every estimate.{% endtrans %}</p>
     <dl class="src-kv">
-      <dt>License</dt><dd>IODL 2.0</dd>
-      <dt>File</dt><dd class="mono" style="font-size:11px">data/assets/milano_omi_valori.csv</dd>
+      <dt>{% trans %}License{% endtrans %}</dt><dd>IODL 2.0</dd>
+      <dt>{% trans %}File{% endtrans %}</dt><dd class="mono" style="font-size:11px">data/assets/milano_omi_valori.csv</dd>
     </dl>
   </div>
   <div class="src">
     <div class="src-head">
       <span class="src-stat">1</span>
-      <span class="src-stat-l">comune · no metropolitan belt</span>
+      <span class="src-stat-l">{% trans %}comune · no metropolitan belt{% endtrans %}</span>
     </div>
-    <h3 class="src-title">OMI zone polygons</h3>
-    <div class="src-org">Comune di Milano · Bundled · GeoJSON</div>
-    <p class="src-desc">Microzone shapes used for point-in-polygon zone assignment. Comune di Milano only — addresses outside the comune are rejected.</p>
+    <h3 class="src-title">{% trans %}OMI zone polygons{% endtrans %}</h3>
+    <div class="src-org">Comune di Milano · {% trans %}Bundled{% endtrans %} · GeoJSON</div>
+    <p class="src-desc">{% trans %}Microzone shapes used for point-in-polygon zone assignment. Comune di Milano only — addresses outside the comune are rejected.{% endtrans %}</p>
     <dl class="src-kv">
-      <dt>License</dt><dd>IODL 2.0</dd>
-      <dt>File</dt><dd class="mono" style="font-size:11px">data/assets/milano_omi_zones.geojson</dd>
+      <dt>{% trans %}License{% endtrans %}</dt><dd>IODL 2.0</dd>
+      <dt>{% trans %}File{% endtrans %}</dt><dd class="mono" style="font-size:11px">data/assets/milano_omi_zones.geojson</dd>
     </dl>
   </div>
   <div class="src">
     <div class="src-head">
       <span class="src-stat">8</span>
-      <span class="src-stat-l">semesters · ~4 years</span>
+      <span class="src-stat-l">{% trans %}semesters · ~4 years{% endtrans %}</span>
     </div>
-    <h3 class="src-title">OMI history</h3>
-    <div class="src-org">Agenzia delle Entrate · Bundled · CSV</div>
-    <p class="src-desc">Trailing 8 semesters (~4 years) of bands per zone × type × condition. Drives the trend strip on the report.</p>
+    <h3 class="src-title">{% trans %}OMI history{% endtrans %}</h3>
+    <div class="src-org">Agenzia delle Entrate · {% trans %}Bundled{% endtrans %} · CSV</div>
+    <p class="src-desc">{% trans %}Trailing 8 semesters (~4 years) of bands per zone × type × condition. Drives the trend strip on the report.{% endtrans %}</p>
     <dl class="src-kv">
-      <dt>License</dt><dd>IODL 2.0</dd>
-      <dt>File</dt><dd class="mono" style="font-size:11px">data/assets/milano_omi_history.csv</dd>
+      <dt>{% trans %}License{% endtrans %}</dt><dd>IODL 2.0</dd>
+      <dt>{% trans %}File{% endtrans %}</dt><dd class="mono" style="font-size:11px">data/assets/milano_omi_history.csv</dd>
     </dl>
   </div>
   <div class="src">
     <div class="src-head">
       <span class="src-stat">Q</span>
-      <span class="src-stat-l">quarterly · by surface bucket</span>
+      <span class="src-stat-l">{% trans %}quarterly · by surface bucket{% endtrans %}</span>
     </div>
-    <h3 class="src-title">NTN — transactions</h3>
-    <div class="src-org">Agenzia delle Entrate · Bundled · CSV</div>
-    <p class="src-desc">Numero di Transazioni Normalizzate, quarterly. Shown for market context only — never used as a pricing input.</p>
+    <h3 class="src-title">NTN — {% trans %}transactions{% endtrans %}</h3>
+    <div class="src-org">Agenzia delle Entrate · {% trans %}Bundled{% endtrans %} · CSV</div>
+    <p class="src-desc">{% trans %}Numero di Transazioni Normalizzate, quarterly. Shown for market context only — never used as a pricing input.{% endtrans %}</p>
     <dl class="src-kv">
-      <dt>License</dt><dd>IODL 2.0</dd>
-      <dt>File</dt><dd class="mono" style="font-size:11px">milano_ntn_total.csv · milano_ntn_by_size.csv</dd>
+      <dt>{% trans %}License{% endtrans %}</dt><dd>IODL 2.0</dd>
+      <dt>{% trans %}File{% endtrans %}</dt><dd class="mono" style="font-size:11px">milano_ntn_total.csv · milano_ntn_by_size.csv</dd>
     </dl>
   </div>
   <div class="src">
     <div class="src-head">
       <span class="src-stat">1×</span>
-      <span class="src-stat-l">request per estimate</span>
+      <span class="src-stat-l">{% trans %}request per estimate{% endtrans %}</span>
     </div>
-    <h3 class="src-title">Nominatim — geocoding</h3>
-    <div class="src-org">OpenStreetMap · Live · 1 req/s</div>
-    <p class="src-desc">Free geocoder, called once per estimate. Queries are scoped to Milano to avoid stray matches.</p>
+    <h3 class="src-title">Nominatim — {% trans %}geocoding{% endtrans %}</h3>
+    <div class="src-org">OpenStreetMap · {% trans %}Live{% endtrans %} · 1 req/s</div>
+    <p class="src-desc">{% trans %}Free geocoder, called once per estimate. Queries are scoped to Milano to avoid stray matches.{% endtrans %}</p>
     <dl class="src-kv">
-      <dt>License</dt><dd>ODbL</dd>
-      <dt>File</dt><dd class="mono" style="font-size:11px">nominatim.openstreetmap.org</dd>
+      <dt>{% trans %}License{% endtrans %}</dt><dd>ODbL</dd>
+      <dt>{% trans %}File{% endtrans %}</dt><dd class="mono" style="font-size:11px">nominatim.openstreetmap.org</dd>
     </dl>
   </div>
   <div class="src">
     <div class="src-head">
       <span class="src-stat">500 m</span>
-      <span class="src-stat-l">radius · 6 categories</span>
+      <span class="src-stat-l">{% trans %}radius · 6 categories{% endtrans %}</span>
     </div>
-    <h3 class="src-title">Overpass — amenities</h3>
-    <div class="src-org">OpenStreetMap · Live · 500 m</div>
-    <p class="src-desc">Counts of schools, pharmacies, markets, transit stops and parks within 500 m. If unreachable, the estimate still renders with a zero amenity score and a warning.</p>
+    <h3 class="src-title">Overpass — {% trans %}amenities{% endtrans %}</h3>
+    <div class="src-org">OpenStreetMap · {% trans %}Live{% endtrans %} · 500 m</div>
+    <p class="src-desc">{% trans %}Counts of schools, pharmacies, markets, transit stops and parks within 500 m. If unreachable, the estimate still renders with a zero amenity score and a warning.{% endtrans %}</p>
     <dl class="src-kv">
-      <dt>License</dt><dd>ODbL</dd>
-      <dt>File</dt><dd class="mono" style="font-size:11px">overpass-api.de</dd>
+      <dt>{% trans %}License{% endtrans %}</dt><dd>ODbL</dd>
+      <dt>{% trans %}File{% endtrans %}</dt><dd class="mono" style="font-size:11px">overpass-api.de</dd>
     </dl>
   </div>
 </div>
@@ -165,17 +165,17 @@
 <div class="grid-2" style="margin-top:28px">
   <div class="doc principle">
     <div class="principle-eyebrow">Principle · 01</div>
-    <h2 class="principle-h">No machine learning.</h2>
+    <h2 class="principle-h">{% trans %}No machine learning.{% endtrans %}</h2>
     <p class="principle-p">
-      stimmo has no trained model. The entire tuning surface is a single
+      {% trans %}stimmo has no trained model. The entire tuning surface is a single
       file — <span class="mono">valuation/adjustments.py</span>. Every
       multiplier (floor, lift, energy, outdoor, era, orientation, amenities)
-      lives there in plain Python.
+      lives there in plain Python.{% endtrans %}
     </p>
     <p class="principle-p">
-      The verdict is <em>deterministic</em>: same inputs, same output.
+      {% trans %}The verdict is <em>deterministic</em>: same inputs, same output.
       If you disagree with a coefficient, you can read the line where it lives,
-      change it, and re-run.
+      change it, and re-run.{% endtrans %}
     </p>
     <div class="principle-foot">
       <span class="kbd">valuation/adjustments.py</span>
@@ -188,11 +188,11 @@
 
   <div class="doc principle">
     <div class="principle-eyebrow">Principle · 02</div>
-    <h2 class="principle-h">Ask-shifted, not rogito.</h2>
+    <h2 class="principle-h">{% trans %}Ask-shifted, not rogito.{% endtrans %}</h2>
     <p class="principle-p">
-      OMI publishes <em>transacted</em> prices — what changed hands at the
+      {% trans %}OMI publishes <em>transacted</em> prices — what changed hands at the
       notary, after negotiation. In Milano, asking prices typically run
-      <b> 5–10 %</b> above the eventual sale price.
+      <b> 5–10 %</b> above the eventual sale price.{% endtrans %}
     </p>
 
     <div class="prem">
@@ -214,70 +214,70 @@
     </div>
 
     <p class="principle-p" style="margin-top:14px">
-      We shift the OMI band upward by a fixed <b>+6 %</b> ask-premium before
+      {% trans %}We shift the OMI band upward by a fixed <b>+6 %</b> ask-premium before
       classifying. ±5 % around the shifted band is "fair". The constant lives
-      in <span class="mono">verdict.py::ASK_PREMIUM_PCT</span>.
+      in <span class="mono">verdict.py::ASK_PREMIUM_PCT</span>.{% endtrans %}
     </p>
   </div>
 </div>
 
 <!-- What stimmo doesn't model -->
-<h2 class="section-h">What stimmo doesn't model</h2>
+<h2 class="section-h">{% trans %}What stimmo doesn't model{% endtrans %}</h2>
 <div class="not-grid">
   <div class="not">
     <div class="not-x" aria-hidden="true">×</div>
     <h3>Spese condominiali</h3>
-    <p>Routine condominium fees and extraordinary works (lavori straordinari deliberati). Can shift true cost €10–50 k. Invisible to OMI.</p>
+    <p>{% trans %}Routine condominium fees and extraordinary works (lavori straordinari deliberati). Can shift true cost €10–50 k. Invisible to OMI.{% endtrans %}</p>
   </div>
   <div class="not">
     <div class="not-x" aria-hidden="true">×</div>
     <h3>Piano nobile</h3>
-    <p>The classic 1° piano premium in storied buildings. Inside the same building, can drive ±5–10 %.</p>
+    <p>{% trans %}The classic 1° piano premium in storied buildings. Inside the same building, can drive ±5–10 %.{% endtrans %}</p>
   </div>
   <div class="not">
     <div class="not-x" aria-hidden="true">×</div>
-    <h3>Street noise &amp; view</h3>
-    <p>A unit on a quiet cortile vs. one on Corso Buenos Aires. OMI averages, doesn't see this.</p>
+    <h3>{% trans %}Street noise &amp; view{% endtrans %}</h3>
+    <p>{% trans %}A unit on a quiet cortile vs. one on Corso Buenos Aires. OMI averages, doesn't see this.{% endtrans %}</p>
   </div>
   <div class="not">
     <div class="not-x" aria-hidden="true">×</div>
-    <h3>Comparable listings</h3>
-    <p>Italian per-transaction sale data isn't public. We don't fit a model on stale asking prices — by design.</p>
+    <h3>{% trans %}Comparable listings{% endtrans %}</h3>
+    <p>{% trans %}Italian per-transaction sale data isn't public. We don't fit a model on stale asking prices — by design.{% endtrans %}</p>
   </div>
   <div class="not">
     <div class="not-x" aria-hidden="true">×</div>
-    <h3>Metropolitan belt</h3>
-    <p>Sesto, Cinisello, Cologno, Rho — outside the Milano comune polygon. Will fail with "outside Milano".</p>
+    <h3>{% trans %}Metropolitan belt{% endtrans %}</h3>
+    <p>{% trans %}Sesto, Cinisello, Cologno, Rho — outside the Milano comune polygon. Will fail with "outside Milano".{% endtrans %}</p>
   </div>
   <div class="not">
     <div class="not-x" aria-hidden="true">×</div>
-    <h3>Commercial property</h3>
-    <p>Shops, offices, ateliers — different OMI category, different dynamics. Residential subtypes only.</p>
+    <h3>{% trans %}Commercial property{% endtrans %}</h3>
+    <p>{% trans %}Shops, offices, ateliers — different OMI category, different dynamics. Residential subtypes only.{% endtrans %}</p>
   </div>
 </div>
 
 <!-- Disclaimer -->
 <div class="disclaimer">
   <div class="disclaimer-stamp">
-    <div style="font-family:var(--serif);font-style:italic;font-size:22px;line-height:1">not a perizia</div>
-    <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.16em;text-transform:uppercase;margin-top:4px;color:var(--bad)">fairness check · {{ app_version }}</div>
+    <div style="font-family:var(--serif);font-style:italic;font-size:22px;line-height:1">{% trans %}not a perizia{% endtrans %}</div>
+    <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.16em;text-transform:uppercase;margin-top:4px;color:var(--bad)">{% trans %}fairness check{% endtrans %} · {{ app_version }}</div>
   </div>
   <div class="disclaimer-body">
-    <h3>stimmo is a fairness check, not an official appraisal.</h3>
-    <p>It does not replace a qualified <em>perito</em> and should not be used as the basis for legal, fiscal, or contractual decisions. Use it to sanity-check an asking price, negotiate, or walk away — not to sign anything.</p>
+    <h3>{% trans %}stimmo is a fairness check, not an official appraisal.{% endtrans %}</h3>
+    <p>{% trans %}It does not replace a qualified <em>perito</em> and should not be used as the basis for legal, fiscal, or contractual decisions. Use it to sanity-check an asking price, negotiate, or walk away — not to sign anything.{% endtrans %}</p>
   </div>
 </div>
 
 <div style="margin-top:28px;display:flex;gap:12px">
-  <a href="/" class="btn">Run an estimate <span class="arrow">→</span></a>
-  <a href="/bookmarklet" class="btn btn-ghost">Install the bookmarklet</a>
+  <a href="/{{ lang }}/" class="btn">{% trans %}Run an estimate{% endtrans %} <span class="arrow">→</span></a>
+  <a href="/{{ lang }}/bookmarklet" class="btn btn-ghost">{% trans %}Install the bookmarklet{% endtrans %}</a>
 </div>
 
 <div class="note" style="margin-top:22px">
-  <b>Built by <a href="https://github.com/alediaferia" target="_blank" rel="noopener">Alessandro Diaferia</a>.</b>
-  stimmo is open source — view the code on <a href="https://github.com/alediaferia/stimmo" target="_blank" rel="noopener">GitHub</a>.
-  Have a feature request, found a bug, or want to suggest an improvement?
-  <a href="https://github.com/alediaferia/stimmo/issues" target="_blank" rel="noopener">Open a GitHub issue →</a>
+  <b>{% trans %}Built by{% endtrans %} <a href="https://github.com/alediaferia" target="_blank" rel="noopener">Alessandro Diaferia</a>.</b>
+  {% trans %}stimmo is open source — view the code on{% endtrans %} <a href="https://github.com/alediaferia/stimmo" target="_blank" rel="noopener">GitHub</a>.
+  {% trans %}Have a feature request, found a bug, or want to suggest an improvement?{% endtrans %}
+  <a href="https://github.com/alediaferia/stimmo/issues" target="_blank" rel="noopener">{% trans %}Open a GitHub issue{% endtrans %} →</a>
 </div>
 
 {% endblock %}

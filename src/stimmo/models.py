@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, NonNegativeFloat, PositiveFloat, PositiveInt
+
+from stimmo.i18n import gettext_lazy as _l
 
 
 class PropertyType(StrEnum):
@@ -13,21 +15,21 @@ class PropertyType(StrEnum):
     VILLE = "Ville e Villini"
 
 
-PROPERTY_TYPE_HINTS: dict[PropertyType, str] = {
-    PropertyType.SIGNORILI: (
+PROPERTY_TYPE_HINTS: dict[PropertyType, Any] = {
+    PropertyType.SIGNORILI: _l(
         "Upscale residential — post-2000 build or prestigious older building, doorman (portineria),"
         " marble/parquet finish, prime zone."
         " Pick this if the listing explicitly markets 'signorile'."
     ),
-    PropertyType.CIVILI: (
+    PropertyType.CIVILI: _l(
         "Standard residential — typical condominium 1960s–90s, ordinary finishes, no doorman"
         " (most common choice for anything that doesn't clearly fit another category)."
     ),
-    PropertyType.ECONOMICO: (
+    PropertyType.ECONOMICO: _l(
         "Economy residential — palazzina economica, peripheral or semi-peripheral area, basic"
         " finishes, pre-1960s low-spec build or post-war INA-casa type."
     ),
-    PropertyType.VILLE: (
+    PropertyType.VILLE: _l(
         "Detached houses and small villas — independent or semi-detached with private garden/land."
     ),
 }
@@ -63,6 +65,14 @@ class Outdoor(StrEnum):
     TERRACE_LARGE = "terrace_large"  # > 10 m²
 
 
+OUTDOOR_LABELS: dict[Outdoor, Any] = {
+    Outdoor.NONE: _l("No outdoor space"),
+    Outdoor.BALCONY: _l("Balcony"),
+    Outdoor.TERRACE_SMALL: _l("Small terrace (≤ 10 m²)"),
+    Outdoor.TERRACE_LARGE: _l("Large terrace (> 10 m²)"),
+}
+
+
 class ConstructionEra(StrEnum):
     PRE_WAR = "pre_war"  # < 1945
     POSTWAR_BOOM = "postwar_boom"  # 1945–1980 (baseline)
@@ -71,12 +81,12 @@ class ConstructionEra(StrEnum):
     RECENT = "recent"  # > 2015
 
 
-CONSTRUCTION_ERA_LABELS: dict[ConstructionEra, str] = {
-    ConstructionEra.PRE_WAR: "Pre-war (before 1945)",
-    ConstructionEra.POSTWAR_BOOM: "Post-war boom (1945–1980)",
-    ConstructionEra.EIGHTIES_90S: "1980s–90s (1981–2000)",
-    ConstructionEra.CONTEMPORARY: "Contemporary (2001–2015)",
-    ConstructionEra.RECENT: "Recent (after 2015)",
+CONSTRUCTION_ERA_LABELS: dict[ConstructionEra, Any] = {
+    ConstructionEra.PRE_WAR: _l("Pre-war (before 1945)"),
+    ConstructionEra.POSTWAR_BOOM: _l("Post-war boom (1945–1980)"),
+    ConstructionEra.EIGHTIES_90S: _l("1980s–90s (1981–2000)"),
+    ConstructionEra.CONTEMPORARY: _l("Contemporary (2001–2015)"),
+    ConstructionEra.RECENT: _l("Recent (after 2015)"),
 }
 
 
@@ -86,10 +96,10 @@ class Orientation(StrEnum):
     NORTH = "north"  # predominantly north-facing
 
 
-ORIENTATION_LABELS: dict[Orientation, str] = {
-    Orientation.SOUTH: "South / south-west",
-    Orientation.MIXED: "East / west / mixed",
-    Orientation.NORTH: "North / north-east",
+ORIENTATION_LABELS: dict[Orientation, Any] = {
+    Orientation.SOUTH: _l("South / south-west"),
+    Orientation.MIXED: _l("East / west / mixed"),
+    Orientation.NORTH: _l("North / north-east"),
 }
 
 
@@ -138,7 +148,8 @@ class AmenityScore(BaseModel):
 
 
 class AdjustmentBreakdown(BaseModel):
-    name: str
+    code: str
+    params: dict[str, Any] = {}
     delta_pct: float
 
 

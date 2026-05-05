@@ -1,19 +1,19 @@
 {% extends "base.html" %}
-{% block title %}stimmo — estimate{% endblock %}
+{% block title %}stimmo — {% trans %}estimate{% endtrans %}{% endblock %}
 {% block content %}
 
 <div class="pagehead">
   <div>
     <div class="stepper">
-      <span class="step on"><span class="num">1</span> Listing</span>
+      <span class="step on"><span class="num">1</span> {% trans %}Listing{% endtrans %}</span>
       <span class="sep"></span>
-      <span class="step"><span class="num">2</span> Verdict</span>
+      <span class="step"><span class="num">2</span> {% trans %}Verdict{% endtrans %}</span>
     </div>
-    <h1>Is this Milan listing <em>fair</em>?</h1>
-    <p class="sub">Anchored to <b>OMI</b> €/m² bands per zone and a single, public coefficients table. No black box — every multiplier shows up in your report.</p>
+    <h1>{% trans %}Is this Milan listing <em>fair</em>?{% endtrans %}</h1>
+    <p class="sub">{% trans %}Anchored to <b>OMI</b> €/m² bands per zone and a single, public coefficients table. No black box — every multiplier shows up in your report.{% endtrans %}</p>
   </div>
   <div class="meta">
-    OMI semester<br>
+    {% trans %}OMI semester{% endtrans %}<br>
     <b>{{ omi_semester }}</b>
     <div style="margin-top:8px;opacity:0.7">Compr. min – max</div>
   </div>
@@ -21,29 +21,29 @@
 
 {% if import_source %}
 <div class="note" style="margin-bottom:22px">
-  <b>Prefilled from {{ import_source }}.it</b> — please verify all fields before estimating.
+  <b>{% trans %}Prefilled from{% endtrans %} {{ import_source }}.it</b> — {% trans %}please verify all fields before estimating.{% endtrans %}
 </div>
 {% endif %}
 
 <div class="grid-2">
-  <form method="post" action="/estimate">
+  <form method="post" action="/{{ lang }}/estimate">
     <div class="doc">
       <div class="doc-head">
-        <h2 class="doc-title">Listing</h2>
-        <span class="doc-eyebrow">§ 01 · Property &amp; price</span>
+        <h2 class="doc-title">{% trans %}Listing{% endtrans %}</h2>
+        <span class="doc-eyebrow">§ 01 · {% trans %}Property &amp; price{% endtrans %}</span>
       </div>
       <div class="form-grid">
 
         <div class="field col-12">
-          <label for="address">Address</label>
+          <label for="address">{% trans %}Address{% endtrans %}</label>
           <input class="input" id="address" name="address" type="text"
             value="{{ defaults.address or '' }}" required autofocus
             placeholder="Via …, Milano">
-          <span class="hint" id="address_status">Street + civic number, Milano comune only.</span>
+          <span class="hint" id="address_status">{% trans %}Street + civic number, Milano comune only.{% endtrans %}</span>
         </div>
 
         <div class="field col-4">
-          <label for="surface_m2">Surface</label>
+          <label for="surface_m2">{% trans %}Surface{% endtrans %}</label>
           <div class="input-affix">
             <input class="input numeric" id="surface_m2" name="surface_m2" type="number"
               step="0.1" min="10" value="{{ defaults.surface_m2 or '' }}" required>
@@ -52,7 +52,7 @@
         </div>
 
         <div class="field col-8">
-          <label for="asking_price_eur">Asking price</label>
+          <label for="asking_price_eur">{% trans %}Asking price{% endtrans %}</label>
           <div class="input-affix">
             <span class="affix">€</span>
             <input class="input numeric" id="asking_price_eur" name="asking_price_eur"
@@ -62,7 +62,7 @@
         </div>
 
         <div class="field col-8">
-          <label for="property_type">Property type</label>
+          <label for="property_type">{% trans %}Property type{% endtrans %}</label>
           <select class="select" id="property_type" name="property_type"
             onchange="document.getElementById('property_type_hint').textContent = this.options[this.selectedIndex].dataset.hint;">
             {% for pt in property_types %}
@@ -76,7 +76,7 @@
         </div>
 
         <div class="field col-4">
-          <label>OMI condition</label>
+          <label>{% trans %}OMI condition{% endtrans %}</label>
           <div class="seg" role="group">
             {% for v in omi_conditions %}
             <button type="button" class="seg-btn{% if v == defaults.omi_condition %} on{% endif %}"
@@ -92,13 +92,13 @@
 
     <div class="doc">
       <div class="doc-head">
-        <h2 class="doc-title">Building &amp; unit</h2>
-        <span class="doc-eyebrow">§ 02 · Adjustments</span>
+        <h2 class="doc-title">{% trans %}Building &amp; unit{% endtrans %}</h2>
+        <span class="doc-eyebrow">§ 02 · {% trans %}Adjustments{% endtrans %}</span>
       </div>
       <div class="form-grid">
 
         <div class="field col-6">
-          <label for="fine_condition">Fine condition</label>
+          <label for="fine_condition">{% trans %}Fine condition{% endtrans %}</label>
           <select class="select" id="fine_condition" name="fine_condition">
             {% for v in fine_conditions %}
             <option value="{{ v }}" {% if v == defaults.fine_condition %}selected{% endif %}>{{ v }}</option>
@@ -107,38 +107,38 @@
         </div>
 
         <div class="field col-6">
-          <label for="energy_class">Energy class</label>
+          <label for="energy_class">{% trans %}Energy class{% endtrans %}</label>
           <select class="select" id="energy_class" name="energy_class">
             {% for v in energy_classes %}
-            <option value="{{ v }}" {% if v == defaults.energy_class %}selected{% endif %}>{{ v or "— unknown —" }}</option>
+            <option value="{{ v }}" {% if v == defaults.energy_class %}selected{% endif %}>{{ v or _("— unknown —") }}</option>
             {% endfor %}
           </select>
         </div>
 
         <div class="field col-3">
-          <label for="floor">Floor</label>
+          <label for="floor">{% trans %}Floor{% endtrans %}</label>
           <input class="input numeric" id="floor" name="floor" type="number"
             value="{{ defaults.floor }}" required>
-          <span class="hint">0 = ground · −1 = basement</span>
+          <span class="hint">{% trans %}0 = ground · −1 = basement{% endtrans %}</span>
         </div>
 
         <div class="field col-3">
-          <label for="total_floors">Total floors</label>
+          <label for="total_floors">{% trans %}Total floors{% endtrans %}</label>
           <input class="input numeric" id="total_floors" name="total_floors"
             type="number" min="1" value="{{ defaults.total_floors }}" required>
         </div>
 
         <div class="field col-6">
-          <label for="outdoor">Outdoor space</label>
+          <label for="outdoor">{% trans %}Outdoor space{% endtrans %}</label>
           <select class="select" id="outdoor" name="outdoor">
-            {% for v in outdoors %}
-            <option value="{{ v }}" {% if v == defaults.outdoor %}selected{% endif %}>{{ v }}</option>
+            {% for item in outdoors %}
+            <option value="{{ item.value }}" {% if item.value == defaults.outdoor %}selected{% endif %}>{{ item.label }}</option>
             {% endfor %}
           </select>
         </div>
 
         <div class="field col-6">
-          <label for="construction_era">Construction era</label>
+          <label for="construction_era">{% trans %}Construction era{% endtrans %}</label>
           <select class="select" id="construction_era" name="construction_era">
             {% for era in construction_eras %}
             <option value="{{ era.value }}" {% if era.value == defaults.construction_era %}selected{% endif %}>{{ era.label }}</option>
@@ -147,7 +147,7 @@
         </div>
 
         <div class="field col-6">
-          <label for="orientation">Orientation</label>
+          <label for="orientation">{% trans %}Orientation{% endtrans %}</label>
           <select class="select" id="orientation" name="orientation">
             {% for ori in orientations %}
             <option value="{{ ori.value }}" {% if ori.value == defaults.orientation %}selected{% endif %}>{{ ori.label }}</option>
@@ -160,7 +160,7 @@
           <label class="check">
             <input type="checkbox" id="has_lift" name="has_lift"
               {% if defaults.has_lift %}checked{% endif %}>
-            <span>Lift in building</span>
+            <span>{% trans %}Lift in building{% endtrans %}</span>
           </label>
         </div>
 
@@ -169,7 +169,7 @@
           <label class="check">
             <input type="checkbox" id="has_box" name="has_box"
               {% if defaults.has_box %}checked{% endif %}>
-            <span>Box auto / garage</span>
+            <span>{% trans %}Box auto / garage{% endtrans %}</span>
           </label>
         </div>
 
@@ -178,7 +178,7 @@
           <label class="check">
             <input type="checkbox" id="has_second_bathroom" name="has_second_bathroom"
               {% if defaults.has_second_bathroom %}checked{% endif %}>
-            <span>Second bathroom</span>
+            <span>{% trans %}Second bathroom{% endtrans %}</span>
           </label>
         </div>
 
@@ -187,16 +187,16 @@
 
     <div style="display:flex;gap:12px;margin-top:18px;align-items:center">
       <button class="btn" type="submit">
-        Run the check <span class="arrow">→</span>
+        {% trans %}Run the check{% endtrans %} <span class="arrow">→</span>
       </button>
-      <span style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--ink-fade);letter-spacing:0.08em;text-transform:uppercase">No data leaves your browser until submit</span>
+      <span style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--ink-fade);letter-spacing:0.08em;text-transform:uppercase">{% trans %}No data leaves your browser until submit{% endtrans %}</span>
     </div>
   </form>
 
   <div>
     <div class="doc" style="padding:0;overflow:hidden">
       <div style="padding:16px 20px;border-bottom:1px solid var(--paper-rule);display:flex;align-items:baseline;justify-content:space-between">
-        <h2 class="doc-title" style="margin:0">Milano · OMI zones</h2>
+        <h2 class="doc-title" style="margin:0">Milano · {% trans %}OMI zones{% endtrans %}</h2>
         <span class="doc-eyebrow">€/m² mid · {{ omi_semester }}</span>
       </div>
       <div class="map-wrap" style="border:0;border-radius:0">
@@ -204,24 +204,24 @@
       </div>
       <div class="map-foot">
         <div class="legend">
-          <span>lower</span>
+          <span>{% trans %}lower{% endtrans %}</span>
           <span class="bar"></span>
-          <span>higher</span>
+          <span>{% trans %}higher{% endtrans %}</span>
         </div>
-        <span>{{ zone_count }} zones · click for €/m² band</span>
+        <span>{{ zone_count }} {% trans %}zones · click for €/m² band{% endtrans %}</span>
       </div>
     </div>
 
     <div class="doc">
       <div class="doc-head">
-        <h2 class="doc-title">How <em style="font-style:italic">stimmo</em> reads a listing</h2>
-        <span class="doc-eyebrow">Methodology</span>
+        <h2 class="doc-title">{% trans %}How <em style="font-style:italic">stimmo</em> reads a listing{% endtrans %}</h2>
+        <span class="doc-eyebrow">{% trans %}Methodology{% endtrans %}</span>
       </div>
       <ol style="margin:0;padding-left:22px;color:var(--ink-2);font-size:14px;line-height:1.7">
-        <li>Geocode the address and pin its <b>OMI zone</b> via the official polygon.</li>
-        <li>Pull the <b>€/m² band</b> for that zone × type × condition (semester {{ omi_semester }}).</li>
-        <li>Apply a <b>transparent multiplier</b> from a single coefficients file — floor, lift, energy, outdoor, era, orientation, amenities.</li>
-        <li>Compare the asking price to an <b>ask-shifted band</b> (rogito +6 %) and classify under / fair / over.</li>
+        <li>{% trans %}Geocode the address and pin its <b>OMI zone</b> via the official polygon.{% endtrans %}</li>
+        <li>{% trans %}Pull the <b>€/m² band</b> for that zone × type × condition (semester {{ omi_semester }}).{% endtrans %}</li>
+        <li>{% trans %}Apply a <b>transparent multiplier</b> from a single coefficients file — floor, lift, energy, outdoor, era, orientation, amenities.{% endtrans %}</li>
+        <li>{% trans %}Compare the asking price to an <b>ask-shifted band</b> (rogito +6 %) and classify under / fair / over.{% endtrans %}</li>
       </ol>
     </div>
   </div>
@@ -316,18 +316,18 @@
   let timer = null, reqId = 0;
 
   function setStatus(msg, isError) {
-    status.textContent = msg || 'Street + civic number, Milano comune only.';
+    status.textContent = msg || '{{ _("Street + civic number, Milano comune only.") }}';
     status.style.color = isError ? 'var(--bad)' : '';
   }
 
   async function lookup(q) {
     const mine = ++reqId;
-    setStatus('Locating…', false);
+    setStatus('{{ _("Locating…") }}', false);
     try {
       const r = await fetch('/api/geocode?q=' + encodeURIComponent(q));
       if (mine !== reqId) return;
-      if (r.status === 404) { setStatus('Address not found in Milano', true); highlightZone(null); return; }
-      if (!r.ok) { setStatus('Geocoding failed', true); return; }
+      if (r.status === 404) { setStatus('{{ _("Address not found in Milano") }}', true); highlightZone(null); return; }
+      if (!r.ok) { setStatus('{{ _("Geocoding failed") }}', true); return; }
       const data = await r.json();
       if (mine !== reqId || !data.found) return;
       if (pin) pin.remove();
@@ -338,11 +338,11 @@
       map.setView([data.lat, data.lon], 15);
       highlightZone(data.zone_code);
       setStatus(
-        data.zone_code ? 'Zone ' + data.zone_code + ' — ' + (data.zone_descr || '') : 'Outside Milano comune — no OMI zone',
+        data.zone_code ? '{{ _("Zone") }} ' + data.zone_code + ' — ' + (data.zone_descr || '') : '{{ _("Outside Milano comune — no OMI zone") }}',
         !data.zone_code,
       );
     } catch (_) {
-      if (mine === reqId) setStatus('Geocoding failed', true);
+      if (mine === reqId) setStatus('{{ _("Geocoding failed") }}', true);
     }
   }
 

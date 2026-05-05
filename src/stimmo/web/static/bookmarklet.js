@@ -34,7 +34,7 @@
   const data = findNextData();
   const listing = data && findListing(data);
   if (!listing) {
-    alert('stimmo: could not find listing data on this page');
+    alert('__STIMMO_ALERT__');
     return;
   }
 
@@ -71,5 +71,5 @@
     .replace(/\//g, '_')
     .replace(/=+$/, '');
 
-  window.open(STIMMO + '/import?src=immobiliare&v=1&p=' + b64, '_blank');
+  window.open(STIMMO + '/' + '__STIMMO_LANG__' + '/import?src=immobiliare&v=1&p=' + b64, '_blank');
 })();

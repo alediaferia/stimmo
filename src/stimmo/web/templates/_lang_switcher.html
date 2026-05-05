@@ -1,0 +1,15 @@
+{% set _other = "en" if lang == "it" else "it" %}
+{% set _cur_path = request.url.path %}
+{% set _other_path = _cur_path | replace("/" + lang + "/", "/" + _other + "/") %}
+<div class="lang-switcher">
+  <form method="post" action="/set-lang" style="display:inline">
+    <input type="hidden" name="lang" value="it">
+    <input type="hidden" name="next" value="{{ "/" + "it" + "/" + _cur_path.split("/")[2:] | join("/") if _cur_path.startswith("/" + lang + "/") else "/it/" }}">
+    <button type="submit" class="lang-pill{% if lang == 'it' %} active{% endif %}">IT</button>
+  </form>
+  <form method="post" action="/set-lang" style="display:inline">
+    <input type="hidden" name="lang" value="en">
+    <input type="hidden" name="next" value="{{ "/" + "en" + "/" + _cur_path.split("/")[2:] | join("/") if _cur_path.startswith("/" + lang + "/") else "/en/" }}">
+    <button type="submit" class="lang-pill{% if lang == 'en' %} active{% endif %}">EN</button>
+  </form>
+</div>

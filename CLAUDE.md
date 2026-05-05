@@ -10,6 +10,16 @@ uv run stimmo-web                 # FastAPI app on 127.0.0.1:8000 (STIMMO_HOST/S
 uv run pytest                    # all tests
 uv run pytest tests/test_engine.py::test_name   # single test
 uv run python scripts/refresh_omi.py            # refresh bundled OMI assets
+
+# i18n catalog management (run from repo root)
+uv run pybabel extract -F babel.cfg -o src/stimmo/locale/messages.pot .
+uv run pybabel update -i src/stimmo/locale/messages.pot -d src/stimmo/locale
+uv run pybabel compile -d src/stimmo/locale
+
+# AI-assisted translation (requires OPENROUTER_API_KEY)
+uv run python scripts/translate_po.py --locale it_IT
+uv run python scripts/translate_po.py --locale it_IT --force   # re-translate all
+uv run python scripts/translate_po.py --locale it_IT --dry-run # preview only
 ```
 
 Python >= 3.12. Dependency + script management is via `uv` (see `pyproject.toml`); don't invoke `python` / `pip` directly.
@@ -39,3 +49,15 @@ The engine is intentionally thin (`valuation/engine.py`): it asks `adjustments.c
 ### Frontend
 
 - `web/` — FastAPI (`web/app.py`) + Jinja templates (`web/templates/`), entry point `web/server.py` (`stimmo-web` script).
+
+### i18n
+
+All routes are prefixed `/{lang}/` (`it` or `en`). Locale negotiation order: `stimmo_lang` cookie → `Accept-Language` header → `it_IT` default.
+
+- **`stimmo/i18n.py`** — ContextVar-backed `gettext`/`ngettext`, `use_locale()` context manager, `fmt_eur`/`fmt_pct`/`fmt_semester` formatters, `negotiate_locale`.
+- **`stimmo/locale/`** — Babel catalog. `it_IT` has full Italian translations; `en_US` uses msgid (English) as-is. Run `pybabel compile` after editing `.po` files.
+- **`babel.cfg`** — extraction config for Python source and Jinja2 templates (`jinja2.ext.i18n`).
+- **`web/labels.py`** — renders `AdjustmentBreakdown` (structured `code`/`params`) to translated strings. `AdjustmentBreakdown.name` no longer exists; use `.code` to identify entries.
+- **Bookmarklet JS** — `__STIMMO_LANG__` and `__STIMMO_ALERT__` placeholders are substituted server-side in the bookmarklet route.
+
+Adding or changing UI strings: edit the template, run `pybabel extract` + `pybabel update`, add Italian msgstr in `it_IT/LC_MESSAGES/messages.po`, run `pybabel compile`.

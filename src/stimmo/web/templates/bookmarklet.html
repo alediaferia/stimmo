@@ -1,27 +1,27 @@
 {% extends "base.html" %}
-{% block title %}stimmo — bookmarklet{% endblock %}
+{% block title %}stimmo — {% trans %}bookmarklet{% endtrans %}{% endblock %}
 {% block content %}
 
 <div class="pagehead">
   <div>
     <div class="stepper">
-      <span class="step on"><span class="num">⌘</span> Import</span>
+      <span class="step on"><span class="num">⌘</span> {% trans %}Import{% endtrans %}</span>
       <span class="sep"></span>
-      <span class="step"><span class="num">1</span> Listing</span>
+      <span class="step"><span class="num">1</span> {% trans %}Listing{% endtrans %}</span>
       <span class="sep"></span>
-      <span class="step"><span class="num">2</span> Verdict</span>
+      <span class="step"><span class="num">2</span> {% trans %}Verdict{% endtrans %}</span>
     </div>
-    <h1>One click, <em>prefilled</em>.</h1>
+    <h1>{% trans %}One click, <em>prefilled</em>.{% endtrans %}</h1>
     <p class="sub">
-      Drag the pill below to your bookmarks bar. Click it on any
+      {% trans %}Drag the pill below to your bookmarks bar. Click it on any
       <span class="mono" style="font-size:13px">immobiliare.it</span> Milano listing — stimmo opens with
-      address, surface, price, floor, lift, energy class, condition, outdoor space, era and bathrooms already filled in.
+      address, surface, price, floor, lift, energy class, condition, outdoor space, era and bathrooms already filled in.{% endtrans %}
     </p>
   </div>
   <div class="meta">
-    Privacy<br>
-    <b>browser-only</b><br>
-    <span style="opacity:0.7">no immobiliare<br>request from us</span>
+    {% trans %}Privacy{% endtrans %}<br>
+    <b>{% trans %}browser-only{% endtrans %}</b><br>
+    <span style="opacity:0.7">{% trans %}no immobiliare<br>request from us{% endtrans %}</span>
   </div>
 </div>
 
@@ -29,8 +29,8 @@
   <div>
     <div class="doc bm-drag">
       <div class="doc-head">
-        <h2 class="doc-title">Drag to your bookmarks bar</h2>
-        <span class="doc-eyebrow">§ 01 · Install</span>
+        <h2 class="doc-title">{% trans %}Drag to your bookmarks bar{% endtrans %}</h2>
+        <span class="doc-eyebrow">§ 01 · {% trans %}Install{% endtrans %}</span>
       </div>
       <div class="bm-pill-wrap">
         <a class="bm-pill" href="{{ bookmarklet_href | safe }}" draggable="true">
@@ -39,45 +39,45 @@
               <rect x="6" y="3" width="12" height="18" rx="1.5"/><path d="M9 3v3h6V3"/>
             </svg>
           </span>
-          <span class="bm-pill-text"><em>stimmo</em> · check this listing</span>
+          <span class="bm-pill-text"><em>stimmo</em> · {% trans %}check this listing{% endtrans %}</span>
         </a>
         <button class="btn btn-ghost bm-copy" type="button" id="bm-copy-btn"
-          onclick="copyBookmarklet()">Copy link</button>
+          onclick="copyBookmarklet()">{% trans %}Copy link{% endtrans %}</button>
       </div>
       <div class="bm-arrow">
         <svg width="160" height="56" viewBox="0 0 160 56" fill="none" stroke="var(--ink-fade)" stroke-width="1.5">
           <path d="M4 50 C 30 50, 70 30, 130 12" stroke-dasharray="3 4"/>
           <path d="M122 8 L132 12 L126 20" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
-        <span class="bm-arrow-lbl">your bookmarks bar</span>
+        <span class="bm-arrow-lbl">{% trans %}your bookmarks bar{% endtrans %}</span>
       </div>
     </div>
 
     <div class="doc">
       <div class="doc-head">
-        <h2 class="doc-title">How it works</h2>
-        <span class="doc-eyebrow">§ 02 · Three steps</span>
+        <h2 class="doc-title">{% trans %}How it works{% endtrans %}</h2>
+        <span class="doc-eyebrow">§ 02 · {% trans %}Three steps{% endtrans %}</span>
       </div>
       <ol class="bm-steps">
         <li>
           <span class="bm-n">1</span>
           <div>
-            <b>Drag the pill</b> above to your browser's bookmarks bar.
-            <div class="bm-hint">Show it with <span class="kbd">⌘</span><span class="kbd">⇧</span><span class="kbd">B</span> on Mac, <span class="kbd">Ctrl</span><span class="kbd">⇧</span><span class="kbd">B</span> on Windows.</div>
+            <b>{% trans %}Drag the pill{% endtrans %}</b> {% trans %}above to your browser's bookmarks bar.{% endtrans %}
+            <div class="bm-hint">{% trans %}Show it with <span class="kbd">⌘</span><span class="kbd">⇧</span><span class="kbd">B</span> on Mac, <span class="kbd">Ctrl</span><span class="kbd">⇧</span><span class="kbd">B</span> on Windows.{% endtrans %}</div>
           </div>
         </li>
         <li>
           <span class="bm-n">2</span>
           <div>
-            <b>Open any listing</b> on <span class="mono" style="font-size:13px">immobiliare.it</span> in Milano.
-            <div class="bm-hint">Works on the public listing detail page (/annunci/…). Map / search pages aren't supported.</div>
+            <b>{% trans %}Open any listing{% endtrans %}</b> {% trans %}on <span class="mono" style="font-size:13px">immobiliare.it</span> in Milano.{% endtrans %}
+            <div class="bm-hint">{% trans %}Works on the public listing detail page (/annunci/…). Map / search pages aren't supported.{% endtrans %}</div>
           </div>
         </li>
         <li>
           <span class="bm-n">3</span>
           <div>
-            <b>Click <em>stimmo</em></b> in your bookmarks bar.
-            <div class="bm-hint">The script reads the listing's <span class="mono" style="font-size:13px">__NEXT_DATA__</span> JSON inside your tab and opens stimmo with the form prefilled. Nothing leaves your browser until you submit.</div>
+            <b>{% trans %}Click <em>stimmo</em>{% endtrans %}</b> {% trans %}in your bookmarks bar.{% endtrans %}
+            <div class="bm-hint">{% trans %}The script reads the listing's <span class="mono" style="font-size:13px">__NEXT_DATA__</span> JSON inside your tab and opens stimmo with the form prefilled. Nothing leaves your browser until you submit.{% endtrans %}</div>
           </div>
         </li>
       </ol>
@@ -85,24 +85,24 @@
 
     <div class="doc">
       <div class="doc-head">
-        <h2 class="doc-title">Can't use bookmarklets?</h2>
-        <span class="doc-eyebrow">§ Paste fallback</span>
+        <h2 class="doc-title">{% trans %}Can't use bookmarklets?{% endtrans %}</h2>
+        <span class="doc-eyebrow">§ {% trans %}Paste fallback{% endtrans %}</span>
       </div>
       <p style="margin:0 0 12px;color:var(--ink-2);font-size:14px">
-        Some browsers (mobile Safari, locked-down work laptops) don't allow custom bookmarklets.
-        Copy the full page source of the listing and paste it here instead.
+        {% trans %}Some browsers (mobile Safari, locked-down work laptops) don't allow custom bookmarklets.
+        Copy the full page source of the listing and paste it here instead.{% endtrans %}
       </p>
       <button type="button" class="btn btn-ghost" id="paste-toggle-btn"
-        onclick="togglePaste()">Use paste fallback</button>
+        onclick="togglePaste()">{% trans %}Use paste fallback{% endtrans %}</button>
       <div id="paste-section" style="display:none;margin-top:14px">
-        <form method="post" action="/import">
+        <form method="post" action="/{{ lang }}/import">
           <input type="hidden" name="src" value="immobiliare">
           <textarea class="input" name="html" rows="5"
             style="font-family:var(--mono);font-size:12px;resize:vertical"
-            placeholder="Paste the full page HTML here (Ctrl+A, Ctrl+C on the immobiliare.it page)…"></textarea>
+            placeholder="{{ _('Paste the full page HTML here (Ctrl+A, Ctrl+C on the immobiliare.it page)…') }}"></textarea>
           <div style="display:flex;gap:10px;margin-top:12px">
-            <button type="submit" class="btn">Import &amp; prefill <span class="arrow">→</span></button>
-            <button type="button" class="btn btn-ghost" onclick="togglePaste()">Cancel</button>
+            <button type="submit" class="btn">{% trans %}Import &amp; prefill{% endtrans %} <span class="arrow">→</span></button>
+            <button type="button" class="btn btn-ghost" onclick="togglePaste()">{% trans %}Cancel{% endtrans %}</button>
           </div>
         </form>
       </div>
@@ -112,7 +112,7 @@
   <div>
     <div class="doc" style="padding:0;overflow:hidden">
       <div style="padding:16px 20px;border-bottom:1px solid var(--paper-rule);display:flex;align-items:baseline;justify-content:space-between">
-        <h2 class="doc-title" style="margin:0">What you'll see</h2>
+        <h2 class="doc-title" style="margin:0">{% trans %}What you'll see{% endtrans %}</h2>
         <span class="doc-eyebrow">Demo</span>
       </div>
       <div class="bm-browser">
@@ -166,29 +166,29 @@
           <div class="bm-flash">
             <div class="bm-flash-inner">
               <span class="bm-flash-eye">stimmo</span>
-              <span class="bm-flash-msg">Reading <span class="mono" style="font-size:11px">__NEXT_DATA__</span> · 12 fields found</span>
+              <span class="bm-flash-msg">{% trans %}Reading <span class="mono" style="font-size:11px">__NEXT_DATA__</span> · 12 fields found{% endtrans %}</span>
             </div>
           </div>
         </div>
-        <div class="bm-foot">Click to simulate <span class="arrow">→</span></div>
+        <div class="bm-foot">{% trans %}Click to simulate{% endtrans %} <span class="arrow">→</span></div>
       </div>
     </div>
 
     <div class="note" style="margin-top:18px">
-      <b>Privacy.</b> The bookmarklet runs entirely in your browser tab.
+      <b>{% trans %}Privacy.{% endtrans %}</b> {% trans %}The bookmarklet runs entirely in your browser tab.
       stimmo never makes a server-side request to immobiliare.it. The only network call
       is from <em>your</em> browser to <em>stimmo</em>, with the parsed form fields —
-      you can review every prefilled field before estimating.
+      you can review every prefilled field before estimating.{% endtrans %}
     </div>
 
     <div class="explainer" style="grid-template-columns:1fr;margin-top:18px">
       <div class="e">
         <span class="num-big">·</span>
-        <h3 class="ttl">Schema drift is expected</h3>
+        <h3 class="ttl">{% trans %}Schema drift is expected{% endtrans %}</h3>
         <p class="desc">
-          immobiliare.it changes its internal JSON shape every few months. Always
+          {% trans %}immobiliare.it changes its internal JSON shape every few months. Always
           review the prefilled fields before you submit — surface and floor are the
-          two that drift most often.
+          two that drift most often.{% endtrans %}
         </p>
       </div>
     </div>
@@ -203,8 +203,8 @@ function copyBookmarklet() {
   const href = {{ bookmarklet_href | tojson }};
   navigator.clipboard.writeText(href).then(() => {
     const btn = document.getElementById('bm-copy-btn');
-    btn.textContent = 'Copied ✓';
-    setTimeout(() => { btn.textContent = 'Copy link'; }, 1600);
+    btn.textContent = '{{ _("Copied") }} ✓';
+    setTimeout(() => { btn.textContent = '{{ _("Copy link") }}'; }, 1600);
   }).catch(() => {});
 }
 function togglePaste() {

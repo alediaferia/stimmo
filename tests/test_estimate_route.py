@@ -13,7 +13,7 @@ def test_estimate_renders_result(monkeypatch):
 
     client = TestClient(app)
     r = client.post(
-        "/estimate",
+        "/en/estimate",
         data={
             "address": "Piazza Duomo, Milano",
             "surface_m2": "80",
@@ -34,6 +34,6 @@ def test_estimate_renders_result(monkeypatch):
     )
     assert r.status_code == 200
     body = r.text
-    assert "Estimate" in body
+    assert "Report" in body
     verdicts = ("Verdict · Under-priced", "Verdict · Fair", "Verdict · Over-priced")
     assert any(v in body for v in verdicts)

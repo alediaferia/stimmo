@@ -8,18 +8,31 @@ from datetime import date
 from functools import lru_cache
 from importlib.metadata import version as _pkg_version
 from pathlib import Path
+from urllib.parse import urlparse
 
-from fastapi import FastAPI, Form, Request
-from fastapi.responses import HTMLResponse, Response
+from fastapi import FastAPI, Form, Path as FPath, Request
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import ValidationError
 
 from stimmo.data import amenities, geocode, history, ntn, omi, zones
 from stimmo.data.importers import immobiliare
+from stimmo.i18n import (
+    LANG_TO_LOCALE,
+    LOCALE_TO_LANG,
+    SUPPORTED_LANGS,
+    _current_locale,
+    fmt_eur,
+    fmt_pct,
+    gettext as _,
+    negotiate_locale,
+    ngettext,
+)
 from stimmo.models import (
     CONSTRUCTION_ERA_LABELS,
     ORIENTATION_LABELS,
+    OUTDOOR_LABELS,
     PROPERTY_TYPE_HINTS,
     AmenityScore,
     ConstructionEra,
@@ -32,27 +45,28 @@ from stimmo.models import (
     PropertyType,
 )
 from stimmo.valuation import engine
+from stimmo.web import labels as _labels
 
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
+# Enable Jinja2 i18n extension with ContextVar-backed callables.
+templates.env.add_extension("jinja2.ext.i18n")
+templates.env.install_gettext_callables(_, ngettext, newstyle=False)
 
-def _eur(n: float) -> str:
-    return f"€ {n:,.0f}".replace(",", ".")
-
-
-def _pct(n: float, d: int = 1) -> str:
-    sign = "+" if n >= 0 else ""
-    return f"{sign}{n:.{d}f}%"
-
-
-templates.env.filters["eur"] = _eur
-templates.env.filters["pct"] = _pct
+templates.env.filters["eur"] = lambda n: fmt_eur(n)
+templates.env.filters["pct"] = lambda n, d=1: fmt_pct(n, digits=d)
+templates.env.filters["num"] = lambda n: _fmt_num(n)
 templates.env.globals["app_version"] = "v" + _pkg_version("stimmo")
+templates.env.globals["render_label"] = _labels.render
+
+
+def _fmt_num(n: float) -> str:
+    from babel.numbers import format_decimal
+    return format_decimal(round(n), format="#,##0", locale=_current_locale.get())
 
 
 def _semester_months_old(semester: str) -> int:
-    """Approximate months elapsed since the semester's start date."""
     try:
         year_str, half_str = semester.split("-")
         sem_start = date(int(year_str), 1 if half_str == "1" else 7, 1)
@@ -62,21 +76,25 @@ def _semester_months_old(semester: str) -> int:
         return 0
 
 
+def _set_locale(request: Request, lang: str) -> str:
+    """Resolve lang slug → locale, store on request.state and ContextVar."""
+    locale = LANG_TO_LOCALE[lang]
+    request.state.locale = locale
+    _current_locale.set(locale)
+    return locale
+
+
+def _tpl(request: Request, template: str, ctx: dict | None = None) -> HTMLResponse:
+    """Render a template with locale context merged in."""
+    locale = getattr(request.state, "locale", "it_IT")
+    lang = LOCALE_TO_LANG.get(locale, "it")
+    base: dict = {"lang": lang, "locale": locale}
+    if ctx:
+        base.update(ctx)
+    return templates.TemplateResponse(request, template, base)
+
+
 _IMPORT_REGISTRY = {"immobiliare": immobiliare.parse}
-
-VERDICT_STYLE = {
-    "under": (
-        "UNDER-PRICED",
-        "warn",
-        "In Milano genuinely under-priced listings are rare. Common reasons: "
-        "pending inheritance dispute (contenzioso ereditario), building irregularity "
-        "(abuso edilizio), easement (servitù), or tenant in situ (affitto in corso). "
-        "Verify carefully before proceeding.",
-    ),
-    "fair": ("FAIR", "ok", "Asking price sits inside the estimated market range."),
-    "over": ("OVER-PRICED", "bad", "Asking price is above the estimated market range."),
-}
-
 
 app = FastAPI(title="stimmo — Milan fair-price estimator")
 
@@ -84,6 +102,10 @@ STATIC_DIR = Path(__file__).parent / "static"
 STATIC_DIR.mkdir(exist_ok=True)
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
+
+# ---------------------------------------------------------------------------
+# Locale-neutral API endpoints
+# ---------------------------------------------------------------------------
 
 @lru_cache(maxsize=1)
 def _zones_geojson_payload() -> str:
@@ -150,12 +172,85 @@ def zones_geojson() -> Response:
     )
 
 
+# ---------------------------------------------------------------------------
+# Locale negotiation for entry-point redirects
+# ---------------------------------------------------------------------------
+
+@app.get("/")
+def root_redirect(request: Request) -> RedirectResponse:
+    cookie = request.cookies.get("stimmo_lang")
+    accept_lang = request.headers.get("Accept-Language")
+    locale = negotiate_locale(cookie, accept_lang)
+    lang = LOCALE_TO_LANG[locale]
+    return RedirectResponse(f"/{lang}/", status_code=302)
+
+
+@app.get("/import")
+def import_redirect_get(request: Request) -> RedirectResponse:
+    cookie = request.cookies.get("stimmo_lang")
+    accept_lang = request.headers.get("Accept-Language")
+    locale = negotiate_locale(cookie, accept_lang)
+    lang = LOCALE_TO_LANG[locale]
+    qs = request.url.query
+    target = f"/{lang}/import"
+    if qs:
+        target += f"?{qs}"
+    return RedirectResponse(target, status_code=302)
+
+
+@app.post("/import")
+async def import_redirect_post(request: Request) -> RedirectResponse:
+    cookie = request.cookies.get("stimmo_lang")
+    accept_lang = request.headers.get("Accept-Language")
+    locale = negotiate_locale(cookie, accept_lang)
+    lang = LOCALE_TO_LANG[locale]
+    qs = request.url.query
+    target = f"/{lang}/import"
+    if qs:
+        target += f"?{qs}"
+    # 308 preserves the POST body through the redirect
+    return RedirectResponse(target, status_code=308)
+
+
+@app.post("/set-lang")
+def set_lang(
+    request: Request,
+    lang: str = Form(...),
+    next: str = Form("/"),
+) -> RedirectResponse:
+    if lang not in SUPPORTED_LANGS:
+        lang = "it"
+
+    # Reject off-origin next paths.
+    parsed = urlparse(next)
+    if parsed.netloc or parsed.scheme:
+        next = f"/{lang}/"
+    elif not next.startswith("/"):
+        next = f"/{lang}/"
+
+    response = RedirectResponse(next, status_code=302)
+    response.set_cookie(
+        "stimmo_lang",
+        lang,
+        max_age=31536000,
+        samesite="lax",
+        secure=request.url.scheme == "https",
+    )
+    return response
+
+
+# ---------------------------------------------------------------------------
+# Localized page routes  /{lang}/...
+# ---------------------------------------------------------------------------
+
+_LANG_RE = "^(it|en)$"
+
+
 def _form_context(
     request: Request,
     defaults_override: dict | None = None,
     import_source: str | None = None,
 ) -> dict:
-    """Build template context for form.html with optional prefill."""
     defaults = {
         "property_type": PropertyType.CIVILI.value,
         "omi_condition": OmiCondition.NORMALE.value,
@@ -183,11 +278,15 @@ def _form_context(
         "omi_conditions": [e.value for e in OmiCondition],
         "fine_conditions": [e.value for e in FineCondition],
         "energy_classes": ["", *[e.value for e in EnergyClass]],
-        "outdoors": [e.value for e in Outdoor],
+        "outdoors": [
+            {"value": e.value, "label": OUTDOOR_LABELS[e]} for e in Outdoor
+        ],
         "construction_eras": [
             {"value": e.value, "label": CONSTRUCTION_ERA_LABELS[e]} for e in ConstructionEra
         ],
-        "orientations": [{"value": e.value, "label": ORIENTATION_LABELS[e]} for e in Orientation],
+        "orientations": [
+            {"value": e.value, "label": ORIENTATION_LABELS[e]} for e in Orientation
+        ],
         "defaults": defaults,
         "import_source": import_source,
         "omi_semester": omi.semester(),
@@ -195,32 +294,27 @@ def _form_context(
     }
 
 
-@app.get("/about", response_class=HTMLResponse)
-def about(request: Request) -> HTMLResponse:
-    return templates.TemplateResponse(
-        request,
-        "about.html",
-        {
-            "semester": omi.semester(),
-            "zone_count": len(omi.available_zones()),
-        },
-    )
+@app.get("/{lang}/about", response_class=HTMLResponse)
+def about(request: Request, lang: str = FPath(pattern=_LANG_RE)) -> HTMLResponse:
+    _set_locale(request, lang)
+    return _tpl(request, "about.html", {
+        "semester": omi.semester(),
+        "zone_count": len(omi.available_zones()),
+    })
 
 
-@app.get("/", response_class=HTMLResponse)
-def form(request: Request) -> HTMLResponse:
+@app.get("/{lang}/", response_class=HTMLResponse)
+def form(request: Request, lang: str = FPath(pattern=_LANG_RE)) -> HTMLResponse:
+    _set_locale(request, lang)
     ctx = _form_context(request)
-    return templates.TemplateResponse(request, "form.html", ctx)
+    return _tpl(request, "form.html", ctx)
 
 
 def _find_listing(node: dict | list | None, depth: int = 0) -> dict | None:
-    """Walk __NEXT_DATA__ tree looking for listing leaf object."""
     if depth > 14 or not node:
         return None
-
     if isinstance(node, dict) and "price" in node and "location" in node and "typology" in node:
         return node
-
     if isinstance(node, list):
         for x in node:
             hit = _find_listing(x, depth + 1)
@@ -231,38 +325,48 @@ def _find_listing(node: dict | list | None, depth: int = 0) -> dict | None:
             hit = _find_listing(v, depth + 1)
             if hit:
                 return hit
-
     return None
 
 
-@app.get("/import", response_class=HTMLResponse)
-def import_get(request: Request, src: str = "", v: str = "1", p: str = "") -> HTMLResponse:
+@app.get("/{lang}/import", response_class=HTMLResponse)
+def import_get(
+    request: Request,
+    lang: str = FPath(pattern=_LANG_RE),
+    src: str = "",
+    v: str = "1",
+    p: str = "",
+) -> HTMLResponse:
+    _set_locale(request, lang)
     if src not in _IMPORT_REGISTRY or not p:
-        return _error(request, ["Invalid import request"])
+        return _error(request, [_("Invalid import request")])
 
     try:
         padded = p + "=" * (-len(p) % 4)
         raw = base64.urlsafe_b64decode(padded)
         if len(raw) > 32_768:
-            return _error(request, ["Payload too large"])
+            return _error(request, [_("Payload too large")])
         payload = json.loads(raw)
     except (binascii.Error, ValueError, UnicodeDecodeError, json.JSONDecodeError):
-        return _error(request, ["Malformed import payload"])
+        return _error(request, [_("Malformed import payload")])
 
     prefill = _IMPORT_REGISTRY[src](payload)
     ctx = _form_context(request, prefill, import_source=src)
-    return templates.TemplateResponse(request, "form.html", ctx)
+    return _tpl(request, "form.html", ctx)
 
 
-@app.post("/import", response_class=HTMLResponse)
+@app.post("/{lang}/import", response_class=HTMLResponse)
 def import_post(
-    request: Request, src: str = Form("immobiliare"), html: str = Form("")
+    request: Request,
+    lang: str = FPath(pattern=_LANG_RE),
+    src: str = Form("immobiliare"),
+    html: str = Form(""),
 ) -> HTMLResponse:
+    _set_locale(request, lang)
     if src not in _IMPORT_REGISTRY or not html:
-        return _error(request, ["Missing source or HTML content"])
+        return _error(request, [_("Missing source or HTML content")])
 
     if len(html) > 256_000:
-        return _error(request, ["Pasted HTML too large"])
+        return _error(request, [_("Pasted HTML too large")])
 
     m = re.search(
         r'<script[^>]+id=["\']__NEXT_DATA__["\'][^>]*>(.*?)</script>',
@@ -270,45 +374,46 @@ def import_post(
         re.DOTALL,
     )
     if not m:
-        return _error(request, ["Could not find listing data in pasted HTML"])
+        return _error(request, [_("Could not find listing data in pasted HTML")])
 
     try:
         data = json.loads(m.group(1))
     except json.JSONDecodeError:
-        return _error(request, ["Could not parse listing data"])
+        return _error(request, [_("Could not parse listing data")])
 
     listing = _find_listing(data)
     if not listing:
-        return _error(request, ["Could not locate listing fields in pasted data"])
+        return _error(request, [_("Could not locate listing fields in pasted data")])
 
     prefill = _IMPORT_REGISTRY[src](listing)
     ctx = _form_context(request, prefill, import_source=src)
-    return templates.TemplateResponse(request, "form.html", ctx)
+    return _tpl(request, "form.html", ctx)
 
 
-@app.get("/bookmarklet", response_class=HTMLResponse)
-def bookmarklet_page(request: Request) -> HTMLResponse:
+@app.get("/{lang}/bookmarklet", response_class=HTMLResponse)
+def bookmarklet_page(
+    request: Request, lang: str = FPath(pattern=_LANG_RE)
+) -> HTMLResponse:
+    _set_locale(request, lang)
     js_path = STATIC_DIR / "bookmarklet.js"
     if not js_path.exists():
-        return _error(request, ["Bookmarklet not available"])
+        return _error(request, [_("Bookmarklet not available")])
 
     js_src = js_path.read_text()
     stimmo_base = str(request.base_url).rstrip("/")
+    alert_str = _("stimmo: could not find listing data on this page")
     js_src = js_src.replace("'https://stimmo.it'", f"'{stimmo_base}'")
+    js_src = js_src.replace("'__STIMMO_LANG__'", f"'{lang}'")
+    js_src = js_src.replace("'__STIMMO_ALERT__'", json.dumps(alert_str))
 
-    # Collapse whitespace but preserve string literals (don't minify //)
     bookmarklet_href = "javascript:" + re.sub(r"\s+", " ", js_src).strip()
-
-    return templates.TemplateResponse(
-        request,
-        "bookmarklet.html",
-        {"bookmarklet_href": bookmarklet_href},
-    )
+    return _tpl(request, "bookmarklet.html", {"bookmarklet_href": bookmarklet_href})
 
 
-@app.post("/estimate", response_class=HTMLResponse)
+@app.post("/{lang}/estimate", response_class=HTMLResponse)
 def estimate(
     request: Request,
+    lang: str = FPath(pattern=_LANG_RE),
     address: str = Form(...),
     surface_m2: float = Form(...),
     property_type: str = Form(...),
@@ -325,7 +430,8 @@ def estimate(
     has_second_bathroom: str = Form("off"),
     asking_price_eur: float = Form(...),
 ) -> HTMLResponse:
-    errors: list[str] = []
+    _set_locale(request, lang)
+
     try:
         prop = Property(
             address=address.strip(),
@@ -345,30 +451,29 @@ def estimate(
             asking_price_eur=asking_price_eur,
         )
     except (ValidationError, ValueError) as e:
-        errors.append(str(e))
-        return _error(request, errors)
+        return _error(request, [str(e)])
 
     try:
         lat, lon = geocode.geocode(prop.address)
     except LookupError as e:
-        return _error(request, [f"Geocoding failed: {e}"])
+        return _error(request, [_("Geocoding failed: %(e)s") % {"e": e}])
 
     z = zones.zone_for_point(lat, lon)
     if z is None:
-        return _error(request, ["Address is outside the Milano comune — no OMI zone."])
+        return _error(request, [_("Address is outside the Milano comune — no OMI zone.")])
     zone_code, zone_name = z
 
     try:
         quote = omi.lookup(zone_code, prop.property_type, prop.omi_condition)
     except LookupError as e:
-        return _error(request, [f"OMI lookup failed: {e}"])
+        return _error(request, [_("OMI lookup failed: %(e)s") % {"e": e}])
     quote.zone_descr = zone_name
 
     amenity_warning: str | None = None
     try:
         amen = amenities.fetch_amenities(lat, lon)
     except Exception as e:
-        amenity_warning = f"Amenity query failed: {e}; using zero score"
+        amenity_warning = _("Amenity query failed: %(e)s; using zero score") % {"e": e}
         amen = AmenityScore()
 
     est = engine.estimate(prop, quote, amen)
@@ -376,8 +481,7 @@ def estimate(
     ntn_total = ntn.total_quarters(last_n=8)
     bucket_label, ntn_bucket = ntn.by_bucket_quarters(prop.surface_m2, last_n=8)
 
-    label, style, hint = VERDICT_STYLE[est.verdict]
-    bucket_by_q = {p.quarter: p.ntn for p in ntn_bucket}
+    bucket_by_q = {p_.quarter: p_.ntn for p_ in ntn_bucket}
 
     asking = prop.asking_price_eur
     g_lo = min(est.ask_range_low_eur, est.range_low_eur) * 0.92
@@ -396,41 +500,38 @@ def estimate(
             "width": _x(est.ask_range_high_eur) - _x(est.ask_range_low_eur),
         },
         "ticks": [
-            {"label": "OMI low", "value": est.range_low_eur, "x": _x(est.range_low_eur)},
-            {"label": "Ask low", "value": est.ask_range_low_eur, "x": _x(est.ask_range_low_eur)},
-            {"label": "Ask mid", "value": est.ask_range_mid_eur, "x": _x(est.ask_range_mid_eur)},
-            {"label": "Ask high", "value": est.ask_range_high_eur, "x": _x(est.ask_range_high_eur)},
-            {"label": "OMI high", "value": est.range_high_eur, "x": _x(est.range_high_eur)},
+            {"label": _("OMI low"), "value": est.range_low_eur, "x": _x(est.range_low_eur)},
+            {"label": _("Ask low"), "value": est.ask_range_low_eur, "x": _x(est.ask_range_low_eur)},
+            {"label": _("Ask mid"), "value": est.ask_range_mid_eur, "x": _x(est.ask_range_mid_eur)},
+            {"label": _("Ask high"), "value": est.ask_range_high_eur, "x": _x(est.ask_range_high_eur)},
+            {"label": _("OMI high"), "value": est.range_high_eur, "x": _x(est.range_high_eur)},
         ],
         "asking_x": _x(asking),
     }
 
-    return templates.TemplateResponse(
-        request,
-        "result.html",
-        {
-            "p": prop,
-            "est": est,
-            "lat": lat,
-            "lon": lon,
-            "history_series": series,
-            "ntn_total": ntn_total,
-            "bucket_label": bucket_label,
-            "bucket_by_q": bucket_by_q,
-            "verdict_label": label,
-            "verdict_style": style,
-            "verdict_hint": hint,
-            "amenity_warning": amenity_warning,
-            "semester_months_old": _semester_months_old(est.omi_quote.semester),
-            "gauge": gauge,
-        },
-    )
+    return _tpl(request, "result.html", {
+        "p": prop,
+        "est": est,
+        "lat": lat,
+        "lon": lon,
+        "history_series": series,
+        "ntn_total": ntn_total,
+        "bucket_label": bucket_label,
+        "bucket_by_q": bucket_by_q,
+        "amenity_warning": amenity_warning,
+        "semester_months_old": _semester_months_old(est.omi_quote.semester),
+        "gauge": gauge,
+    })
 
 
 def _error(request: Request, errors: list[str]) -> HTMLResponse:
     return templates.TemplateResponse(
         request,
         "error.html",
-        {"errors": errors},
+        {
+            "lang": LOCALE_TO_LANG.get(getattr(request.state, "locale", "it_IT"), "it"),
+            "locale": getattr(request.state, "locale", "it_IT"),
+            "errors": errors,
+        },
         status_code=400,
     )

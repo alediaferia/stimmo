@@ -21,6 +21,23 @@ jobs:
       - run: uv run ruff format --check
       - run: uv run pytest -v
 
+  translations:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8.1.0
+        with:
+          enable-cache: true
+      - run: uv sync --all-extras --dev
+      - run: uv run pybabel extract -F babel.cfg -o src/stimmo/locale/messages.pot .
+      - run: uv run pybabel update -i src/stimmo/locale/messages.pot -d src/stimmo/locale
+      - run: uv run pybabel compile -d src/stimmo/locale
+      - run: |
+          git diff --exit-code src/stimmo/locale/ || {
+            echo "Translation files are out of date. Run pybabel extract/update/compile and commit the result."
+            exit 1
+          }
+
   gitleaks:
     runs-on: ubuntu-latest
     steps:

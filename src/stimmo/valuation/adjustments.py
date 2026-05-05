@@ -6,8 +6,6 @@ All values are deltas in percent (e.g. -5 means -5%). Tune in one place.
 from __future__ import annotations
 
 from stimmo.models import (
-    CONSTRUCTION_ERA_LABELS,
-    ORIENTATION_LABELS,
     AdjustmentBreakdown,
     AmenityScore,
     ConstructionEra,
@@ -109,35 +107,60 @@ def compute(
     floor = _floor_delta(p)
     if floor:
         deltas.append(
-            AdjustmentBreakdown(name=f"floor (piano {p.floor}, lift={p.has_lift})", delta_pct=floor)
+            AdjustmentBreakdown(
+                code="floor",
+                params={"floor": p.floor, "lift": p.has_lift},
+                delta_pct=floor,
+            )
         )
 
     size = _size_delta(p)
     if size:
-        deltas.append(AdjustmentBreakdown(name=f"size ({p.surface_m2:g} m²)", delta_pct=size))
+        deltas.append(
+            AdjustmentBreakdown(
+                code="size",
+                params={"surface_m2": p.surface_m2},
+                delta_pct=size,
+            )
+        )
 
     fine = FINE_CONDITION_DELTA[p.fine_condition]
     if fine:
         deltas.append(
-            AdjustmentBreakdown(name=f"condition fine ({p.fine_condition.value})", delta_pct=fine)
+            AdjustmentBreakdown(
+                code="condition_fine",
+                params={"condition": p.fine_condition.value},
+                delta_pct=fine,
+            )
         )
 
     if p.energy_class is not None:
         en = ENERGY_DELTA[p.energy_class]
         if en:
             deltas.append(
-                AdjustmentBreakdown(name=f"energy class {p.energy_class.value}", delta_pct=en)
+                AdjustmentBreakdown(
+                    code="energy_class",
+                    params={"cls": p.energy_class.value},
+                    delta_pct=en,
+                )
             )
 
     out = OUTDOOR_DELTA[p.outdoor]
     if out:
-        deltas.append(AdjustmentBreakdown(name=f"outdoor ({p.outdoor.value})", delta_pct=out))
+        deltas.append(
+            AdjustmentBreakdown(
+                code="outdoor",
+                params={"outdoor": p.outdoor.value},
+                delta_pct=out,
+            )
+        )
 
     era = CONSTRUCTION_ERA_DELTA[p.construction_era]
     if era:
         deltas.append(
             AdjustmentBreakdown(
-                name=f"construction era ({CONSTRUCTION_ERA_LABELS[p.construction_era]})",
+                code="construction_era",
+                params={"era": p.construction_era.value},
                 delta_pct=era,
             )
         )
@@ -146,15 +169,25 @@ def compute(
     if ori:
         deltas.append(
             AdjustmentBreakdown(
-                name=f"orientation ({ORIENTATION_LABELS[p.orientation]})", delta_pct=ori
+                code="orientation",
+                params={"orientation": p.orientation.value},
+                delta_pct=ori,
             )
         )
 
     if p.has_second_bathroom and p.surface_m2 >= 75:
-        deltas.append(AdjustmentBreakdown(name="second bathroom", delta_pct=+5.0))
+        deltas.append(
+            AdjustmentBreakdown(code="second_bathroom", params={}, delta_pct=+5.0)
+        )
 
     if amenity.score_pct:
-        deltas.append(AdjustmentBreakdown(name="amenities (OSM)", delta_pct=amenity.score_pct))
+        deltas.append(
+            AdjustmentBreakdown(
+                code="amenities",
+                params={"score_pct": amenity.score_pct},
+                delta_pct=amenity.score_pct,
+            )
+        )
 
     pct = sum(d.delta_pct for d in deltas)
     raw_mult = 1 + pct / 100
@@ -162,7 +195,8 @@ def compute(
     if mult != raw_mult:
         deltas.append(
             AdjustmentBreakdown(
-                name=f"clamp ({raw_mult:.3f} → {mult:.3f})",
+                code="clamp",
+                params={"raw": raw_mult, "clamped": mult},
                 delta_pct=(mult - raw_mult) * 100,
             )
         )

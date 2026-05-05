@@ -1,26 +1,26 @@
 {% extends "base.html" %}
-{% block title %}stimmo — error{% endblock %}
+{% block title %}stimmo — {% trans %}error{% endtrans %}{% endblock %}
 {% block content %}
 
 <div class="pagehead">
   <div>
     <div class="stepper">
-      <span class="step on"><span class="num">!</span> Error</span>
+      <span class="step on"><span class="num">!</span> {% trans %}Error{% endtrans %}</span>
     </div>
-    <h1>Could not produce <em>an estimate</em>.</h1>
+    <h1>{% trans %}Could not produce <em>an estimate</em>.{% endtrans %}</h1>
   </div>
 </div>
 
 <div class="doc" style="max-width:640px">
   <div class="doc-head">
-    <h2 class="doc-title">What went wrong</h2>
-    <span class="doc-eyebrow">§ Errors</span>
+    <h2 class="doc-title">{% trans %}What went wrong{% endtrans %}</h2>
+    <span class="doc-eyebrow">§ {% trans %}Errors{% endtrans %}</span>
   </div>
   {% for e in errors %}
   <div class="note error" style="margin-bottom:10px">{{ e }}</div>
   {% endfor %}
   <div style="margin-top:18px">
-    <a href="/" class="btn btn-ghost">← Back to form</a>
+    <a href="/{{ lang }}/" class="btn btn-ghost">← {% trans %}Back to form{% endtrans %}</a>
   </div>
 </div>
 

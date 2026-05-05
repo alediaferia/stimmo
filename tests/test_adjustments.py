@@ -90,14 +90,14 @@ def test_energy_g_penalty_is_5pct():
 def test_floor_no_lift_high_penalty(quote):
     p = _base(floor=4, has_lift=False)
     _, _, deltas = adjustments.compute(p, AmenityScore(), quote)
-    floor_delta = next(d.delta_pct for d in deltas if d.name.startswith("floor"))
+    floor_delta = next(d.delta_pct for d in deltas if d.code == "floor")
     assert floor_delta == -8.0
 
 
 def test_ground_floor_civili_penalty(quote):
     p = _base(floor=0)
     _, _, deltas = adjustments.compute(p, AmenityScore(), quote)
-    floor_delta = next(d.delta_pct for d in deltas if d.name.startswith("floor"))
+    floor_delta = next(d.delta_pct for d in deltas if d.code == "floor")
     assert floor_delta == -10.0
 
 
@@ -106,7 +106,7 @@ def test_ground_floor_signorili_penalty(quote):
 
     p = _base(floor=0, property_type=PropertyType.SIGNORILI)
     _, _, deltas = adjustments.compute(p, AmenityScore(), quote)
-    floor_delta = next(d.delta_pct for d in deltas if d.name.startswith("floor"))
+    floor_delta = next(d.delta_pct for d in deltas if d.code == "floor")
     assert floor_delta == -3.0
 
 
@@ -159,7 +159,7 @@ def test_orientation_south_premium():
 def test_second_bathroom_applies_above_75m2(quote):
     p = _base(has_second_bathroom=True, surface_m2=80)
     _, _, deltas = adjustments.compute(p, AmenityScore(), quote)
-    second_bath = next((d for d in deltas if "second bathroom" in d.name), None)
+    second_bath = next((d for d in deltas if d.code == "second_bathroom"), None)
     assert second_bath is not None
     assert second_bath.delta_pct == +5.0
 
@@ -167,7 +167,7 @@ def test_second_bathroom_applies_above_75m2(quote):
 def test_second_bathroom_ignored_below_75m2(quote):
     p = _base(has_second_bathroom=True, surface_m2=60)
     _, _, deltas = adjustments.compute(p, AmenityScore(), quote)
-    assert not any("second bathroom" in d.name for d in deltas)
+    assert not any(d.code == "second_bathroom" for d in deltas)
 
 
 def test_box_value_is_zone_relative(quote):
