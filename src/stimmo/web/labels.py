@@ -3,6 +3,7 @@
 The engine emits structured data; this web-layer module renders it for the
 user's current locale (read from the active ContextVar in stimmo.i18n).
 """
+
 from __future__ import annotations
 
 from stimmo.i18n import gettext as _

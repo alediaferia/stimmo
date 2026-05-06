@@ -12,6 +12,7 @@ Defaults to claude-sonnet-4-6 via OpenRouter; override with --model.
 Strings are sent in batches to reduce API round-trips. Python-format
 placeholders (%(name)s) and HTML tags are preserved by the system prompt.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -86,9 +87,8 @@ def _translate_batch(
     api_key: str,
 ) -> dict[str, str]:
     """Send a {msgid: ""} dict and return {msgid: translation}."""
-    user_content = (
-        f"Translate the following strings into {target_lang}.\n\n"
-        + json.dumps(batch, ensure_ascii=False, indent=2)
+    user_content = f"Translate the following strings into {target_lang}.\n\n" + json.dumps(
+        batch, ensure_ascii=False, indent=2
     )
     raw = _call_openrouter(
         [
@@ -129,10 +129,16 @@ def main() -> None:
         default="anthropic/claude-sonnet-4-6",
         help="OpenRouter model ID (default: anthropic/claude-sonnet-4-6)",
     )
-    parser.add_argument("--batch-size", type=int, default=30, help="Strings per API call (default: 30)")
-    parser.add_argument("--force", action="store_true", help="Re-translate already-translated entries")
+    parser.add_argument(
+        "--batch-size", type=int, default=30, help="Strings per API call (default: 30)"
+    )
+    parser.add_argument(
+        "--force", action="store_true", help="Re-translate already-translated entries"
+    )
     parser.add_argument("--dry-run", action="store_true", help="Print translations without writing")
-    parser.add_argument("--delay", type=float, default=0.5, help="Seconds between API calls (default: 0.5)")
+    parser.add_argument(
+        "--delay", type=float, default=0.5, help="Seconds between API calls (default: 0.5)"
+    )
     args = parser.parse_args()
 
     if not args.key:
@@ -171,10 +177,14 @@ def main() -> None:
         batch = {str(m.id): "" for m in batch_msgs}
         batch_num = i // args.batch_size + 1
         total_batches = (len(pending) + args.batch_size - 1) // args.batch_size
-        print(f"  batch {batch_num}/{total_batches} ({len(batch_msgs)} strings)…", end=" ", flush=True)
+        print(
+            f"  batch {batch_num}/{total_batches} ({len(batch_msgs)} strings)…", end=" ", flush=True
+        )
 
         try:
-            translations = _translate_batch(batch, target_lang=target_lang, model=args.model, api_key=args.key)
+            translations = _translate_batch(
+                batch, target_lang=target_lang, model=args.model, api_key=args.key
+            )
         except httpx.HTTPStatusError as exc:
             print(f"HTTP {exc.response.status_code}: {exc.response.text[:200]}", file=sys.stderr)
             sys.exit(1)
@@ -213,6 +223,7 @@ def main() -> None:
     # Compile to .mo
     mo_path = po_path.with_suffix(".mo")
     from babel.messages.mofile import write_mo
+
     with mo_path.open("wb") as fh:
         write_mo(fh, catalog)
     print(f"Compiled: {mo_path}")

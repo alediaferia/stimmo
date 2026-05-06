@@ -3,6 +3,7 @@
 Source language: English (en_US). Translations live in src/stimmo/locale/.
 Locale codes used internally: 'it_IT', 'en_US'. URL lang slugs: 'it', 'en'.
 """
+
 from __future__ import annotations
 
 import gettext as _gettext
@@ -96,6 +97,7 @@ def gettext_lazy(key: str) -> _LazyStr:
 # ---------------------------------------------------------------------------
 # Number / currency formatters
 # ---------------------------------------------------------------------------
+
 
 def fmt_eur(n: float, locale: str | None = None) -> str:
     """Format as Euro currency according to locale conventions."""

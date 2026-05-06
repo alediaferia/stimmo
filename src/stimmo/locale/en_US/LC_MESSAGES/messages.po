@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-05-05 08:34+0200\n"
+"POT-Creation-Date: 2026-05-06 08:08+0200\n"
 "PO-Revision-Date: 2026-05-05 08:34+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en_US\n"
@@ -18,137 +18,137 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: src/stimmo/web/app.py:341
+#: src/stimmo/web/app.py:345
 msgid "Invalid import request"
 msgstr ""
 
-#: src/stimmo/web/app.py:347
+#: src/stimmo/web/app.py:351
 msgid "Payload too large"
 msgstr ""
 
-#: src/stimmo/web/app.py:350
+#: src/stimmo/web/app.py:354
 msgid "Malformed import payload"
 msgstr ""
 
-#: src/stimmo/web/app.py:366
+#: src/stimmo/web/app.py:370
 msgid "Missing source or HTML content"
 msgstr ""
 
-#: src/stimmo/web/app.py:369
+#: src/stimmo/web/app.py:373
 msgid "Pasted HTML too large"
 msgstr ""
 
-#: src/stimmo/web/app.py:377
+#: src/stimmo/web/app.py:381
 msgid "Could not find listing data in pasted HTML"
 msgstr ""
 
-#: src/stimmo/web/app.py:382
+#: src/stimmo/web/app.py:386
 msgid "Could not parse listing data"
 msgstr ""
 
-#: src/stimmo/web/app.py:386
+#: src/stimmo/web/app.py:390
 msgid "Could not locate listing fields in pasted data"
 msgstr ""
 
-#: src/stimmo/web/app.py:400
+#: src/stimmo/web/app.py:402
 msgid "Bookmarklet not available"
 msgstr ""
 
-#: src/stimmo/web/app.py:404
+#: src/stimmo/web/app.py:406
 msgid "stimmo: could not find listing data on this page"
 msgstr ""
 
-#: src/stimmo/web/app.py:459
+#: src/stimmo/web/app.py:461
 #, python-format
 msgid "Geocoding failed: %(e)s"
 msgstr ""
 
-#: src/stimmo/web/app.py:463
+#: src/stimmo/web/app.py:465
 msgid "Address is outside the Milano comune — no OMI zone."
 msgstr ""
 
-#: src/stimmo/web/app.py:469
+#: src/stimmo/web/app.py:471
 #, python-format
 msgid "OMI lookup failed: %(e)s"
 msgstr ""
 
-#: src/stimmo/web/app.py:476
+#: src/stimmo/web/app.py:478
 #, python-format
 msgid "Amenity query failed: %(e)s; using zero score"
 msgstr ""
 
-#: src/stimmo/web/app.py:503
+#: src/stimmo/web/app.py:505
 msgid "OMI low"
 msgstr ""
 
-#: src/stimmo/web/app.py:504
+#: src/stimmo/web/app.py:506
 msgid "Ask low"
 msgstr ""
 
-#: src/stimmo/web/app.py:505
+#: src/stimmo/web/app.py:507
 msgid "Ask mid"
 msgstr ""
 
-#: src/stimmo/web/app.py:506
+#: src/stimmo/web/app.py:509
 msgid "Ask high"
 msgstr ""
 
-#: src/stimmo/web/app.py:507
+#: src/stimmo/web/app.py:513
 msgid "OMI high"
 msgstr ""
 
-#: src/stimmo/web/labels.py:29
+#: src/stimmo/web/labels.py:31
 msgid "yes"
 msgstr ""
 
-#: src/stimmo/web/labels.py:29
+#: src/stimmo/web/labels.py:31
 msgid "no"
 msgstr ""
 
-#: src/stimmo/web/labels.py:30
+#: src/stimmo/web/labels.py:32
 #, python-format
 msgid "Floor %(floor)s, lift: %(lift)s"
 msgstr ""
 
-#: src/stimmo/web/labels.py:35
+#: src/stimmo/web/labels.py:37
 #, python-format
 msgid "Size (%(surface_m2)s m²)"
 msgstr ""
 
-#: src/stimmo/web/labels.py:39
+#: src/stimmo/web/labels.py:41
 #, python-format
 msgid "Interior condition (%(condition)s)"
 msgstr ""
 
-#: src/stimmo/web/labels.py:43
+#: src/stimmo/web/labels.py:45
 #, python-format
 msgid "Energy class %(cls)s"
 msgstr ""
 
-#: src/stimmo/web/labels.py:45
+#: src/stimmo/web/labels.py:47
 #, python-format
 msgid "Outdoor (%(outdoor)s)"
 msgstr ""
 
-#: src/stimmo/web/labels.py:47
+#: src/stimmo/web/labels.py:49
 #, python-format
 msgid "Construction era (%(era)s)"
 msgstr ""
 
-#: src/stimmo/web/labels.py:49
+#: src/stimmo/web/labels.py:51
 #, python-format
 msgid "Orientation (%(orientation)s)"
 msgstr ""
 
-#: src/stimmo/web/labels.py:53 src/stimmo/web/templates/form.html:181
+#: src/stimmo/web/labels.py:55 src/stimmo/web/templates/form.html:181
 msgid "Second bathroom"
 msgstr ""
 
-#: src/stimmo/web/labels.py:55
+#: src/stimmo/web/labels.py:57
 msgid "Amenities (OSM)"
 msgstr ""
 
-#: src/stimmo/web/labels.py:59
+#: src/stimmo/web/labels.py:61
 #, python-format
 msgid "Clamp (%(raw)s → %(clamped)s)"
 msgstr ""
@@ -1163,11 +1163,10 @@ msgid "What this estimate does not cover."
 msgstr ""
 
 #: src/stimmo/web/templates/result.html:273
-#, python-format
 msgid ""
 "Spese condominiali, extraordinary works already deliberated, piano nobile"
 " premium, street noise, view, cortile vs giardino — these can drive ±5–10"
-" % inside the same building and are invisible to OMI."
+" % within the same building and are invisible to OMI."
 msgstr ""
 
 #: src/stimmo/web/templates/result.html:278
@@ -1222,4 +1221,13 @@ msgid ""
 "a normal-market premium from listing to closing. ±5 % around it is "
 "\"fair\"."
 msgstr ""
+
+#~ msgid ""
+#~ "Spese condominiali, extraordinary works "
+#~ "already deliberated, piano nobile premium, "
+#~ "street noise, view, cortile vs giardino"
+#~ " — these can drive ±5–10 % "
+#~ "inside the same building and are "
+#~ "invisible to OMI."
+#~ msgstr ""
 

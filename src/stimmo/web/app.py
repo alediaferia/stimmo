@@ -66,6 +66,7 @@ templates.env.globals["render_label"] = _labels.render
 
 def _fmt_num(n: float) -> str:
     from babel.numbers import format_decimal
+
     return format_decimal(round(n), format="#,##0", locale=_current_locale.get())
 
 
@@ -109,6 +110,7 @@ app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 # ---------------------------------------------------------------------------
 # Locale-neutral API endpoints
 # ---------------------------------------------------------------------------
+
 
 @lru_cache(maxsize=1)
 def _zones_geojson_payload() -> str:
@@ -178,6 +180,7 @@ def zones_geojson() -> Response:
 # ---------------------------------------------------------------------------
 # Locale negotiation for entry-point redirects
 # ---------------------------------------------------------------------------
+
 
 @app.get("/")
 def root_redirect(request: Request) -> RedirectResponse:
@@ -279,15 +282,11 @@ def _form_context(
         "omi_conditions": [e.value for e in OmiCondition],
         "fine_conditions": [e.value for e in FineCondition],
         "energy_classes": ["", *[e.value for e in EnergyClass]],
-        "outdoors": [
-            {"value": e.value, "label": OUTDOOR_LABELS[e]} for e in Outdoor
-        ],
+        "outdoors": [{"value": e.value, "label": OUTDOOR_LABELS[e]} for e in Outdoor],
         "construction_eras": [
             {"value": e.value, "label": CONSTRUCTION_ERA_LABELS[e]} for e in ConstructionEra
         ],
-        "orientations": [
-            {"value": e.value, "label": ORIENTATION_LABELS[e]} for e in Orientation
-        ],
+        "orientations": [{"value": e.value, "label": ORIENTATION_LABELS[e]} for e in Orientation],
         "defaults": defaults,
         "import_source": import_source,
         "omi_semester": omi.semester(),
@@ -298,10 +297,14 @@ def _form_context(
 @app.get("/{lang}/about", response_class=HTMLResponse)
 def about(request: Request, lang: str = FPath(pattern=_LANG_RE)) -> HTMLResponse:
     _set_locale(request, lang)
-    return _tpl(request, "about.html", {
-        "semester": omi.semester(),
-        "zone_count": len(omi.available_zones()),
-    })
+    return _tpl(
+        request,
+        "about.html",
+        {
+            "semester": omi.semester(),
+            "zone_count": len(omi.available_zones()),
+        },
+    )
 
 
 @app.get("/{lang}/", response_class=HTMLResponse)
@@ -392,9 +395,7 @@ def import_post(
 
 
 @app.get("/{lang}/bookmarklet", response_class=HTMLResponse)
-def bookmarklet_page(
-    request: Request, lang: str = FPath(pattern=_LANG_RE)
-) -> HTMLResponse:
+def bookmarklet_page(request: Request, lang: str = FPath(pattern=_LANG_RE)) -> HTMLResponse:
     _set_locale(request, lang)
     js_path = STATIC_DIR / "bookmarklet.js"
     if not js_path.exists():
@@ -505,27 +506,32 @@ def estimate(
             {"label": _("Ask low"), "value": est.ask_range_low_eur, "x": _x(est.ask_range_low_eur)},
             {"label": _("Ask mid"), "value": est.ask_range_mid_eur, "x": _x(est.ask_range_mid_eur)},
             {
-                "label": _("Ask high"), "value": est.ask_range_high_eur, 
-                "x": _x(est.ask_range_high_eur)
+                "label": _("Ask high"),
+                "value": est.ask_range_high_eur,
+                "x": _x(est.ask_range_high_eur),
             },
             {"label": _("OMI high"), "value": est.range_high_eur, "x": _x(est.range_high_eur)},
         ],
         "asking_x": _x(asking),
     }
 
-    return _tpl(request, "result.html", {
-        "p": prop,
-        "est": est,
-        "lat": lat,
-        "lon": lon,
-        "history_series": series,
-        "ntn_total": ntn_total,
-        "bucket_label": bucket_label,
-        "bucket_by_q": bucket_by_q,
-        "amenity_warning": amenity_warning,
-        "semester_months_old": _semester_months_old(est.omi_quote.semester),
-        "gauge": gauge,
-    })
+    return _tpl(
+        request,
+        "result.html",
+        {
+            "p": prop,
+            "est": est,
+            "lat": lat,
+            "lon": lon,
+            "history_series": series,
+            "ntn_total": ntn_total,
+            "bucket_label": bucket_label,
+            "bucket_by_q": bucket_by_q,
+            "amenity_warning": amenity_warning,
+            "semester_months_old": _semester_months_old(est.omi_quote.semester),
+            "gauge": gauge,
+        },
+    )
 
 
 def _error(request: Request, errors: list[str]) -> HTMLResponse:

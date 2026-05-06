@@ -176,9 +176,7 @@ def compute(
         )
 
     if p.has_second_bathroom and p.surface_m2 >= 75:
-        deltas.append(
-            AdjustmentBreakdown(code="second_bathroom", params={}, delta_pct=+5.0)
-        )
+        deltas.append(AdjustmentBreakdown(code="second_bathroom", params={}, delta_pct=+5.0))
 
     if amenity.score_pct:
         deltas.append(
