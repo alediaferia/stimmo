@@ -33,12 +33,12 @@ jobs:
       - run: find src/stimmo/locale -name "*.pot" -o -name "*.po" | xargs sed -i '/^"POT-Creation-Date/d'
       - run: uv run pybabel update -i src/stimmo/locale/messages.pot -d src/stimmo/locale
       - run: find src/stimmo/locale -name "*.po" | xargs sed -i '/^"POT-Creation-Date/d'
-      - run: uv run pybabel compile -d src/stimmo/locale
       - run: |
-          git diff --exit-code src/stimmo/locale/ || {
+          git diff --exit-code -- $(find src/stimmo/locale -name "*.pot" -o -name "*.po") || {
             echo "Translation files are out of date. Run pybabel extract/update/compile and commit the result."
             exit 1
           }
+      - run: uv run pybabel compile -d src/stimmo/locale
 
   gitleaks:
     runs-on: ubuntu-latest
