@@ -30,7 +30,9 @@ jobs:
           enable-cache: true
       - run: uv sync --all-extras --dev
       - run: uv run pybabel extract -F babel.cfg -o src/stimmo/locale/messages.pot .
+      - run: find src/stimmo/locale -name "*.pot" -o -name "*.po" | xargs sed -i '/^"POT-Creation-Date/d'
       - run: uv run pybabel update -i src/stimmo/locale/messages.pot -d src/stimmo/locale
+      - run: find src/stimmo/locale -name "*.po" | xargs sed -i '/^"POT-Creation-Date/d'
       - run: uv run pybabel compile -d src/stimmo/locale
       - run: |
           git diff --exit-code src/stimmo/locale/ || {

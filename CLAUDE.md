@@ -13,7 +13,9 @@ uv run python scripts/refresh_omi.py            # refresh bundled OMI assets
 
 # i18n catalog management (run from repo root)
 uv run pybabel extract -F babel.cfg -o src/stimmo/locale/messages.pot .
+find src/stimmo/locale -name "*.pot" -o -name "*.po" | xargs sed -i.bak '/^"POT-Creation-Date/d' && find src/stimmo/locale -name "*.bak" -delete
 uv run pybabel update -i src/stimmo/locale/messages.pot -d src/stimmo/locale
+find src/stimmo/locale -name "*.po" | xargs sed -i.bak '/^"POT-Creation-Date/d' && find src/stimmo/locale -name "*.bak" -delete
 uv run pybabel compile -d src/stimmo/locale
 
 # AI-assisted translation (requires OPENROUTER_API_KEY)
