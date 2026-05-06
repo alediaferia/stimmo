@@ -1286,11 +1286,10 @@ msgid "What this estimate does not cover."
 msgstr "Cosa non copre questa stima."
 
 #: src/stimmo/web/templates/result.html:273
-#, python-format
 msgid ""
 "Spese condominiali, extraordinary works already deliberated, piano nobile"
 " premium, street noise, view, cortile vs giardino — these can drive ±5–10"
-" % inside the same building and are invisible to OMI."
+" % within the same building and are invisible to OMI."
 msgstr ""
 "Spese condominiali, lavori straordinari già deliberati, piano nobile "
 "premium, rumore stradale, vista, cortile vs giardino — questi possono "

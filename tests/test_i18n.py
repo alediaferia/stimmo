@@ -1,10 +1,7 @@
 from __future__ import annotations
 
-import pytest
-
 from stimmo.i18n import (
     fmt_eur,
-    fmt_pct,
     fmt_semester,
     gettext,
     gettext_lazy,

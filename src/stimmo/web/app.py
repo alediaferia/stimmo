@@ -10,7 +10,8 @@ from importlib.metadata import version as _pkg_version
 from pathlib import Path
 from urllib.parse import urlparse
 
-from fastapi import FastAPI, Form, Path as FPath, Request
+from fastapi import FastAPI, Form, Request
+from fastapi import Path as FPath
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -25,9 +26,11 @@ from stimmo.i18n import (
     _current_locale,
     fmt_eur,
     fmt_pct,
-    gettext as _,
     negotiate_locale,
     ngettext,
+)
+from stimmo.i18n import (
+    gettext as _,
 )
 from stimmo.models import (
     CONSTRUCTION_ERA_LABELS,
@@ -223,9 +226,7 @@ def set_lang(
 
     # Reject off-origin next paths.
     parsed = urlparse(next)
-    if parsed.netloc or parsed.scheme:
-        next = f"/{lang}/"
-    elif not next.startswith("/"):
+    if parsed.netloc or parsed.scheme or not next.startswith("/"):
         next = f"/{lang}/"
 
     response = RedirectResponse(next, status_code=302)
@@ -503,7 +504,10 @@ def estimate(
             {"label": _("OMI low"), "value": est.range_low_eur, "x": _x(est.range_low_eur)},
             {"label": _("Ask low"), "value": est.ask_range_low_eur, "x": _x(est.ask_range_low_eur)},
             {"label": _("Ask mid"), "value": est.ask_range_mid_eur, "x": _x(est.ask_range_mid_eur)},
-            {"label": _("Ask high"), "value": est.ask_range_high_eur, "x": _x(est.ask_range_high_eur)},
+            {
+                "label": _("Ask high"), "value": est.ask_range_high_eur, 
+                "x": _x(est.ask_range_high_eur)
+            },
             {"label": _("OMI high"), "value": est.range_high_eur, "x": _x(est.range_high_eur)},
         ],
         "asking_x": _x(asking),

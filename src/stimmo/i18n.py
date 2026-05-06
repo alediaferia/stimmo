@@ -6,10 +6,10 @@ Locale codes used internally: 'it_IT', 'en_US'. URL lang slugs: 'it', 'en'.
 from __future__ import annotations
 
 import gettext as _gettext
+from collections.abc import Generator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from pathlib import Path
-from typing import Generator
 
 from babel.numbers import format_decimal
 

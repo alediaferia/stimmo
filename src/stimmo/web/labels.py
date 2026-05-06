@@ -5,7 +5,8 @@ user's current locale (read from the active ContextVar in stimmo.i18n).
 """
 from __future__ import annotations
 
-from stimmo.i18n import gettext as _, use_locale
+from stimmo.i18n import gettext as _
+from stimmo.i18n import use_locale
 from stimmo.models import AdjustmentBreakdown
 
 

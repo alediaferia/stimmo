@@ -178,14 +178,14 @@ def main() -> None:
         except httpx.HTTPStatusError as exc:
             print(f"HTTP {exc.response.status_code}: {exc.response.text[:200]}", file=sys.stderr)
             sys.exit(1)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             print(f"error: {exc}", file=sys.stderr)
             sys.exit(1)
 
         # Apply translations back to catalog messages
         for msg in batch_msgs:
             key = str(msg.id)
-            if key in translations and translations[key]:
+            if translations.get(key):
                 msg.string = translations[key]
                 translated_count += 1
             else:
