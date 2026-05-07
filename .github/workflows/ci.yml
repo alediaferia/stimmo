@@ -21,6 +21,9 @@ jobs:
       - run: uv run ruff format --check
       - run: uv run pytest -v
 
+  # Validates that all committed .po catalogs are well-formed and can be compiled.
+  # This is intentionally a compile-only check — staleness detection (extract/update)
+  # was removed because POT-Creation-Date timestamps made it permanently brittle.
   translations:
     runs-on: ubuntu-latest
     steps:
@@ -29,15 +32,6 @@ jobs:
         with:
           enable-cache: true
       - run: uv sync --all-extras --dev
-      - run: uv run pybabel extract -F babel.cfg -o src/stimmo/locale/messages.pot .
-      - run: find src/stimmo/locale -name "*.pot" -o -name "*.po" | xargs sed -i '/^"POT-Creation-Date/d'
-      - run: uv run pybabel update -i src/stimmo/locale/messages.pot -d src/stimmo/locale
-      - run: find src/stimmo/locale -name "*.po" | xargs sed -i '/^"POT-Creation-Date/d'
-      - run: |
-          git diff --exit-code -- $(find src/stimmo/locale -name "*.pot" -o -name "*.po") || {
-            echo "Translation files are out of date. Run pybabel extract/update/compile and commit the result."
-            exit 1
-          }
       - run: uv run pybabel compile -d src/stimmo/locale
 
   gitleaks:

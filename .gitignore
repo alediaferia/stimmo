@@ -6,6 +6,9 @@ dist/
 wheels/
 *.egg-info
 
+# Compiled Babel message catalogs — generated artifacts, not committed
+src/stimmo/locale/**/*.mo
+
 # Virtual environments
 .venv
 
