@@ -62,4 +62,6 @@ All routes are prefixed `/{lang}/` (`it` or `en`). Locale negotiation order: `st
 - **`web/labels.py`** — renders `AdjustmentBreakdown` (structured `code`/`params`) to translated strings. `AdjustmentBreakdown.name` no longer exists; use `.code` to identify entries.
 - **Bookmarklet JS** — `__STIMMO_LANG__` and `__STIMMO_ALERT__` placeholders are substituted server-side in the bookmarklet route.
 
-Adding or changing UI strings: edit the template, run `pybabel extract` + `pybabel update`, add Italian msgstr in `it_IT/LC_MESSAGES/messages.po`, run `pybabel compile`.
+Adding or changing UI strings: edit the template, run `pybabel extract` + `pybabel update`, then run `scripts/translate_po.py --locale it_IT` to fill in Italian translations (never write `msgstr` values by hand), then run `pybabel compile`.
+
+**Translation invariant — never hand-write `msgstr` values.** All Italian translations must be produced by `scripts/translate_po.py`. Writing Italian text directly into `.po` files bypasses the approved translation pipeline and must not happen, even for short or "obvious" strings.

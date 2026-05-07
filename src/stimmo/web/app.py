@@ -34,12 +34,14 @@ from stimmo.i18n import (
 )
 from stimmo.models import (
     CONSTRUCTION_ERA_LABELS,
+    EXPOSURE_LABELS,
     ORIENTATION_LABELS,
     OUTDOOR_LABELS,
     PROPERTY_TYPE_HINTS,
     AmenityScore,
     ConstructionEra,
     EnergyClass,
+    Exposure,
     FineCondition,
     OmiCondition,
     Orientation,
@@ -48,6 +50,7 @@ from stimmo.models import (
     PropertyType,
 )
 from stimmo.valuation import engine
+from stimmo.valuation.verdict import HIGH_TOL
 from stimmo.web import labels as _labels
 
 TEMPLATES_DIR = Path(__file__).parent / "templates"
@@ -271,6 +274,8 @@ def _form_context(
         "asking_price_eur": "",
         "address": "",
         "energy_class": "",
+        "exposure": Exposure.STREET.value,
+        "room_count": "",
     }
     if defaults_override:
         defaults.update({k: v for k, v in defaults_override.items() if v is not None})
@@ -287,6 +292,7 @@ def _form_context(
             {"value": e.value, "label": CONSTRUCTION_ERA_LABELS[e]} for e in ConstructionEra
         ],
         "orientations": [{"value": e.value, "label": ORIENTATION_LABELS[e]} for e in Orientation],
+        "exposures": [{"value": e.value, "label": EXPOSURE_LABELS[e]} for e in Exposure],
         "defaults": defaults,
         "import_source": import_source,
         "omi_semester": omi.semester(),
@@ -429,7 +435,9 @@ def estimate(
     has_box: str = Form("off"),
     construction_era: str = Form(ConstructionEra.POSTWAR_BOOM.value),
     orientation: str = Form(Orientation.MIXED.value),
+    exposure: str = Form(Exposure.STREET.value),
     has_second_bathroom: str = Form("off"),
+    room_count: int | None = Form(None),
     asking_price_eur: float = Form(...),
 ) -> HTMLResponse:
     _set_locale(request, lang)
@@ -449,7 +457,9 @@ def estimate(
             has_box=has_box == "on",
             construction_era=ConstructionEra(construction_era),
             orientation=Orientation(orientation),
+            exposure=Exposure(exposure),
             has_second_bathroom=has_second_bathroom == "on",
+            room_count=room_count if room_count and room_count > 0 else None,
             asking_price_eur=asking_price_eur,
         )
     except (ValidationError, ValueError) as e:
@@ -486,8 +496,9 @@ def estimate(
     bucket_by_q = {p_.quarter: p_.ntn for p_ in ntn_bucket}
 
     asking = prop.asking_price_eur
+    verdict_high = est.ask_range_high_eur * HIGH_TOL
     g_lo = min(est.ask_range_low_eur, est.range_low_eur) * 0.92
-    g_hi = max(est.ask_range_high_eur, asking, est.range_high_eur) * 1.06
+    g_hi = max(verdict_high, asking, est.range_high_eur) * 1.06
 
     def _x(v: float) -> float:
         return (v - g_lo) / (g_hi - g_lo) * 100
@@ -499,18 +510,14 @@ def estimate(
         },
         "ask_band": {
             "left": _x(est.ask_range_low_eur),
-            "width": _x(est.ask_range_high_eur) - _x(est.ask_range_low_eur),
+            "width": _x(verdict_high) - _x(est.ask_range_low_eur),
         },
         "ticks": [
             {"label": _("OMI low"), "value": est.range_low_eur, "x": _x(est.range_low_eur)},
             {"label": _("Ask low"), "value": est.ask_range_low_eur, "x": _x(est.ask_range_low_eur)},
             {"label": _("Ask mid"), "value": est.ask_range_mid_eur, "x": _x(est.ask_range_mid_eur)},
-            {
-                "label": _("Ask high"),
-                "value": est.ask_range_high_eur,
-                "x": _x(est.ask_range_high_eur),
-            },
             {"label": _("OMI high"), "value": est.range_high_eur, "x": _x(est.range_high_eur)},
+            {"label": _("Ask high"), "value": verdict_high, "x": _x(verdict_high)},
         ],
         "asking_x": _x(asking),
     }

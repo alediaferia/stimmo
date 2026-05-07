@@ -5,6 +5,7 @@ import pytest
 from stimmo.models import (
     AmenityScore,
     ConstructionEra,
+    Exposure,
     FineCondition,
     OmiCondition,
     OmiQuote,
@@ -107,3 +108,57 @@ def test_box_shifts_range_up(quote):
     assert box_est.range_mid_eur == pytest.approx(
         base_est.range_mid_eur + expected_box_eur, rel=1e-6
     )
+
+
+def test_exposure_internal_courtyard_adds_breakdown(quote):
+    p = _prop(exposure=Exposure.INTERNAL_COURTYARD)
+    est = engine.estimate(p, quote, AmenityScore())
+    codes = [b.code for b in est.breakdown]
+    assert "exposure" in codes
+    exp_b = next(b for b in est.breakdown if b.code == "exposure")
+    assert exp_b.delta_pct == pytest.approx(adjustments.EXPOSURE_DELTA[Exposure.INTERNAL_COURTYARD])
+
+
+def test_exposure_street_no_breakdown(quote):
+    p = _prop(exposure=Exposure.STREET)
+    est = engine.estimate(p, quote, AmenityScore())
+    assert all(b.code != "exposure" for b in est.breakdown)
+
+
+def test_room_density_cramped_4_locali_100m2(quote):
+    # 4 locali on 100 m² → 25 m²/locale → ≥22 → no penalty
+    p = _prop(surface_m2=100, room_count=4)
+    est = engine.estimate(p, quote, AmenityScore())
+    assert all(b.code != "room_density" for b in est.breakdown)
+
+
+def test_room_density_cramped_4_locali_76m2(quote):
+    # 4 locali on 76 m² → 19 m²/locale → 18–22 → -2%
+    p = _prop(surface_m2=76, room_count=4)
+    est = engine.estimate(p, quote, AmenityScore())
+    rd_rows = [b for b in est.breakdown if b.code == "room_density"]
+    assert len(rd_rows) == 1
+    assert rd_rows[0].delta_pct == pytest.approx(-2.0)
+
+
+def test_room_density_very_cramped_5_locali_80m2(quote):
+    # 5 locali on 80 m² → 16 m²/locale → <18 → -4%
+    p = _prop(surface_m2=80, room_count=5)
+    est = engine.estimate(p, quote, AmenityScore())
+    rd_rows = [b for b in est.breakdown if b.code == "room_density"]
+    assert len(rd_rows) == 1
+    assert rd_rows[0].delta_pct == pytest.approx(-4.0)
+
+
+def test_room_density_bilocale_ignored(quote):
+    # 2 locali → not enough rooms to trigger the penalty
+    p = _prop(room_count=2)
+    est = engine.estimate(p, quote, AmenityScore())
+    assert all(b.code != "room_density" for b in est.breakdown)
+
+
+def test_room_count_none_no_breakdown(quote):
+    # backwards compatibility: no room_count → no room_density row
+    p = _prop()
+    est = engine.estimate(p, quote, AmenityScore())
+    assert all(b.code != "room_density" for b in est.breakdown)

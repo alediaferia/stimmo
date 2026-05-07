@@ -11,7 +11,7 @@
     </div>
     <h1>{% trans %}Report{% endtrans %} · <em>{{ p.address.split(',')[0] }}</em></h1>
     <p class="sub">
-      {{ p.surface_m2 }} m² · {{ p.property_type.value.lower() }} · {% trans %}floor{% endtrans %} {{ p.floor }} {% trans %}of{% endtrans %} {{ p.total_floors }}{% if p.has_lift %} · {% trans %}with lift{% endtrans %}{% endif %}{% if p.has_box %} · box auto{% endif %}
+      {{ p.surface_m2 }} m² · {{ p.property_type.value.lower() }}{% if p.room_count %} · {{ p.room_count }} {% trans %}locali{% endtrans %} · {{ "%.0f" | format(p.surface_m2 / p.room_count) }} m²/locale{% endif %} · {% trans %}floor{% endtrans %} {{ p.floor }} {% trans %}of{% endtrans %} {{ p.total_floors }}{% if p.has_lift %} · {% trans %}with lift{% endtrans %}{% endif %}{% if p.has_box %} · box auto{% endif %}
     </p>
   </div>
   <div class="meta">
@@ -73,12 +73,12 @@
     </div>
     <div class="legend">
       <span><span class="swatch omi"></span> {% trans %}OMI rogito band (€/m² × surface + box){% endtrans %}</span>
-      <span><span class="swatch ask"></span> {% trans %}Typical Milano ask band{% endtrans %} (+{{ est.ask_premium_pct | int }} %)</span>
+      <span><span class="swatch ask"></span> {% trans %}Typical Milano ask band{% endtrans %} (+{{ est.ask_premium_pct | int }} % ± 5 %)</span>
       <span><span class="swatch you"></span> {% trans %}Asking price{% endtrans %}</span>
     </div>
   </div>
 
-  <div class="verdict-stats">
+  <div class="verdict-stats" style="grid-template-columns:repeat(4,auto)">
     <div class="vstat">
       <div class="lbl">{% trans %}Δ vs typical ask mid{% endtrans %}</div>
       <div class="val {% if est.asking_vs_ask_mid_pct > 0 %}delta-up{% elif est.asking_vs_ask_mid_pct < 0 %}delta-down{% endif %}">
@@ -86,8 +86,14 @@
       </div>
     </div>
     <div class="vstat">
-      <div class="lbl">{% trans %}Adjusted €/m²{% endtrans %}</div>
+      <div class="lbl">
+        <abbr class="gloss" title="{% trans %}OMI mid €/m² × compound multiplier — the per-m² price stimmo estimates this property is worth based on the OMI band and your inputs. Compare against the asking €/m².{% endtrans %}">{% trans %}Adjusted €/m²{% endtrans %}</abbr>
+      </div>
       <div class="val mono">{{ est.adjusted_eur_m2_mid | num }}</div>
+    </div>
+    <div class="vstat">
+      <div class="lbl">{% trans %}Asking €/m²{% endtrans %}</div>
+      <div class="val mono">{{ (p.asking_price_eur / p.surface_m2) | num }}</div>
     </div>
     <div class="vstat">
       <div class="lbl">{% trans %}Multiplier on OMI band{% endtrans %}</div>
@@ -207,6 +213,8 @@
         <dd class="mono">€ {{ est.base_eur_m2_min | num }} – {{ est.base_eur_m2_max | num }} / m²</dd>
         <dt>{% trans %}Adjusted{% endtrans %}</dt>
         <dd class="mono">€ {{ est.adjusted_eur_m2_min | num }} – {{ est.adjusted_eur_m2_max | num }} / m² · ×{{ "%.3f" | format(est.multiplier) }}</dd>
+        <dt>{% trans %}Asking €/m²{% endtrans %}</dt>
+        <dd class="mono">€ {{ (p.asking_price_eur / p.surface_m2) | num }} / m²</dd>
         <dt>{% trans %}Surface{% endtrans %}</dt>
         <dd class="mono">{{ p.surface_m2 }} m²</dd>
         <dt>{% trans %}OMI rogito range{% endtrans %}</dt>
@@ -231,42 +239,53 @@
         <h2 class="doc-title">{% trans %}Amenities{% endtrans %} · 500 m</h2>
         <span class="doc-eyebrow">OpenStreetMap · Overpass</span>
       </div>
+{% set metro_names = est.amenity_score.items_within_500m | selectattr("kind", "eq", "metro") | map(attribute="name") | select | list %}
+{% set tram_names = est.amenity_score.items_within_500m | selectattr("kind", "eq", "tram") | map(attribute="name") | select | list %}
+{% set park_names = est.amenity_score.items_within_500m | selectattr("kind", "eq", "park") | map(attribute="name") | select | list %}
+{% set market_names = est.amenity_score.items_within_500m | selectattr("kind", "eq", "supermarket") | map(attribute="name") | select | list %}
+{% set school_names = est.amenity_score.items_within_500m | selectattr("kind", "eq", "school") | map(attribute="name") | select | list %}
+{% set pharmacy_names = est.amenity_score.items_within_500m | selectattr("kind", "eq", "pharmacy") | map(attribute="name") | select | list %}
       <div class="amen-grid">
         <div class="amen">
           <div class="nm">{% trans %}Metro{% endtrans %}</div>
           <div class="v">{{ est.amenity_score.metro_within_500m }}</div>
-          <div class="far">{% trans %}within 500 m{% endtrans %}</div>
+          <div class="far">{% if metro_names %}{{ metro_names[:2] | join(" · ") }}{% else %}{% trans %}within 500 m{% endtrans %}{% endif %}</div>
         </div>
         <div class="amen">
           <div class="nm">{% trans %}Tram{% endtrans %}</div>
           <div class="v">{{ est.amenity_score.tram_within_500m }}</div>
-          <div class="far">{% trans %}within 500 m{% endtrans %}</div>
+          <div class="far">{% if tram_names %}{{ tram_names[:2] | join(" · ") }}{% else %}{% trans %}within 500 m{% endtrans %}{% endif %}</div>
         </div>
         <div class="amen">
           <div class="nm">{% trans %}Parks{% endtrans %}</div>
           <div class="v">{{ est.amenity_score.parks_large_within_500m }}</div>
-          <div class="far">{% trans %}within 500 m{% endtrans %}</div>
+          <div class="far">{% if park_names %}{{ park_names[:2] | join(" · ") }}{% else %}{% trans %}within 500 m{% endtrans %}{% endif %}</div>
         </div>
         <div class="amen">
           <div class="nm">{% trans %}Markets{% endtrans %}</div>
           <div class="v">{{ est.amenity_score.supermarkets_within_500m }}</div>
-          <div class="far">{% trans %}within 500 m{% endtrans %}</div>
+          <div class="far">{% if market_names %}{{ market_names[:2] | join(" · ") }}{% else %}{% trans %}within 500 m{% endtrans %}{% endif %}</div>
         </div>
         <div class="amen">
           <div class="nm">{% trans %}Schools{% endtrans %}</div>
           <div class="v">{{ est.amenity_score.schools_within_500m }}</div>
-          <div class="far">{% trans %}within 500 m{% endtrans %}</div>
+          <div class="far">{% if school_names %}{{ school_names[:2] | join(" · ") }}{% else %}{% trans %}within 500 m{% endtrans %}{% endif %}</div>
         </div>
         <div class="amen">
           <div class="nm">{% trans %}Pharmacies{% endtrans %}</div>
           <div class="v">{{ est.amenity_score.pharmacies_within_500m }}</div>
-          <div class="far">{% trans %}within 500 m{% endtrans %}</div>
+          <div class="far">{% if pharmacy_names %}{{ pharmacy_names[:2] | join(" · ") }}{% else %}{% trans %}within 500 m{% endtrans %}{% endif %}</div>
         </div>
       </div>
       <div style="margin-top:12px;display:flex;justify-content:space-between;font-family:var(--mono);font-size:12px;color:var(--ink-muted)">
         <span>{% trans %}Combined amenity score{% endtrans %}</span>
         <span style="color:var(--good)">+{{ "%.2f" | format(est.amenity_score.score_pct) }} %</span>
       </div>
+      {% if est.amenity_score.items_within_500m %}
+      <div class="map-wrap" style="margin-top:14px">
+        <div id="amenity-map" style="height:280px"></div>
+      </div>
+      {% endif %}
     </div>
 
     <div class="note" style="margin-top:18px">
@@ -305,4 +324,47 @@
   </div>
 </div>
 
+{% endblock %}
+
+{% block scripts %}
+{% if est.amenity_score.items_within_500m %}
+<script>
+(function () {
+  const map = L.map('amenity-map', { zoomControl: true, scrollWheelZoom: false, attributionControl: false })
+    .setView([{{ lat }}, {{ lon }}], 15);
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
+    subdomains: 'abcd', maxZoom: 19,
+  }).addTo(map);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
+    subdomains: 'abcd', maxZoom: 19, opacity: 0.85,
+  }).addTo(map);
+
+  L.circleMarker([{{ lat }}, {{ lon }}], {
+    radius: 8, color: 'oklch(0.22 0.012 250)', weight: 2,
+    fillColor: 'oklch(0.56 0.13 38)', fillOpacity: 1,
+  }).addTo(map).bindTooltip('{% trans %}Property{% endtrans %}', { permanent: false });
+
+  const kindColors = {
+    metro:       { color: '#c0392b', fill: '#e74c3c' },
+    tram:        { color: '#8e44ad', fill: '#9b59b6' },
+    park:        { color: '#1e8449', fill: '#27ae60' },
+    supermarket: { color: '#d35400', fill: '#e67e22' },
+    school:      { color: '#1a5276', fill: '#2980b9' },
+    pharmacy:    { color: '#76448a', fill: '#a569bd' },
+  };
+
+  {% for item in est.amenity_score.items_within_500m %}
+  (function() {
+    var k = {{ item.kind | tojson }};
+    var c = kindColors[k] || { color: '#555', fill: '#888' };
+    L.circleMarker([{{ item.lat }}, {{ item.lon }}], {
+      radius: 6, color: c.color, weight: 1.5,
+      fillColor: c.fill, fillOpacity: 0.85,
+    }).addTo(map).bindTooltip({{ (item.name or item.kind) | tojson }}, { permanent: false });
+  })();
+  {% endfor %}
+})();
+</script>
+{% endif %}
 {% endblock %}

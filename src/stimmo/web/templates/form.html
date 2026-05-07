@@ -155,6 +155,23 @@
           </select>
         </div>
 
+        <div class="field col-6">
+          <label for="exposure">{% trans %}Exposure{% endtrans %}</label>
+          <select class="select" id="exposure" name="exposure">
+            {% for exp in exposures %}
+            <option value="{{ exp.value }}" {% if exp.value == defaults.exposure %}selected{% endif %}>{{ exp.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field col-6">
+          <label for="room_count">{% trans %}Rooms (locali){% endtrans %}</label>
+          <input class="input numeric" id="room_count" name="room_count" type="number"
+            min="1" max="20" value="{{ defaults.room_count or '' }}"
+            placeholder="{% trans %}optional{% endtrans %}">
+          <span class="hint">{% trans %}1 = monolocale · 2 = bilocale · 3 = trilocale … (optional) — cramped-layout penalty for 3+ locali: −2 % below 22 m²/locale, −4 % below 18 m²/locale{% endtrans %}</span>
+        </div>
+
         <div class="field col-4">
           <label>&nbsp;</label>
           <label class="check">

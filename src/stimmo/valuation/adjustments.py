@@ -10,6 +10,7 @@ from stimmo.models import (
     AmenityScore,
     ConstructionEra,
     EnergyClass,
+    Exposure,
     FineCondition,
     OmiQuote,
     Orientation,
@@ -59,6 +60,13 @@ ORIENTATION_DELTA: dict[Orientation, float] = {
     Orientation.NORTH: -6.0,
 }
 
+# Quiet courtyard = less noise/more privacy; mixed = partial benefit; street = baseline.
+EXPOSURE_DELTA: dict[Exposure, float] = {
+    Exposure.STREET: 0.0,
+    Exposure.MIXED: +0.5,
+    Exposure.INTERNAL_COURTYARD: +1.5,
+}
+
 # Box auto value is zone-relative: 18 m² equivalent on the OMI mid price,
 # clamped to a realistic range across Milano zones.
 BOX_SURFACE_EQUIV_M2 = 18
@@ -68,6 +76,17 @@ BOX_EUR_MAX = 60_000.0
 # Total multiplier is clamped to this band to avoid runaway combinations.
 MIN_MULTIPLIER = 0.70
 MAX_MULTIPLIER = 1.30
+
+
+def _room_density_delta(p: Property) -> float:
+    if p.room_count is None or p.room_count < 3:
+        return 0.0
+    m2_per_locale = p.surface_m2 / p.room_count
+    if m2_per_locale >= 22:
+        return 0.0
+    if m2_per_locale >= 18:
+        return -2.0
+    return -4.0
 
 
 def _floor_delta(p: Property) -> float:
@@ -172,6 +191,30 @@ def compute(
                 code="orientation",
                 params={"orientation": p.orientation.value},
                 delta_pct=ori,
+            )
+        )
+
+    exp = EXPOSURE_DELTA[p.exposure]
+    if exp:
+        deltas.append(
+            AdjustmentBreakdown(
+                code="exposure",
+                params={"exposure": p.exposure.value},
+                delta_pct=exp,
+            )
+        )
+
+    rd = _room_density_delta(p)
+    if rd:
+        m2_per_locale = p.surface_m2 / p.room_count  # type: ignore[operator]
+        deltas.append(
+            AdjustmentBreakdown(
+                code="room_density",
+                params={
+                    "rooms": p.room_count,
+                    "m2_per_locale": round(m2_per_locale, 1),
+                },
+                delta_pct=rd,
             )
         )
 

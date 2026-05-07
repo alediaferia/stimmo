@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import requests
 
-from stimmo.models import AmenityScore
+from stimmo.models import AmenityItem, AmenityScore
 
 OVERPASS = "https://overpass-api.de/api/interpreter"
 UA = "stimmo/0.1 (Overpass amenity counter)"
@@ -67,6 +67,12 @@ def _classify(el: dict) -> str | None:
     return None
 
 
+def _centroid(geometry: list[dict]) -> tuple[float, float]:
+    lats = [p["lat"] for p in geometry if "lat" in p]
+    lons = [p["lon"] for p in geometry if "lon" in p]
+    return sum(lats) / len(lats), sum(lons) / len(lons)
+
+
 def _count_elements(data: dict) -> dict[str, int]:
     counts: dict[str, int] = {}
     for el in data.get("elements", []):
@@ -74,6 +80,29 @@ def _count_elements(data: dict) -> dict[str, int]:
         if kind:
             counts[kind] = counts.get(kind, 0) + 1
     return counts
+
+
+def _extract_items(data: dict) -> list[AmenityItem]:
+    items: list[AmenityItem] = []
+    for el in data.get("elements", []):
+        kind = _classify(el)
+        if not kind:
+            continue
+        name: str | None = el.get("tags", {}).get("name")
+        if "lat" in el and "lon" in el:
+            lat, lon = el["lat"], el["lon"]
+        elif el.get("geometry"):
+            try:
+                lat, lon = _centroid(el["geometry"])
+            except (ZeroDivisionError, KeyError):
+                continue
+        else:
+            continue
+        items.append(AmenityItem(kind=kind, name=name, lat=lat, lon=lon))  # type: ignore[arg-type]
+    # Metro/tram first (most identity-bearing), then parks, then rest; cap at 12
+    order = ["metro", "tram", "park", "supermarket", "school", "pharmacy"]
+    items.sort(key=lambda x: order.index(x.kind) if x.kind in order else 99)
+    return items[:12]
 
 
 def _score_for_counts(kind: str, count: int, weight: float = 1.0) -> float:
@@ -87,7 +116,8 @@ def _score_for_counts(kind: str, count: int, weight: float = 1.0) -> float:
 
 
 def fetch_amenities(lat: float, lon: float) -> AmenityScore:
-    counts_500 = _count_elements(_query(lat, lon, radius=500))
+    data_500 = _query(lat, lon, radius=500)
+    counts_500 = _count_elements(data_500)
     counts_1000 = _count_elements(_query(lat, lon, radius=1000))
     # Ring = amenities exclusive to the 500–1000 m band
     counts_ring = {k: max(0, counts_1000.get(k, 0) - counts_500.get(k, 0)) for k in SCORE_CAPS}
@@ -112,4 +142,5 @@ def fetch_amenities(lat: float, lon: float) -> AmenityScore:
         schools_500_1000m=counts_ring.get("school", 0),
         pharmacies_500_1000m=counts_ring.get("pharmacy", 0),
         score_pct=round(score, 2),
+        items_within_500m=_extract_items(data_500),
     )

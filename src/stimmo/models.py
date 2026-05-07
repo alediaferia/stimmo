@@ -8,6 +8,19 @@ from pydantic import BaseModel, Field, NonNegativeFloat, PositiveFloat, Positive
 from stimmo.i18n import gettext_lazy as _l
 
 
+class Exposure(StrEnum):
+    STREET = "street"
+    MIXED = "mixed"
+    INTERNAL_COURTYARD = "internal_courtyard"
+
+
+EXPOSURE_LABELS: dict[Exposure, Any] = {
+    Exposure.STREET: _l("Street-facing"),
+    Exposure.MIXED: _l("Mixed (street + courtyard)"),
+    Exposure.INTERNAL_COURTYARD: _l("Internal courtyard"),
+}
+
+
 class PropertyType(StrEnum):
     SIGNORILI = "Abitazioni signorili"
     CIVILI = "Abitazioni civili"
@@ -117,7 +130,9 @@ class Property(BaseModel):
     has_box: bool = False
     construction_era: ConstructionEra
     orientation: Orientation
+    exposure: Exposure = Exposure.STREET
     has_second_bathroom: bool = False
+    room_count: PositiveInt | None = None
     asking_price_eur: PositiveFloat
 
 
@@ -129,6 +144,13 @@ class OmiQuote(BaseModel):
     eur_m2_min: PositiveFloat
     eur_m2_max: PositiveFloat
     semester: str  # e.g. "2018-2"
+
+
+class AmenityItem(BaseModel):
+    kind: Literal["metro", "tram", "park", "supermarket", "school", "pharmacy"]
+    name: str | None = None
+    lat: float
+    lon: float
 
 
 class AmenityScore(BaseModel):
@@ -145,6 +167,7 @@ class AmenityScore(BaseModel):
     schools_500_1000m: int = 0
     pharmacies_500_1000m: int = 0
     score_pct: NonNegativeFloat = 0.0  # additive %, capped
+    items_within_500m: list[AmenityItem] = []
 
 
 class AdjustmentBreakdown(BaseModel):

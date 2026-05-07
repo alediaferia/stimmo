@@ -51,6 +51,13 @@ def _render_impl(b: AdjustmentBreakdown) -> str:
             return _("Orientation (%(orientation)s)") % {
                 "orientation": p.get("orientation", "?"),
             }
+        case "exposure":
+            return _("Exposure (%(exposure)s)") % {"exposure": p.get("exposure", "?")}
+        case "room_density":
+            return _("Cramped layout (%(rooms)s locali · %(m2_per_locale)s m²/locale)") % {
+                "rooms": p.get("rooms", "?"),
+                "m2_per_locale": _fmt_g(p.get("m2_per_locale", "?")),
+            }
         case "second_bathroom":
             return _("Second bathroom")
         case "amenities":
