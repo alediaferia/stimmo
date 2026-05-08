@@ -221,6 +221,24 @@ async def import_redirect_post(request: Request) -> RedirectResponse:
     return RedirectResponse(target, status_code=308)
 
 
+@app.get("/about")
+def about_redirect(request: Request) -> RedirectResponse:
+    cookie = request.cookies.get("stimmo_lang")
+    accept_lang = request.headers.get("Accept-Language")
+    locale = negotiate_locale(cookie, accept_lang)
+    lang = LOCALE_TO_LANG[locale]
+    return RedirectResponse(f"/{lang}/about", status_code=302)
+
+
+@app.get("/bookmarklet")
+def bookmarklet_redirect(request: Request) -> RedirectResponse:
+    cookie = request.cookies.get("stimmo_lang")
+    accept_lang = request.headers.get("Accept-Language")
+    locale = negotiate_locale(cookie, accept_lang)
+    lang = LOCALE_TO_LANG[locale]
+    return RedirectResponse(f"/{lang}/bookmarklet", status_code=302)
+
+
 @app.post("/set-lang")
 def set_lang(
     request: Request,
@@ -539,6 +557,22 @@ def estimate(
             "gauge": gauge,
         },
     )
+
+
+@app.get("/{path:path}")
+def bare_path_redirect(request: Request, path: str) -> RedirectResponse:
+    # Redirect bare paths (e.g. /about) to the negotiated locale prefix.
+    # Paths already carrying a lang prefix reach their own routes first and
+    # never hit this handler.
+    cookie = request.cookies.get("stimmo_lang")
+    accept_lang = request.headers.get("Accept-Language")
+    locale = negotiate_locale(cookie, accept_lang)
+    lang = LOCALE_TO_LANG[locale]
+    qs = request.url.query
+    target = f"/{lang}/{path}"
+    if qs:
+        target += f"?{qs}"
+    return RedirectResponse(target, status_code=302)
 
 
 def _error(request: Request, errors: list[str]) -> HTMLResponse:
