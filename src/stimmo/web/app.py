@@ -10,7 +10,7 @@ from importlib.metadata import version as _pkg_version
 from pathlib import Path
 from urllib.parse import urlparse
 
-from fastapi import FastAPI, Form, Request
+from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi import Path as FPath
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -562,8 +562,12 @@ def estimate(
 @app.get("/{path:path}")
 def bare_path_redirect(request: Request, path: str) -> RedirectResponse:
     # Redirect bare paths (e.g. /about) to the negotiated locale prefix.
-    # Paths already carrying a lang prefix reach their own routes first and
-    # never hit this handler.
+    # Paths already carrying a lang prefix that didn't match a real route
+    # must 404 here — otherwise we'd loop /it/foo → /it/it/foo → ...
+    first = path.split("/", 1)[0]
+    if first in SUPPORTED_LANGS:
+        raise HTTPException(status_code=404)
+
     cookie = request.cookies.get("stimmo_lang")
     accept_lang = request.headers.get("Accept-Language")
     locale = negotiate_locale(cookie, accept_lang)

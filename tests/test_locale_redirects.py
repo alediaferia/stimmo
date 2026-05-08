@@ -46,6 +46,13 @@ class TestBarePathRedirects:
         assert r.status_code == 302
         assert r.headers["location"] in ("/it/nonexistent-page", "/en/nonexistent-page")
 
+    def test_lang_prefixed_unknown_path_404s(self, client: TestClient):
+        # Regression: catch-all must not redirect /it/foo → /it/it/foo.
+        r = client.get("/it/favicon.ico")
+        assert r.status_code == 404
+        r = client.get("/en/nonexistent")
+        assert r.status_code == 404
+
 
 class TestLangCookieNegotiation:
     """stimmo_lang cookie must control the redirect target."""
