@@ -33,7 +33,7 @@
         <span class="doc-eyebrow">§ 01 · {% trans %}Install{% endtrans %}</span>
       </div>
       <div class="bm-pill-wrap">
-        <a class="bm-pill" href="{{ bookmarklet_href | safe }}" draggable="true">
+        <a class="bm-pill" href="{{ bookmarklet_href }}" draggable="true">
           <span class="bm-clip" aria-hidden="true">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="6" y="3" width="12" height="18" rx="1.5"/><path d="M9 3v3h6V3"/>
@@ -115,7 +115,8 @@
         <h2 class="doc-title" style="margin:0">{% trans %}What you'll see{% endtrans %}</h2>
         <span class="doc-eyebrow">Demo</span>
       </div>
-      <div class="bm-browser">
+      <div class="bm-browser" role="button" tabindex="0"
+        onclick="playBmDemo()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();playBmDemo();}">
         <div class="bm-chrome">
           <div class="bm-tl">
             <span class="bm-dot r"></span><span class="bm-dot y"></span><span class="bm-dot g"></span>
@@ -214,5 +215,34 @@ function togglePaste() {
   sec.style.display = hidden ? 'block' : 'none';
   btn.style.display = hidden ? 'none' : '';
 }
+function calibrateBmDemo() {
+  const browser = document.querySelector('.bm-browser');
+  if (!browser || browser.classList.contains('playing')) return;
+  const cursor = browser.querySelector('.bm-cursor');
+  const target = browser.querySelector('.bm-bk.active');
+  if (!cursor || !target) return;
+  const c = cursor.getBoundingClientRect();
+  const t = target.getBoundingClientRect();
+  // Cursor SVG tip sits roughly at (5, 3) inside its 20x20 box.
+  const tipX = c.left + 5;
+  const tipY = c.top + 3;
+  const dx = (t.left + t.width / 2) - tipX;
+  const dy = (t.top + t.height / 2) - tipY;
+  browser.style.setProperty('--bm-tx', dx.toFixed(1) + 'px');
+  browser.style.setProperty('--bm-ty', dy.toFixed(1) + 'px');
+}
+function playBmDemo() {
+  const browser = document.querySelector('.bm-browser');
+  if (!browser || browser.classList.contains('playing')) return;
+  calibrateBmDemo();
+  browser.classList.add('playing');
+  setTimeout(() => browser.classList.remove('playing'), 2500);
+}
+document.addEventListener('DOMContentLoaded', () => {
+  calibrateBmDemo();
+  window.addEventListener('resize', calibrateBmDemo);
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!reduce) setTimeout(playBmDemo, 700);
+});
 </script>
 {% endblock %}
