@@ -204,8 +204,8 @@ function copyBookmarklet() {
   const href = {{ bookmarklet_href | tojson }};
   navigator.clipboard.writeText(href).then(() => {
     const btn = document.getElementById('bm-copy-btn');
-    btn.textContent = '{{ _("Copied") }} ✓';
-    setTimeout(() => { btn.textContent = '{{ _("Copy link") }}'; }, 1600);
+    btn.textContent = {{ _("Copied") | tojson }} + ' ✓';
+    setTimeout(() => { btn.textContent = {{ _("Copy link") | tojson }}; }, 1600);
   }).catch(() => {});
 }
 function togglePaste() {

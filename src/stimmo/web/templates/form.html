@@ -333,18 +333,18 @@
   let timer = null, reqId = 0;
 
   function setStatus(msg, isError) {
-    status.textContent = msg || '{{ _("Street + civic number, Milano comune only.") }}';
+    status.textContent = msg || {{ _("Street + civic number, Milano comune only.") | tojson }};
     status.style.color = isError ? 'var(--bad)' : '';
   }
 
   async function lookup(q) {
     const mine = ++reqId;
-    setStatus('{{ _("Locating…") }}', false);
+    setStatus({{ _("Locating…") | tojson }}, false);
     try {
       const r = await fetch('/api/geocode?q=' + encodeURIComponent(q));
       if (mine !== reqId) return;
-      if (r.status === 404) { setStatus('{{ _("Address not found in Milano") }}', true); highlightZone(null); return; }
-      if (!r.ok) { setStatus('{{ _("Geocoding failed") }}', true); return; }
+      if (r.status === 404) { setStatus({{ _("Address not found in Milano") | tojson }}, true); highlightZone(null); return; }
+      if (!r.ok) { setStatus({{ _("Geocoding failed") | tojson }}, true); return; }
       const data = await r.json();
       if (mine !== reqId || !data.found) return;
       if (pin) pin.remove();
@@ -355,11 +355,11 @@
       map.setView([data.lat, data.lon], 15);
       highlightZone(data.zone_code);
       setStatus(
-        data.zone_code ? '{{ _("Zone") }} ' + data.zone_code + ' — ' + (data.zone_descr || '') : '{{ _("Outside Milano comune — no OMI zone") }}',
+        data.zone_code ? {{ _("Zone") | tojson }} + ' ' + data.zone_code + ' — ' + (data.zone_descr || '') : {{ _("Outside Milano comune — no OMI zone") | tojson }},
         !data.zone_code,
       );
     } catch (_) {
-      if (mine === reqId) setStatus('{{ _("Geocoding failed") }}', true);
+      if (mine === reqId) setStatus({{ _("Geocoding failed") | tojson }}, true);
     }
   }
 

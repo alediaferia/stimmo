@@ -106,7 +106,6 @@ _IMPORT_REGISTRY = {"immobiliare": immobiliare.parse}
 app = FastAPI(title="stimmo — Milan fair-price estimator")
 
 STATIC_DIR = Path(__file__).parent / "static"
-STATIC_DIR.mkdir(exist_ok=True)
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
@@ -268,7 +267,7 @@ def set_lang(
 # Localized page routes  /{lang}/...
 # ---------------------------------------------------------------------------
 
-_LANG_RE = "^(it|en)$"
+_LANG_RE = f"^({'|'.join(SUPPORTED_LANGS)})$"
 
 
 def _form_context(
