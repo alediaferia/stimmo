@@ -6,12 +6,74 @@
   <title>{% block title %}stimmo{% endblock %}</title>
 
   <link rel="icon" type="image/svg+xml" href="{{ static_url('stimmo-favicon.svg') }}">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="{{ static_url('fonts/inter-tight-400.woff2') }}">
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="{{ static_url('fonts/instrument-serif-400.woff2') }}">
+  <link rel="stylesheet" href="{{ static_url('vendor/leaflet/leaflet.css') }}">
 
   <style>
+    @font-face {
+      font-family: 'Inter Tight';
+      font-style: normal;
+      font-weight: 400;
+      font-display: swap;
+      src: url('{{ static_url("fonts/inter-tight-400.woff2") }}') format('woff2');
+    }
+    @font-face {
+      font-family: 'Inter Tight';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url('{{ static_url("fonts/inter-tight-500.woff2") }}') format('woff2');
+    }
+    @font-face {
+      font-family: 'Inter Tight';
+      font-style: normal;
+      font-weight: 600;
+      font-display: swap;
+      src: url('{{ static_url("fonts/inter-tight-600.woff2") }}') format('woff2');
+    }
+    @font-face {
+      font-family: 'Inter Tight';
+      font-style: normal;
+      font-weight: 700;
+      font-display: swap;
+      src: url('{{ static_url("fonts/inter-tight-700.woff2") }}') format('woff2');
+    }
+    @font-face {
+      font-family: 'Instrument Serif';
+      font-style: normal;
+      font-weight: 400;
+      font-display: swap;
+      src: url('{{ static_url("fonts/instrument-serif-400.woff2") }}') format('woff2');
+    }
+    @font-face {
+      font-family: 'Instrument Serif';
+      font-style: italic;
+      font-weight: 400;
+      font-display: swap;
+      src: url('{{ static_url("fonts/instrument-serif-400-italic.woff2") }}') format('woff2');
+    }
+    @font-face {
+      font-family: 'JetBrains Mono';
+      font-style: normal;
+      font-weight: 400;
+      font-display: swap;
+      src: url('{{ static_url("fonts/jetbrains-mono-400.woff2") }}') format('woff2');
+    }
+    @font-face {
+      font-family: 'JetBrains Mono';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url('{{ static_url("fonts/jetbrains-mono-500.woff2") }}') format('woff2');
+    }
+    @font-face {
+      font-family: 'JetBrains Mono';
+      font-style: normal;
+      font-weight: 600;
+      font-display: swap;
+      src: url('{{ static_url("fonts/jetbrains-mono-600.woff2") }}') format('woff2');
+    }
     :root {
       --paper:        oklch(0.975 0.008 82);
       --paper-2:      oklch(0.955 0.010 82);
