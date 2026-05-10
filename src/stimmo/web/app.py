@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import binascii
+import hashlib
 import json
 import re
 from datetime import date
@@ -67,6 +68,22 @@ templates.env.globals["app_version"] = "v" + _pkg_version("stimmo")
 templates.env.globals["render_label"] = _labels.render
 
 
+@lru_cache(maxsize=256)
+def _static_hash(rel_path: str) -> str:
+    p = STATIC_DIR / rel_path
+    if not p.is_file():
+        return ""
+    return hashlib.sha256(p.read_bytes()).hexdigest()[:8]
+
+
+def static_url(rel_path: str) -> str:
+    h = _static_hash(rel_path)
+    return f"/static/{rel_path}?v={h}" if h else f"/static/{rel_path}"
+
+
+templates.env.globals["static_url"] = static_url
+
+
 def _fmt_num(n: float) -> str:
     from babel.numbers import format_decimal
 
@@ -106,7 +123,17 @@ _IMPORT_REGISTRY = {"immobiliare": immobiliare.parse}
 app = FastAPI(title="stimmo — Milan fair-price estimator")
 
 STATIC_DIR = Path(__file__).parent / "static"
-app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+
+class _CachedStaticFiles(StaticFiles):
+    async def get_response(self, path: str, scope: dict) -> Response:
+        response = await super().get_response(path, scope)
+        if response.status_code == 200:
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        return response
+
+
+app.mount("/static", _CachedStaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
 # ---------------------------------------------------------------------------

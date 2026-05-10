@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="stimmo">
+  <rect width="64" height="64" rx="2" fill="oklch(0.975 0.008 82)"></rect>
+  <text x="6" y="46" font-family="Instrument Serif, Times New Roman, Georgia, serif" font-size="46" letter-spacing="-0.02em" fill="oklch(0.22 0.012 250)"><tspan>s</tspan><tspan font-style="italic">o</tspan></text>
+  <circle cx="46" cy="44" r="4" fill="oklch(0.56 0.13 38)"></circle>
+</svg>
