@@ -16,82 +16,82 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: src/stimmo/web/app.py:351
+#: src/stimmo/web/app.py:395
 msgid "Invalid import request"
 msgstr ""
 
-#: src/stimmo/web/app.py:357
+#: src/stimmo/web/app.py:401
 msgid "Payload too large"
 msgstr ""
 
-#: src/stimmo/web/app.py:360
+#: src/stimmo/web/app.py:404
 msgid "Malformed import payload"
 msgstr ""
 
-#: src/stimmo/web/app.py:376
+#: src/stimmo/web/app.py:420
 msgid "Missing source or HTML content"
 msgstr ""
 
-#: src/stimmo/web/app.py:379
+#: src/stimmo/web/app.py:423
 msgid "Pasted HTML too large"
 msgstr ""
 
-#: src/stimmo/web/app.py:387
+#: src/stimmo/web/app.py:431
 msgid "Could not find listing data in pasted HTML"
 msgstr ""
 
-#: src/stimmo/web/app.py:392
+#: src/stimmo/web/app.py:436
 msgid "Could not parse listing data"
 msgstr ""
 
-#: src/stimmo/web/app.py:396
+#: src/stimmo/web/app.py:440
 msgid "Could not locate listing fields in pasted data"
 msgstr ""
 
-#: src/stimmo/web/app.py:408
+#: src/stimmo/web/app.py:452
 msgid "Bookmarklet not available"
 msgstr ""
 
-#: src/stimmo/web/app.py:412
+#: src/stimmo/web/app.py:456
 msgid "stimmo: could not find listing data on this page"
 msgstr ""
 
-#: src/stimmo/web/app.py:471
+#: src/stimmo/web/app.py:515
 #, python-format
 msgid "Geocoding failed: %(e)s"
 msgstr ""
 
-#: src/stimmo/web/app.py:475
+#: src/stimmo/web/app.py:519
 msgid "Address is outside the Milano comune — no OMI zone."
 msgstr ""
 
-#: src/stimmo/web/app.py:481
+#: src/stimmo/web/app.py:525
 #, python-format
 msgid "OMI lookup failed: %(e)s"
 msgstr ""
 
-#: src/stimmo/web/app.py:488
+#: src/stimmo/web/app.py:532
 #, python-format
 msgid "Amenity query failed: %(e)s; using zero score"
 msgstr ""
 
-#: src/stimmo/web/app.py:516
+#: src/stimmo/web/app.py:560
 msgid "OMI low"
 msgstr ""
 
-#: src/stimmo/web/app.py:517
+#: src/stimmo/web/app.py:561
 msgid "Ask low"
 msgstr ""
 
-#: src/stimmo/web/app.py:518
+#: src/stimmo/web/app.py:562
 msgid "Ask mid"
 msgstr ""
 
-#: src/stimmo/web/app.py:519
+#: src/stimmo/web/app.py:563
 msgid "OMI high"
 msgstr ""
 
-#: src/stimmo/web/app.py:520
+#: src/stimmo/web/app.py:564
 msgid "Ask high"
 msgstr ""
 
@@ -165,7 +165,7 @@ msgstr ""
 msgid "about"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:8 src/stimmo/web/templates/base.html:879
+#: src/stimmo/web/templates/about.html:8 src/stimmo/web/templates/base.html:968
 msgid "About"
 msgstr ""
 
@@ -532,23 +532,34 @@ msgstr ""
 msgid "Open a GitHub issue"
 msgstr ""
 
-#: src/stimmo/web/templates/base.html:873
+#: src/stimmo/web/templates/base.html:9 src/stimmo/web/templates/base.html:13
+#: src/stimmo/web/templates/base.html:20
+msgid ""
+"Fair-price check for Milan apartment listings — OMI-anchored, no machine "
+"learning, every multiplier visible."
+msgstr ""
+
+#: src/stimmo/web/templates/base.html:12 src/stimmo/web/templates/base.html:19
+msgid "Milan fair-price check"
+msgstr ""
+
+#: src/stimmo/web/templates/base.html:962
 msgid "Fair-price check"
 msgstr ""
 
-#: src/stimmo/web/templates/base.html:877
+#: src/stimmo/web/templates/base.html:966
 msgid "Estimate"
 msgstr ""
 
-#: src/stimmo/web/templates/base.html:878
+#: src/stimmo/web/templates/base.html:967
 msgid "Bookmarklet"
 msgstr ""
 
-#: src/stimmo/web/templates/base.html:890
+#: src/stimmo/web/templates/base.html:979
 msgid "By"
 msgstr ""
 
-#: src/stimmo/web/templates/base.html:894
+#: src/stimmo/web/templates/base.html:983
 msgid "Requests &amp; feedback"
 msgstr ""
 
@@ -610,7 +621,7 @@ msgid "check this listing"
 msgstr ""
 
 #: src/stimmo/web/templates/bookmarklet.html:45
-#: src/stimmo/web/templates/bookmarklet.html:207
+#: src/stimmo/web/templates/bookmarklet.html:208
 msgid "Copy link"
 msgstr ""
 
@@ -709,21 +720,21 @@ msgstr ""
 msgid "What you'll see"
 msgstr ""
 
-#: src/stimmo/web/templates/bookmarklet.html:169
+#: src/stimmo/web/templates/bookmarklet.html:170
 msgid ""
 "Reading <span class=\"mono\" style=\"font-"
 "size:11px\">__NEXT_DATA__</span> · 12 fields found"
 msgstr ""
 
-#: src/stimmo/web/templates/bookmarklet.html:173
+#: src/stimmo/web/templates/bookmarklet.html:174
 msgid "Click to simulate"
 msgstr ""
 
-#: src/stimmo/web/templates/bookmarklet.html:178
+#: src/stimmo/web/templates/bookmarklet.html:179
 msgid "Privacy."
 msgstr ""
 
-#: src/stimmo/web/templates/bookmarklet.html:178
+#: src/stimmo/web/templates/bookmarklet.html:179
 msgid ""
 "The bookmarklet runs entirely in your browser tab.\n"
 "      stimmo never makes a server-side request to immobiliare.it. The "
@@ -733,11 +744,11 @@ msgid ""
 "      you can review every prefilled field before estimating."
 msgstr ""
 
-#: src/stimmo/web/templates/bookmarklet.html:187
+#: src/stimmo/web/templates/bookmarklet.html:188
 msgid "Schema drift is expected"
 msgstr ""
 
-#: src/stimmo/web/templates/bookmarklet.html:189
+#: src/stimmo/web/templates/bookmarklet.html:190
 msgid ""
 "immobiliare.it changes its internal JSON shape every few months. Always\n"
 "          review the prefilled fields before you submit — surface and "
@@ -745,7 +756,7 @@ msgid ""
 "          two that drift most often."
 msgstr ""
 
-#: src/stimmo/web/templates/bookmarklet.html:206
+#: src/stimmo/web/templates/bookmarklet.html:207
 msgid "Copied"
 msgstr ""
 
