@@ -50,11 +50,25 @@ def _base(**overrides) -> Property:
 
 
 def test_no_adjustments_yields_unit_multiplier(quote):
-    p = _base()
+    # has_lift=False to avoid triggering the standalone lift bonus on the baseline.
+    p = _base(has_lift=False)
     mult, flat, deltas = adjustments.compute(p, AmenityScore(), quote)
     assert mult == 1.0
     assert flat == 0
     assert deltas == []
+
+
+def test_lift_bonus_applies_to_non_signorili(quote):
+    p = _base(has_lift=True, property_type=PropertyType.CIVILI)
+    _, _, deltas = adjustments.compute(p, AmenityScore(), quote)
+    lift_delta = next(d.delta_pct for d in deltas if d.code == "lift")
+    assert lift_delta == adjustments.LIFT_DELTA
+
+
+def test_lift_bonus_skipped_for_signorili(quote):
+    p = _base(has_lift=True, property_type=PropertyType.SIGNORILI)
+    _, _, deltas = adjustments.compute(p, AmenityScore(), quote)
+    assert not any(d.code == "lift" for d in deltas)
 
 
 def test_box_adds_flat_extra(quote):
@@ -77,8 +91,8 @@ def test_da_ristrutturare_penalty_is_15pct():
     assert adjustments.FINE_CONDITION_DELTA[FineCondition.DA_RISTRUTTURARE] == -15.0
 
 
-def test_terrace_large_premium_is_8pct():
-    assert adjustments.OUTDOOR_DELTA[Outdoor.TERRACE_LARGE] == 8.0
+def test_terrace_large_premium_is_10pct():
+    assert adjustments.OUTDOOR_DELTA[Outdoor.TERRACE_LARGE] == 10.0
 
 
 def test_energy_g_penalty_is_5pct():
