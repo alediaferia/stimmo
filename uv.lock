@@ -1137,7 +1137,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "commitizen", specifier = ">=4.15.1" },
-    { name = "fonttools", extras = ["woff"], specifier = ">=4.50" },
+    { name = "fonttools", extras = ["woff"], specifier = ">=4.62.1" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "pytest", specifier = ">=9.0.3" },
     { name = "ruff", specifier = ">=0.8" },
