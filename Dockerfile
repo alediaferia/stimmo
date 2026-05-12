@@ -4,7 +4,8 @@ WORKDIR /app
 COPY pyproject.toml README.md LICENSE NOTICE uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 COPY src/ ./src/
-RUN uv sync --frozen --no-dev
+RUN uv sync --frozen --no-dev \
+    && uv run --no-dev pybabel compile -d src/stimmo/locale
 
 FROM python:3.13-slim AS runtime
 
@@ -14,7 +15,7 @@ RUN apt-get update \
 
 WORKDIR /app
 COPY --from=builder /app/.venv /app/.venv
-COPY src/ /app/src/
+COPY --from=builder /app/src /app/src
 
 RUN useradd -r -s /bin/false stimmo
 USER stimmo
