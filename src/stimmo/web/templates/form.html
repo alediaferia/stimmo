@@ -61,7 +61,7 @@
           </div>
         </div>
 
-        <div class="field col-8">
+        <div class="field col-6">
           <label for="property_type">{% trans %}Property type{% endtrans %}</label>
           <select class="select" id="property_type" name="property_type"
             onchange="document.getElementById('property_type_hint').textContent = this.options[this.selectedIndex].dataset.hint;">
@@ -75,7 +75,7 @@
           </span>
         </div>
 
-        <div class="field col-4">
+        <div class="field col-6">
           <label>{% trans %}OMI condition{% endtrans %}</label>
           <div class="seg" role="group">
             {% for v in omi_conditions %}
