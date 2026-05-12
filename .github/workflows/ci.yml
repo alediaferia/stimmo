@@ -43,3 +43,88 @@ jobs:
       - uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Advisory check (push-to-main only): if a push touches src/stimmo/valuation/ but
+  # not src/stimmo/web/templates/about.html, open or update a `docs-drift` issue
+  # reminding the maintainer to verify the methodology copy. This is a nudge, not a
+  # gate — pure magnitude tweaks should just close the issue.
+  docs-drift-check:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Detect valuation changes without about.html update
+        id: detect
+        env:
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          if [[ "$BEFORE" == "0000000000000000000000000000000000000000" || -z "$BEFORE" ]]; then
+            echo "drift=false" >> "$GITHUB_OUTPUT"
+            echo "Initial push or unknown base — skipping."
+            exit 0
+          fi
+          changed=$(git diff --name-only "$BEFORE" "$AFTER")
+          echo "Changed files:"
+          echo "$changed"
+          val=$(echo "$changed" | grep -E '^src/stimmo/valuation/' || true)
+          about=$(echo "$changed" | grep -E '^src/stimmo/web/templates/about\.html$' || true)
+          if [[ -n "$val" && -z "$about" ]]; then
+            {
+              echo "drift=true"
+              echo "valuation_files<<EOF"
+              echo "$val"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+          else
+            echo "drift=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Open or update docs-drift issue
+        if: steps.detect.outputs.drift == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SHA: ${{ github.sha }}
+          SHORT_SHA: ${{ github.event.head_commit.id }}
+          COMMIT_URL: ${{ github.event.head_commit.url }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          VALUATION_FILES: ${{ steps.detect.outputs.valuation_files }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          # Ensure label exists (idempotent)
+          gh label create docs-drift \
+            --description "valuation/ changed without about.html — verify methodology copy" \
+            --color FBCA04 2>/dev/null || true
+
+          files_block=$(echo "$VALUATION_FILES" | sed 's/^/- /')
+          body=$(cat <<EOF
+          Commit [\`${SHA:0:7}\`]($COMMIT_URL) modified files under \`src/stimmo/valuation/\` without touching \`src/stimmo/web/templates/about.html\`.
+
+          **Changed valuation files:**
+          $files_block
+
+          **Commit message:**
+          > $(echo "$COMMIT_MSG" | head -1)
+
+          Per CONTRIBUTING.md, any change that adds, removes, or renames a coefficient — or otherwise alters something quoted in the methodology copy — must be paired with an \`about.html\` update (notably pipeline step 05 and the "no machine learning" principle block).
+
+          **If this commit was a pure magnitude tweak or internal refactor that doesn't change the user-facing enumeration, just close this issue.**
+          EOF
+          )
+
+          existing=$(gh issue list --label docs-drift --state open --json number --jq '.[0].number' || echo "")
+          if [[ -n "$existing" ]]; then
+            gh issue comment "$existing" --body "$body"
+            echo "Appended note to existing issue #$existing"
+          else
+            gh issue create \
+              --title "Verify about.html after recent valuation/ changes" \
+              --label docs-drift \
+              --body "$body"
+          fi
