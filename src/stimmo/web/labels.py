@@ -58,6 +58,8 @@ def _render_impl(b: AdjustmentBreakdown) -> str:
                 "rooms": p.get("rooms", "?"),
                 "m2_per_locale": _fmt_g(p.get("m2_per_locale", "?")),
             }
+        case "lift":
+            return _("Lift")
         case "second_bathroom":
             return _("Second bathroom")
         case "amenities":
