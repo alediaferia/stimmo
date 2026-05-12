@@ -1,56 +1,39 @@
+<p align="center">
+  <img src="src/stimmo/web/static/favicon-64.png" width="64" alt="stimmo logo" />
+</p>
+
 # stimmo
 
 ![License](https://img.shields.io/badge/license-Apache%202.0-blue)
 ![Python](https://img.shields.io/badge/python-3.12+-blue)
 
-**stimmo** — a transparent, OMI-anchored fair-price check for Milan apartment listings. No ML, no black box: every adjustment lives in [a single coefficients file](src/stimmo/valuation/adjustments.py).
+**Is that Milan listing actually a fair price?**
 
-A web tool that estimates whether the asking price of a Milan property
-listing is **under-priced**, **fair**, or **over-priced**, using:
+stimmo checks the asking price of any Milan apartment against the official OMI €/m² band for its zone, property type, and condition — adjusting for floor, lift, energy class, outdoor space, and more. You get a verdict: **under-priced**, **fair**, or **over-priced**.
 
-- **OMI** (Osservatorio del Mercato Immobiliare, Agenzia delle Entrate) — official
-  €/m² ranges per OMI zone × property type × condition.
-- **OpenStreetMap** — Nominatim geocoding + Overpass amenity counts.
-- A small, transparent hedonic-style adjustment table (no ML).
+No ML, no black box. Every multiplier is a number in [one public coefficients file](src/stimmo/valuation/adjustments.py).
 
-> ⚠️ Italian sold-price data is not public. The OMI `Compr_min`–`Compr_max`
-> band is the spine of the estimate; everything else (floor, condition,
-> amenities…) tunes a multiplier on top of it.
+![stimmo — form and OMI zone map](docs/screenshot.png)
 
-## Install
+## Quickstart
 
 ```sh
 uv sync
+uv run stimmo-web        # → http://127.0.0.1:8000
 ```
 
-## Run
+Fill in the listing's address, surface, condition, and asking price. stimmo geocodes the address, looks up the OMI zone, runs the adjustments, and returns a verdict with a full breakdown and 8-semester price trend for the zone.
 
-```sh
-uv run stimmo-web
-```
+Override the bind address via `STIMMO_HOST` / `STIMMO_PORT` env vars.
 
-Serves a FastAPI + Jinja app on `http://127.0.0.1:8000` with a form for
-address, surface, property type, OMI condition bucket, fine-grained condition,
-floor, total floors, lift, energy class (optional), outdoor space, box auto,
-construction era, orientation, second bathroom, and asking price, and renders
-the valuation report (verdict, OMI band, adjustments breakdown, recent
-semesters trend). Override the bind address via `STIMMO_HOST` / `STIMMO_PORT`
-env vars.
+## How it works
 
-## Importing from immobiliare.it
+- **OMI band** — official €/m² min–max from *Agenzia delle Entrate* per zone × property type × condition, sourced from the Comune di Milano open-data portal.
+- **Hedonic adjustments** — a small, fully transparent table of multipliers (floor, lift, fine condition, energy class, outdoor space, box, amenities). No ML; the entire tuning surface is [`valuation/adjustments.py`](src/stimmo/valuation/adjustments.py).
+- **Amenity score** — counts of nearby POIs via OpenStreetMap Overpass.
+- **Verdict** — asking price vs. the adjusted band, with ±5% tolerance.
 
-Open `/bookmarklet` in the running app, drag the **📋 stimmo** link to your
-bookmarks bar, then click it on any immobiliare.it Milano listing. The
-bookmarklet reads the page's `__NEXT_DATA__` JSON (already in your browser —
-no server-side request is ever made to immobiliare.it) and opens stimmo with
-the form prefilled: address, surface, price, floor, lift, energy class,
-condition, outdoor space, construction era, bathrooms, and property type.
-
-A paste fallback is also available on `/bookmarklet` for users who can't use
-bookmarklets: paste the full page source of a listing and submit.
-
-Review every prefilled field before estimating — schema drift is expected over
-time.
+> ⚠️ Italian sold-price data is not public. The OMI `Compr_min`–`Compr_max` band is the spine of the estimate; multipliers tune it but don't replace it.
 
 ## Architecture
 
