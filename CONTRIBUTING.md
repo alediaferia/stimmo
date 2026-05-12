@@ -22,6 +22,7 @@ Two hooks are active: `gitleaks` (secret scanning, runs on `pre-commit`) and `co
 
 - **All coefficients live in `src/stimmo/valuation/adjustments.py`.** Do not scatter multipliers into the engine, models, or renderers.
 - **The OMI band is the spine.** There is no comparable-listings logic — the absence is by design.
+- **User-facing docs track the engine.** Any change under `src/stimmo/valuation/` that adds, removes, or renames a coefficient — or otherwise alters something quoted in the methodology copy — must be paired with the corresponding update to `src/stimmo/web/templates/about.html` (notably the pipeline step 05 description and the "no machine learning" principle block, which both enumerate the coefficient set). Pure magnitude tweaks that don't change the enumeration do not need a docs change.
 
 ## Commit messages
 
