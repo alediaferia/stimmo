@@ -6,7 +6,6 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  stimmo\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-10 09:15+0200\n"
 "PO-Revision-Date: 2026-05-05 08:34+0200\n"
 "Last-Translator: Alessandro Diaferia\n"
 "Language: it_IT\n"
@@ -149,15 +148,20 @@ msgstr "Esposizione (%(exposure)s)"
 msgid "Cramped layout (%(rooms)s locali · %(m2_per_locale)s m²/locale)"
 msgstr "Layout stretto (%(rooms)s locali · %(m2_per_locale)s m²/locale)"
 
-#: src/stimmo/web/labels.py:62 src/stimmo/web/templates/form.html:198
+#: src/stimmo/web/labels.py:62
+#, fuzzy
+msgid "Lift"
+msgstr "con ascensore"
+
+#: src/stimmo/web/labels.py:64 src/stimmo/web/templates/form.html:198
 msgid "Second bathroom"
 msgstr "Secondo bagno"
 
-#: src/stimmo/web/labels.py:64
+#: src/stimmo/web/labels.py:66
 msgid "Amenities (OSM)"
 msgstr "Servizi (OSM)"
 
-#: src/stimmo/web/labels.py:68
+#: src/stimmo/web/labels.py:70
 #, python-format
 msgid "Clamp (%(raw)s → %(clamped)s)"
 msgstr "Clamp (%(raw)s → %(clamped)s)"
@@ -270,11 +274,13 @@ msgstr "Regola la fascia"
 
 #: src/stimmo/web/templates/about.html:72
 msgid ""
-"A single coefficients table multiplies floor, lift, energy, outdoor, era,"
-" orientation, amenities."
+"A single coefficients table multiplies floor, lift, size, condition, "
+"energy, outdoor, era, orientation, exposure, room density, second "
+"bathroom, parking box, and amenities."
 msgstr ""
-"Un'unica tabella di coefficienti moltiplica piano, ascensore, energia, "
-"esterno, epoca, orientamento, servizi."
+"Un'unica tabella di coefficienti moltiplica piano, ascensore, superficie,"
+" stato, energia, spazi esterni, epoca, orientamento, esposizione, densità"
+" dei vani, secondo bagno, box auto e dotazioni."
 
 #: src/stimmo/web/templates/about.html:76
 msgid "Classify"
@@ -431,18 +437,22 @@ msgstr "Niente machine learning."
 msgid ""
 "stimmo has no trained model. The entire tuning surface is a single\n"
 "      file — <span class=\"mono\">valuation/adjustments.py</span>. Every\n"
-"      multiplier (floor, lift, energy, outdoor, era, orientation, "
+"      multiplier (floor, lift, size, condition, energy, outdoor, era, "
+"orientation,\n"
+"      exposure, room density, second bathroom, parking box, and "
 "amenities)\n"
 "      lives there in plain Python."
 msgstr ""
-"stimmo non ha un modello addestrato. L'intera superficie di regolazione è"
-" un singolo\n"
+"stimmo non utilizza alcun modello addestrato. L'intera superficie di "
+"calibrazione è un unico\n"
 "      file — <span class=\"mono\">valuation/adjustments.py</span>. Ogni\n"
-"      moltiplicatore (piano, ascensore, energia, esterno, epoca, "
-"orientamento, servizi)\n"
-"      vive lì in Python semplice."
+"      moltiplicatore (piano, ascensore, superficie, stato, energia, spazi"
+" esterni, epoca, orientamento,\n"
+"      esposizione, densità dei vani, secondo bagno, box auto e dotazioni)"
+"\n"
+"      è definito lì in semplice Python."
 
-#: src/stimmo/web/templates/about.html:176
+#: src/stimmo/web/templates/about.html:177
 msgid ""
 "The verdict is <em>deterministic</em>: same inputs, same output.\n"
 "      If you disagree with a coefficient, you can read the line where it "
@@ -454,11 +464,11 @@ msgstr ""
 "cui si trova,\n"
 "      modificarla e rieseguire."
 
-#: src/stimmo/web/templates/about.html:191
+#: src/stimmo/web/templates/about.html:192
 msgid "Ask-shifted, not rogito."
 msgstr "Basato sul prezzo richiesto, non sul rogito."
 
-#: src/stimmo/web/templates/about.html:193
+#: src/stimmo/web/templates/about.html:194
 msgid ""
 "OMI publishes <em>transacted</em> prices — what changed hands at the\n"
 "      notary, after negotiation. In Milano, asking prices typically run\n"
@@ -469,7 +479,7 @@ msgstr ""
 "tipicamente\n"
 "      <b> 5–10 %</b> superiori al prezzo di vendita finale."
 
-#: src/stimmo/web/templates/about.html:217
+#: src/stimmo/web/templates/about.html:218
 msgid ""
 "We shift the OMI band upward by a fixed <b>+6 %</b> ask-premium before\n"
 "      classifying. ±5 % around the shifted band is \"fair\". The constant"
@@ -482,11 +492,11 @@ msgstr ""
 "\"giusto\". La costante si trova\n"
 "      in <span class=\"mono\">verdict.py::ASK_PREMIUM_PCT</span>."
 
-#: src/stimmo/web/templates/about.html:225
+#: src/stimmo/web/templates/about.html:226
 msgid "What stimmo doesn't model"
 msgstr "Cosa stimmo non modella"
 
-#: src/stimmo/web/templates/about.html:230
+#: src/stimmo/web/templates/about.html:231
 msgid ""
 "Routine condominium fees and extraordinary works (lavori straordinari "
 "deliberati). Can shift true cost €10–50 k. Invisible to OMI."
@@ -494,7 +504,7 @@ msgstr ""
 "Spese condominiali ordinarie e lavori straordinari deliberati. Possono "
 "spostare il costo reale di €10–50 k. Invisibili all'OMI."
 
-#: src/stimmo/web/templates/about.html:235
+#: src/stimmo/web/templates/about.html:236
 msgid ""
 "The classic 1° piano premium in storied buildings. Inside the same "
 "building, can drive ±5–10 %."
@@ -502,11 +512,11 @@ msgstr ""
 "Il classico premio del 1° piano negli edifici storici. All'interno dello "
 "stesso edificio, può determinare ±5–10 %."
 
-#: src/stimmo/web/templates/about.html:239
+#: src/stimmo/web/templates/about.html:240
 msgid "Street noise &amp; view"
 msgstr "Rumore stradale &amp; vista"
 
-#: src/stimmo/web/templates/about.html:240
+#: src/stimmo/web/templates/about.html:241
 msgid ""
 "A unit on a quiet cortile vs. one on Corso Buenos Aires. OMI averages, "
 "doesn't see this."
@@ -514,11 +524,11 @@ msgstr ""
 "Un'unità su un cortile tranquillo vs. una su Corso Buenos Aires. L'OMI fa"
 " una media, non vede questo."
 
-#: src/stimmo/web/templates/about.html:244
+#: src/stimmo/web/templates/about.html:245
 msgid "Comparable listings"
 msgstr "Annunci comparabili"
 
-#: src/stimmo/web/templates/about.html:245
+#: src/stimmo/web/templates/about.html:246
 msgid ""
 "Italian per-transaction sale data isn't public. We don't fit a model on "
 "stale asking prices — by design."
@@ -526,11 +536,11 @@ msgstr ""
 "I dati sulle vendite effettive in Italia non sono pubblici. Per scelta, "
 "non addestriamo un modello su prezzi richiesti obsoleti."
 
-#: src/stimmo/web/templates/about.html:249
+#: src/stimmo/web/templates/about.html:250
 msgid "Metropolitan belt"
 msgstr "Cintura metropolitana"
 
-#: src/stimmo/web/templates/about.html:250
+#: src/stimmo/web/templates/about.html:251
 msgid ""
 "Sesto, Cinisello, Cologno, Rho — outside the Milano comune polygon. Will "
 "fail with \"outside Milano\"."
@@ -538,11 +548,11 @@ msgstr ""
 "Sesto, Cinisello, Cologno, Rho — fuori dal poligono del comune di Milano."
 " Fallirà con \"fuori Milano\"."
 
-#: src/stimmo/web/templates/about.html:254
+#: src/stimmo/web/templates/about.html:255
 msgid "Commercial property"
 msgstr "Immobile commerciale"
 
-#: src/stimmo/web/templates/about.html:255
+#: src/stimmo/web/templates/about.html:256
 msgid ""
 "Shops, offices, ateliers — different OMI category, different dynamics. "
 "Residential subtypes only."
@@ -550,19 +560,19 @@ msgstr ""
 "Negozi, uffici, atelier — categoria OMI diversa, dinamiche diverse. Solo "
 "sottotipi residenziali."
 
-#: src/stimmo/web/templates/about.html:262
+#: src/stimmo/web/templates/about.html:263
 msgid "not a perizia"
 msgstr "non è una perizia"
 
-#: src/stimmo/web/templates/about.html:263
+#: src/stimmo/web/templates/about.html:264
 msgid "fairness check"
 msgstr "controllo di congruità"
 
-#: src/stimmo/web/templates/about.html:266
+#: src/stimmo/web/templates/about.html:267
 msgid "stimmo is a fairness check, not an official appraisal."
 msgstr "stimmo è un controllo di congruità, non una perizia ufficiale."
 
-#: src/stimmo/web/templates/about.html:267
+#: src/stimmo/web/templates/about.html:268
 msgid ""
 "It does not replace a qualified <em>perito</em> and should not be used as"
 " the basis for legal, fiscal, or contractual decisions. Use it to sanity-"
@@ -573,29 +583,29 @@ msgstr ""
 "per verificare un prezzo richiesto, negoziare o rinunciare — non per "
 "firmare nulla."
 
-#: src/stimmo/web/templates/about.html:272
+#: src/stimmo/web/templates/about.html:273
 msgid "Run an estimate"
 msgstr "Esegui una stima"
 
-#: src/stimmo/web/templates/about.html:273
+#: src/stimmo/web/templates/about.html:274
 msgid "Install the bookmarklet"
 msgstr "Installa il bookmarklet"
 
-#: src/stimmo/web/templates/about.html:277
+#: src/stimmo/web/templates/about.html:278
 msgid "Built by"
 msgstr "Realizzato da"
 
-#: src/stimmo/web/templates/about.html:278
+#: src/stimmo/web/templates/about.html:279
 msgid "stimmo is open source — view the code on"
 msgstr "stimmo è open source — vedi il codice su"
 
-#: src/stimmo/web/templates/about.html:279
+#: src/stimmo/web/templates/about.html:280
 msgid "Have a feature request, found a bug, or want to suggest an improvement?"
 msgstr ""
 "Hai una richiesta di funzionalità, hai trovato un bug o vuoi suggerire un"
 " miglioramento?"
 
-#: src/stimmo/web/templates/about.html:280
+#: src/stimmo/web/templates/about.html:281
 msgid "Open a GitHub issue"
 msgstr "Apri una issue su GitHub"
 
