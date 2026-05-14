@@ -375,4 +375,13 @@
   });
 })();
 </script>
+<script>
+(function () {
+  document.querySelector('form').addEventListener('submit', function () {
+    var btn = this.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.innerHTML = '{% trans %}Estimating… (fetching amenities){% endtrans %}';
+  });
+})();
+</script>
 {% endblock %}

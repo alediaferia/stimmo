@@ -51,6 +51,10 @@
   <h2 class="verdict-label">{{ vc.main }} <em>{{ vc.em }}</em>.</h2>
   <p class="verdict-sub">{{ vc.sub }}</p>
 
+  {% if amenity_status == "failed" %}
+  <p class="verdict-sub" style="color:var(--warn);font-size:13px;margin-top:6px">⚠ {% trans %}Amenity data could not be retrieved — the estimate above does not account for proximity to metro, parks, or services.{% endtrans %}</p>
+  {% endif %}
+
   <div class="gauge">
     <div class="scale">
       <div class="track"></div>
@@ -234,69 +238,50 @@
       </dl>
     </div>
 
-    <div class="doc">
+    <div class="doc" id="amenity-card">
       <div class="doc-head">
         <h2 class="doc-title">{% trans %}Amenities{% endtrans %} · 500 m</h2>
         <span class="doc-eyebrow">OpenStreetMap · Overpass</span>
       </div>
-{% set metro_names = est.amenity_score.items_within_500m | selectattr("kind", "eq", "metro") | map(attribute="name") | select | list %}
-{% set tram_names = est.amenity_score.items_within_500m | selectattr("kind", "eq", "tram") | map(attribute="name") | select | list %}
-{% set park_names = est.amenity_score.items_within_500m | selectattr("kind", "eq", "park") | map(attribute="name") | select | list %}
-{% set market_names = est.amenity_score.items_within_500m | selectattr("kind", "eq", "supermarket") | map(attribute="name") | select | list %}
-{% set school_names = est.amenity_score.items_within_500m | selectattr("kind", "eq", "school") | map(attribute="name") | select | list %}
-{% set pharmacy_names = est.amenity_score.items_within_500m | selectattr("kind", "eq", "pharmacy") | map(attribute="name") | select | list %}
-      <div class="amen-grid">
-        <div class="amen">
-          <div class="nm">{% trans %}Metro{% endtrans %}</div>
-          <div class="v">{{ est.amenity_score.metro_within_500m }}</div>
-          <div class="far">{% if metro_names %}{{ metro_names[:2] | join(" · ") }}{% else %}{% trans %}within 500 m{% endtrans %}{% endif %}</div>
-        </div>
-        <div class="amen">
-          <div class="nm">{% trans %}Tram{% endtrans %}</div>
-          <div class="v">{{ est.amenity_score.tram_within_500m }}</div>
-          <div class="far">{% if tram_names %}{{ tram_names[:2] | join(" · ") }}{% else %}{% trans %}within 500 m{% endtrans %}{% endif %}</div>
-        </div>
-        <div class="amen">
-          <div class="nm">{% trans %}Parks{% endtrans %}</div>
-          <div class="v">{{ est.amenity_score.parks_large_within_500m }}</div>
-          <div class="far">{% if park_names %}{{ park_names[:2] | join(" · ") }}{% else %}{% trans %}within 500 m{% endtrans %}{% endif %}</div>
-        </div>
-        <div class="amen">
-          <div class="nm">{% trans %}Markets{% endtrans %}</div>
-          <div class="v">{{ est.amenity_score.supermarkets_within_500m }}</div>
-          <div class="far">{% if market_names %}{{ market_names[:2] | join(" · ") }}{% else %}{% trans %}within 500 m{% endtrans %}{% endif %}</div>
-        </div>
-        <div class="amen">
-          <div class="nm">{% trans %}Schools{% endtrans %}</div>
-          <div class="v">{{ est.amenity_score.schools_within_500m }}</div>
-          <div class="far">{% if school_names %}{{ school_names[:2] | join(" · ") }}{% else %}{% trans %}within 500 m{% endtrans %}{% endif %}</div>
-        </div>
-        <div class="amen">
-          <div class="nm">{% trans %}Pharmacies{% endtrans %}</div>
-          <div class="v">{{ est.amenity_score.pharmacies_within_500m }}</div>
-          <div class="far">{% if pharmacy_names %}{{ pharmacy_names[:2] | join(" · ") }}{% else %}{% trans %}within 500 m{% endtrans %}{% endif %}</div>
+      {% if amenity_status == "failed" %}
+      <div id="amenity-retry-block" class="note" style="border-left-color:var(--warn);margin:0">
+        <b>{% trans %}Amenity data unavailable.{% endtrans %}</b>
+        <span id="amenity-retry-msg">{{ amenity_error }}</span>
+        <div style="margin-top:10px">
+          <button id="amenity-retry-btn" type="button" class="btn" style="padding:6px 14px;font-size:13px">{% trans %}Retry amenity lookup{% endtrans %}</button>
         </div>
       </div>
-      <div style="margin-top:12px;display:flex;justify-content:space-between;font-family:var(--mono);font-size:12px;color:var(--ink-muted)">
-        <span>{% trans %}Combined amenity score{% endtrans %}</span>
-        <span style="color:var(--good)">+{{ "%.2f" | format(est.amenity_score.score_pct) }} %</span>
-      </div>
-      {% if est.amenity_score.items_within_500m %}
-      <div class="map-wrap" style="margin-top:14px">
-        <div id="amenity-map" style="height:280px"></div>
-      </div>
+      {% else %}
+      {% set score = est.amenity_score %}
+      {% include "_amenity_card.html" %}
       {% endif %}
     </div>
+
+    {% if amenity_status == "failed" %}
+    <form id="recompute-form" method="post" action="/{{ lang }}/estimate" style="display:none">
+      <input type="hidden" name="address" value="{{ p.address | e }}">
+      <input type="hidden" name="surface_m2" value="{{ p.surface_m2 }}">
+      <input type="hidden" name="property_type" value="{{ p.property_type.value | e }}">
+      <input type="hidden" name="omi_condition" value="{{ p.omi_condition.value | e }}">
+      <input type="hidden" name="fine_condition" value="{{ p.fine_condition.value | e }}">
+      <input type="hidden" name="floor" value="{{ p.floor }}">
+      <input type="hidden" name="total_floors" value="{{ p.total_floors }}">
+      <input type="hidden" name="has_lift" value="{{ 'on' if p.has_lift else 'off' }}">
+      <input type="hidden" name="energy_class" value="{{ p.energy_class.value if p.energy_class else '' }}">
+      <input type="hidden" name="outdoor" value="{{ p.outdoor.value | e }}">
+      <input type="hidden" name="has_box" value="{{ 'on' if p.has_box else 'off' }}">
+      <input type="hidden" name="construction_era" value="{{ p.construction_era.value | e }}">
+      <input type="hidden" name="orientation" value="{{ p.orientation.value | e }}">
+      <input type="hidden" name="exposure" value="{{ p.exposure.value | e }}">
+      <input type="hidden" name="has_second_bathroom" value="{{ 'on' if p.has_second_bathroom else 'off' }}">
+      {% if p.room_count %}<input type="hidden" name="room_count" value="{{ p.room_count }}">{% endif %}
+      <input type="hidden" name="asking_price_eur" value="{{ p.asking_price_eur }}">
+    </form>
+    {% endif %}
 
     <div class="note" style="margin-top:18px">
       <b>{% trans %}What this estimate does not cover.{% endtrans %}</b> {% trans %}Spese condominiali, extraordinary works already deliberated, piano nobile premium, street noise, view, cortile vs giardino — these can drive ±5–10 % within the same building and are invisible to OMI.{% endtrans %}
     </div>
-
-    {% if amenity_warning %}
-    <div class="note" style="margin-top:12px;border-left-color:var(--warn)">
-      <b>{% trans %}Amenity data unavailable.{% endtrans %}</b> {{ amenity_warning }}
-    </div>
-    {% endif %}
 
     {% if semester_months_old > 12 %}
     <div class="note" style="margin-top:12px;border-left-color:var(--warn)">
@@ -327,6 +312,54 @@
 {% endblock %}
 
 {% block scripts %}
+{% if amenity_status == "failed" %}
+<script>
+(function () {
+  var btn = document.getElementById('amenity-retry-btn');
+  var msg = document.getElementById('amenity-retry-msg');
+  var card = document.getElementById('amenity-card');
+  var recomputeForm = document.getElementById('recompute-form');
+  var totalAttempts = 0;
+
+  btn.addEventListener('click', function () {
+    btn.disabled = true;
+    btn.textContent = '{% trans %}Retrying amenity lookup…{% endtrans %}';
+    msg.textContent = '';
+
+    fetch('/{{ lang }}/api/amenities?lat={{ lat }}&lon={{ lon }}')
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        totalAttempts += data.attempts || 1;
+        if (data.status === 'ok') {
+          card.innerHTML = card.querySelector('.doc-head').outerHTML + data.html;
+          var block = document.getElementById('amenity-retry-block');
+          var recomputeLink = document.createElement('div');
+          recomputeLink.className = 'note';
+          recomputeLink.style.marginTop = '12px';
+          recomputeLink.innerHTML = '<a href="#" id="recompute-link" style="font-family:var(--mono);font-size:12px">{% trans %}Recompute estimate with amenity data{% endtrans %} →</a>';
+          block.replaceWith(recomputeLink);
+          document.getElementById('recompute-link').addEventListener('click', function (e) {
+            e.preventDefault();
+            recomputeForm.style.display = '';
+            recomputeForm.submit();
+          });
+        } else {
+          btn.disabled = false;
+          btn.textContent = '{% trans %}Retry amenity lookup{% endtrans %}';
+          var n = totalAttempts;
+          msg.textContent = '{% trans %}Still unavailable after %(n)s attempts.{% endtrans %}'.replace('%(n)s', n) + ' ';
+        }
+      })
+      .catch(function () {
+        btn.disabled = false;
+        btn.textContent = '{% trans %}Retry amenity lookup{% endtrans %}';
+        totalAttempts += 1;
+        msg.textContent = '{% trans %}Still unavailable after %(n)s attempts.{% endtrans %}'.replace('%(n)s', totalAttempts) + ' ';
+      });
+  });
+})();
+</script>
+{% endif %}
 {% if est.amenity_score.items_within_500m %}
 <script>
 (function () {
