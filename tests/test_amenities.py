@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-import json
 from unittest.mock import MagicMock, patch
 
 import pytest
 import requests
+from fastapi.testclient import TestClient
 
 from stimmo.data import amenities
 from stimmo.data.amenities import AmenityFetchError, _post_overpass
+from stimmo.web.app import app
 
 
 def _make_response(status: int, body: dict | None = None, headers: dict | None = None):
@@ -22,7 +23,17 @@ def _make_response(status: int, body: dict | None = None, headers: dict | None =
 
 
 EMPTY_RESPONSE = {"elements": []}
-OK_RESPONSE = {"elements": [{"type": "node", "id": 1, "lat": 45.46, "lon": 9.19, "tags": {"station": "subway"}}]}
+OK_RESPONSE = {
+    "elements": [
+        {
+            "type": "node", 
+            "id": 1, 
+            "lat": 45.46, 
+            "lon": 9.19, 
+            "tags": {"station": "subway"}
+        }
+    ]
+}
 
 
 # ---------------------------------------------------------------------------
@@ -116,10 +127,6 @@ def test_request_exception_twice_raises(mock_post, mock_sleep):
 # /api/amenities web endpoint
 # ---------------------------------------------------------------------------
 
-
-from fastapi.testclient import TestClient
-
-from stimmo.web.app import app
 
 _CLIENT = TestClient(app)
 
