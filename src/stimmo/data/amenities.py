@@ -24,6 +24,7 @@ class AmenityFetchError(Exception):
         super().__init__(message)
         self.attempts = attempts
 
+
 # Caps to keep the +% adjustment bounded.
 SCORE_CAPS = {
     "metro": 2.0,

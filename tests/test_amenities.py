@@ -25,13 +25,7 @@ def _make_response(status: int, body: dict | None = None, headers: dict | None =
 EMPTY_RESPONSE = {"elements": []}
 OK_RESPONSE = {
     "elements": [
-        {
-            "type": "node", 
-            "id": 1, 
-            "lat": 45.46, 
-            "lon": 9.19, 
-            "tags": {"station": "subway"}
-        }
+        {"type": "node", "id": 1, "lat": 45.46, "lon": 9.19, "tags": {"station": "subway"}}
     ]
 }
 
