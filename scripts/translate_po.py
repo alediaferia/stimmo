@@ -7,7 +7,7 @@ Usage:
     uv run python scripts/translate_po.py --locale it_IT --dry-run    # print without writing
 
 The OPENROUTER_API_KEY env var is used unless --key is passed.
-Defaults to claude-sonnet-4-6 via OpenRouter; override with --model.
+Defaults to deepseek/deepseek-v4-flash via OpenRouter; override with --model.
 
 Strings are sent in batches to reduce API round-trips. Python-format
 placeholders (%(name)s) and HTML tags are preserved by the system prompt.
@@ -126,8 +126,8 @@ def main() -> None:
     parser.add_argument("--key", default=os.getenv("OPENROUTER_API_KEY"), help="OpenRouter API key")
     parser.add_argument(
         "--model",
-        default="anthropic/claude-sonnet-4-6",
-        help="OpenRouter model ID (default: anthropic/claude-sonnet-4-6)",
+        default="deepseek/deepseek-v4-flash",
+        help="OpenRouter model ID (default: deepseek/deepseek-v4-flash)",
     )
     parser.add_argument(
         "--batch-size", type=int, default=30, help="Strings per API call (default: 30)"

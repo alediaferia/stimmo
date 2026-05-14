@@ -6,6 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  stimmo\n"
 "Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-14 08:03+0200\n"
 "PO-Revision-Date: 2026-05-05 08:34+0200\n"
 "Last-Translator: Alessandro Diaferia\n"
 "Language: it_IT\n"
@@ -70,28 +71,23 @@ msgstr "L'indirizzo è fuori dal comune di Milano — nessuna zona OMI."
 msgid "OMI lookup failed: %(e)s"
 msgstr "Ricerca OMI fallita: %(e)s"
 
-#: src/stimmo/web/app.py:532
-#, python-format
-msgid "Amenity query failed: %(e)s; using zero score"
-msgstr "Query servizi fallita: %(e)s; punteggio zero utilizzato"
-
-#: src/stimmo/web/app.py:560
+#: src/stimmo/web/app.py:562
 msgid "OMI low"
 msgstr "OMI basso"
 
-#: src/stimmo/web/app.py:561
+#: src/stimmo/web/app.py:563
 msgid "Ask low"
 msgstr "Richiesta bassa"
 
-#: src/stimmo/web/app.py:562
+#: src/stimmo/web/app.py:564
 msgid "Ask mid"
 msgstr "Richiesta media"
 
-#: src/stimmo/web/app.py:563
+#: src/stimmo/web/app.py:565
 msgid "OMI high"
 msgstr "OMI alto"
 
-#: src/stimmo/web/app.py:564
+#: src/stimmo/web/app.py:566
 msgid "Ask high"
 msgstr "Richiesta alta"
 
@@ -165,6 +161,43 @@ msgstr "Servizi (OSM)"
 #, python-format
 msgid "Clamp (%(raw)s → %(clamped)s)"
 msgstr "Clamp (%(raw)s → %(clamped)s)"
+
+#: src/stimmo/web/templates/_amenity_card.html:9
+msgid "Metro"
+msgstr "Metro"
+
+#: src/stimmo/web/templates/_amenity_card.html:11
+#: src/stimmo/web/templates/_amenity_card.html:16
+#: src/stimmo/web/templates/_amenity_card.html:21
+#: src/stimmo/web/templates/_amenity_card.html:26
+#: src/stimmo/web/templates/_amenity_card.html:31
+#: src/stimmo/web/templates/_amenity_card.html:36
+msgid "within 500 m"
+msgstr "entro 500 m"
+
+#: src/stimmo/web/templates/_amenity_card.html:14
+msgid "Tram"
+msgstr "Tram"
+
+#: src/stimmo/web/templates/_amenity_card.html:19
+msgid "Parks"
+msgstr "Parchi"
+
+#: src/stimmo/web/templates/_amenity_card.html:24
+msgid "Markets"
+msgstr "Mercati"
+
+#: src/stimmo/web/templates/_amenity_card.html:29
+msgid "Schools"
+msgstr "Scuole"
+
+#: src/stimmo/web/templates/_amenity_card.html:34
+msgid "Pharmacies"
+msgstr "Farmacie"
+
+#: src/stimmo/web/templates/_amenity_card.html:40
+msgid "Combined amenity score"
+msgstr "Punteggio complessivo dei servizi"
 
 #: src/stimmo/web/templates/about.html:2
 msgid "about"
@@ -944,13 +977,13 @@ msgid "Street + civic number, Milano comune only."
 msgstr "Via + numero civico, solo comune di Milano."
 
 #: src/stimmo/web/templates/form.html:46
-#: src/stimmo/web/templates/result.html:218
+#: src/stimmo/web/templates/result.html:222
 msgid "Surface"
 msgstr "Superficie"
 
 #: src/stimmo/web/templates/form.html:55
-#: src/stimmo/web/templates/result.html:77
-#: src/stimmo/web/templates/result.html:228
+#: src/stimmo/web/templates/result.html:81
+#: src/stimmo/web/templates/result.html:232
 msgid "Asking price"
 msgstr "Prezzo richiesto"
 
@@ -967,7 +1000,7 @@ msgid "Building &amp; unit"
 msgstr "Edificio &amp; unità"
 
 #: src/stimmo/web/templates/form.html:96
-#: src/stimmo/web/templates/result.html:109
+#: src/stimmo/web/templates/result.html:113
 msgid "Adjustments"
 msgstr "Aggiustamenti"
 
@@ -1119,6 +1152,10 @@ msgstr "Zona"
 msgid "Outside Milano comune — no OMI zone"
 msgstr "Fuori dal comune di Milano — nessuna zona OMI"
 
+#: src/stimmo/web/templates/form.html:383
+msgid "Estimating… (fetching amenities)"
+msgstr "Stima in corso… (recupero servizi)"
+
 #: src/stimmo/web/templates/result.html:12
 msgid "Report"
 msgstr "Report"
@@ -1208,23 +1245,31 @@ msgstr ""
 "dopo aver applicato ogni aggiustamento favorevole. Ampio margine per "
 "negoziare — o per rinunciare."
 
-#: src/stimmo/web/templates/result.html:70
+#: src/stimmo/web/templates/result.html:55
+msgid ""
+"Amenity data could not be retrieved — the estimate above does not account"
+" for proximity to metro, parks, or services."
+msgstr ""
+"Impossibile recuperare i dati sui servizi — la stima sopra non tiene "
+"conto della vicinanza a metropolitana, parchi o servizi."
+
+#: src/stimmo/web/templates/result.html:74
 msgid "Asking"
 msgstr "Richiesto"
 
-#: src/stimmo/web/templates/result.html:75
+#: src/stimmo/web/templates/result.html:79
 msgid "OMI rogito band (€/m² × surface + box)"
 msgstr "Fascia OMI rogito (€/m² × superficie + box)"
 
-#: src/stimmo/web/templates/result.html:76
+#: src/stimmo/web/templates/result.html:80
 msgid "Typical Milano ask band"
 msgstr "Fascia tipica di richiesta Milano"
 
-#: src/stimmo/web/templates/result.html:83
+#: src/stimmo/web/templates/result.html:87
 msgid "Δ vs typical ask mid"
 msgstr "Δ vs centro fascia tipica"
 
-#: src/stimmo/web/templates/result.html:90
+#: src/stimmo/web/templates/result.html:94
 msgid ""
 "OMI mid €/m² × compound multiplier — the per-m² price stimmo estimates "
 "this property is worth based on the OMI band and your inputs. Compare "
@@ -1234,133 +1279,106 @@ msgstr ""
 "stima valere l'immobile in base alla fascia OMI e agli input forniti. "
 "Confronta con il €/m² richiesto."
 
-#: src/stimmo/web/templates/result.html:90
+#: src/stimmo/web/templates/result.html:94
 msgid "Adjusted €/m²"
 msgstr "€/m² aggiustato"
 
-#: src/stimmo/web/templates/result.html:95
-#: src/stimmo/web/templates/result.html:216
+#: src/stimmo/web/templates/result.html:99
+#: src/stimmo/web/templates/result.html:220
 msgid "Asking €/m²"
 msgstr "€/m² richiesto"
 
-#: src/stimmo/web/templates/result.html:99
+#: src/stimmo/web/templates/result.html:103
 msgid "Multiplier on OMI band"
 msgstr "Moltiplicatore sulla fascia OMI"
 
-#: src/stimmo/web/templates/result.html:110
+#: src/stimmo/web/templates/result.html:114
 msgid "One coefficients file · valuation/adjustments.py"
 msgstr "Un file di coefficienti · valuation/adjustments.py"
 
-#: src/stimmo/web/templates/result.html:114
+#: src/stimmo/web/templates/result.html:118
 msgid "Factor"
 msgstr "Fattore"
 
-#: src/stimmo/web/templates/result.html:130
+#: src/stimmo/web/templates/result.html:134
 msgid "Compound multiplier"
 msgstr "Moltiplicatore composto"
 
-#: src/stimmo/web/templates/result.html:136
+#: src/stimmo/web/templates/result.html:140
 msgid "Box auto · flat extra"
 msgstr "Box auto · extra fisso"
 
-#: src/stimmo/web/templates/result.html:151
+#: src/stimmo/web/templates/result.html:155
 msgid "zone"
 msgstr "zona"
 
-#: src/stimmo/web/templates/result.html:152
+#: src/stimmo/web/templates/result.html:156
 msgid "8 semesters · mid value"
 msgstr "8 semestri · valore medio"
 
-#: src/stimmo/web/templates/result.html:169
+#: src/stimmo/web/templates/result.html:173
 msgid "last semester highlighted"
 msgstr "ultimo semestre evidenziato"
 
-#: src/stimmo/web/templates/result.html:182
+#: src/stimmo/web/templates/result.html:186
 msgid "Market activity"
 msgstr "Attività di mercato"
 
-#: src/stimmo/web/templates/result.html:183
+#: src/stimmo/web/templates/result.html:187
 msgid "context only · not a pricing input"
 msgstr "solo contesto · non un input di prezzo"
 
-#: src/stimmo/web/templates/result.html:186
+#: src/stimmo/web/templates/result.html:190
 msgid "Milano total last 8 quarters"
 msgstr "Milano totale ultimi 8 trimestri"
 
-#: src/stimmo/web/templates/result.html:208
+#: src/stimmo/web/templates/result.html:212
 msgid "Numbers"
 msgstr "Numeri"
 
-#: src/stimmo/web/templates/result.html:209
+#: src/stimmo/web/templates/result.html:213
 msgid "The maths in plain sight"
 msgstr "I calcoli in bella vista"
 
-#: src/stimmo/web/templates/result.html:212
+#: src/stimmo/web/templates/result.html:216
 msgid "OMI base"
 msgstr "Base OMI"
 
-#: src/stimmo/web/templates/result.html:214
+#: src/stimmo/web/templates/result.html:218
 msgid "Adjusted"
 msgstr "Aggiustato"
 
-#: src/stimmo/web/templates/result.html:220
+#: src/stimmo/web/templates/result.html:224
 msgid "OMI rogito range"
 msgstr "Intervallo OMI rogito"
 
-#: src/stimmo/web/templates/result.html:226
+#: src/stimmo/web/templates/result.html:230
 msgid "Typical ask range"
 msgstr "Intervallo tipico di richiesta"
 
-#: src/stimmo/web/templates/result.html:230
+#: src/stimmo/web/templates/result.html:234
 msgid "Δ vs ask mid"
 msgstr "Δ vs centro richiesta"
 
-#: src/stimmo/web/templates/result.html:239
+#: src/stimmo/web/templates/result.html:243
 msgid "Amenities"
 msgstr "Servizi"
 
-#: src/stimmo/web/templates/result.html:250
-msgid "Metro"
-msgstr "Metro"
+#: src/stimmo/web/templates/result.html:248
+msgid "Amenity data unavailable."
+msgstr "Dati sui servizi non disponibili."
 
-#: src/stimmo/web/templates/result.html:252
-#: src/stimmo/web/templates/result.html:257
-#: src/stimmo/web/templates/result.html:262
-#: src/stimmo/web/templates/result.html:267
-#: src/stimmo/web/templates/result.html:272
-#: src/stimmo/web/templates/result.html:277
-msgid "within 500 m"
-msgstr "entro 500 m"
+#: src/stimmo/web/templates/result.html:251
+#: src/stimmo/web/templates/result.html:348
+#: src/stimmo/web/templates/result.html:355
+msgid "Retry amenity lookup"
+msgstr "Riprova ricerca servizi"
 
-#: src/stimmo/web/templates/result.html:255
-msgid "Tram"
-msgstr "Tram"
-
-#: src/stimmo/web/templates/result.html:260
-msgid "Parks"
-msgstr "Parchi"
-
-#: src/stimmo/web/templates/result.html:265
-msgid "Markets"
-msgstr "Mercati"
-
-#: src/stimmo/web/templates/result.html:270
-msgid "Schools"
-msgstr "Scuole"
-
-#: src/stimmo/web/templates/result.html:275
-msgid "Pharmacies"
-msgstr "Farmacie"
-
-#: src/stimmo/web/templates/result.html:281
-msgid "Combined amenity score"
-msgstr "Punteggio complessivo dei servizi"
-
-#: src/stimmo/web/templates/result.html:292
+#: src/stimmo/web/templates/result.html:283
 msgid "What this estimate does not cover."
 msgstr "Cosa non copre questa stima."
 
-#: src/stimmo/web/templates/result.html:292
+#: src/stimmo/web/templates/result.html:283
 msgid ""
 "Spese condominiali, extraordinary works already deliberated, piano nobile"
 " premium, street noise, view, cortile vs giardino — these can drive ±5–10"
@@ -1371,28 +1389,24 @@ msgstr ""
 "determinare ±5–10 % all'interno dello stesso edificio e sono invisibili "
 "all'OMI."
 
-#: src/stimmo/web/templates/result.html:297
-msgid "Amenity data unavailable."
-msgstr "Dati sui servizi non disponibili."
-
-#: src/stimmo/web/templates/result.html:303
+#: src/stimmo/web/templates/result.html:288
 #, python-format
 msgid "OMI data is %(months)s months old."
 msgstr "I dati OMI hanno %(months)s mesi."
 
-#: src/stimmo/web/templates/result.html:303
+#: src/stimmo/web/templates/result.html:288
 msgid "Semester "
 msgstr "Semestre "
 
-#: src/stimmo/web/templates/result.html:303
+#: src/stimmo/web/templates/result.html:288
 msgid "consider refreshing the bundled data with"
 msgstr "considera di aggiornare i dati inclusi con"
 
-#: src/stimmo/web/templates/result.html:312
+#: src/stimmo/web/templates/result.html:297
 msgid "OMI band, not a model"
 msgstr "Fascia OMI, non un modello"
 
-#: src/stimmo/web/templates/result.html:313
+#: src/stimmo/web/templates/result.html:298
 msgid ""
 "Italian per-transaction sale data isn't public. The €/m² Compr min–max "
 "band — built from observed sales by the Agenzia delle Entrate — is the "
@@ -1402,11 +1416,11 @@ msgstr ""
 "€/m² Compr min–max — costruita dalle vendite osservate dall'Agenzia delle"
 " Entrate — è la spina dorsale di ogni stima."
 
-#: src/stimmo/web/templates/result.html:317
+#: src/stimmo/web/templates/result.html:302
 msgid "One file of coefficients"
 msgstr "Un file di coefficienti"
 
-#: src/stimmo/web/templates/result.html:318
+#: src/stimmo/web/templates/result.html:303
 msgid ""
 "Floor, lift, energy, outdoor, era, orientation, amenities — every "
 "multiplier lives in"
@@ -1414,15 +1428,15 @@ msgstr ""
 "Piano, ascensore, energia, esterno, epoca, orientamento, servizi — ogni "
 "moltiplicatore vive in"
 
-#: src/stimmo/web/templates/result.html:318
+#: src/stimmo/web/templates/result.html:303
 msgid "No black box, nothing learned, nothing hidden."
 msgstr "Nessuna scatola nera, nulla appreso, nulla nascosto."
 
-#: src/stimmo/web/templates/result.html:322
+#: src/stimmo/web/templates/result.html:307
 msgid "Ask-shifted, not rogito"
 msgstr "Shiftato sul prezzo richiesto, non sul rogito"
 
-#: src/stimmo/web/templates/result.html:323
+#: src/stimmo/web/templates/result.html:308
 msgid ""
 "Verdicts compare the asking price to an ask-shifted band (rogito +6 %) — "
 "a normal-market premium from listing to closing. ±5 % around it is "
@@ -1432,7 +1446,21 @@ msgstr ""
 "sull'offerta (rogito +6 %) — un premio di mercato normale dall'annuncio "
 "alla chiusura. ±5 % intorno ad essa è \"equo\"."
 
-#: src/stimmo/web/templates/result.html:346
+#: src/stimmo/web/templates/result.html:326
+msgid "Retrying amenity lookup…"
+msgstr "Riprovo ricerca servizi…"
+
+#: src/stimmo/web/templates/result.html:339
+msgid "Recompute estimate with amenity data"
+msgstr "Ricalcola stima con dati servizi"
+
+#: src/stimmo/web/templates/result.html:350
+#: src/stimmo/web/templates/result.html:357
+#, python-format
+msgid "Still unavailable after %(n)s attempts."
+msgstr "Ancora non disponibile dopo %(n)s tentativi."
+
+#: src/stimmo/web/templates/result.html:379
 msgid "Property"
 msgstr "Immobile"
 
@@ -1446,4 +1474,7 @@ msgstr "Immobile"
 #~ " −2 % if &lt;22 m²/locale, −4 %"
 #~ " if &lt;18 m²/locale"
 #~ msgstr ""
+
+#~ msgid "Amenity query failed: %(e)s; using zero score"
+#~ msgstr "Query servizi fallita: %(e)s; punteggio zero utilizzato"
 
