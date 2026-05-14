@@ -1,0 +1,47 @@
+{% set metro_names = score.items_within_500m | selectattr("kind", "eq", "metro") | map(attribute="name") | select | list %}
+{% set tram_names = score.items_within_500m | selectattr("kind", "eq", "tram") | map(attribute="name") | select | list %}
+{% set park_names = score.items_within_500m | selectattr("kind", "eq", "park") | map(attribute="name") | select | list %}
+{% set market_names = score.items_within_500m | selectattr("kind", "eq", "supermarket") | map(attribute="name") | select | list %}
+{% set school_names = score.items_within_500m | selectattr("kind", "eq", "school") | map(attribute="name") | select | list %}
+{% set pharmacy_names = score.items_within_500m | selectattr("kind", "eq", "pharmacy") | map(attribute="name") | select | list %}
+<div class="amen-grid">
+  <div class="amen">
+    <div class="nm">{% trans %}Metro{% endtrans %}</div>
+    <div class="v">{{ score.metro_within_500m }}</div>
+    <div class="far">{% if metro_names %}{{ metro_names[:2] | join(" · ") }}{% else %}{% trans %}within 500 m{% endtrans %}{% endif %}</div>
+  </div>
+  <div class="amen">
+    <div class="nm">{% trans %}Tram{% endtrans %}</div>
+    <div class="v">{{ score.tram_within_500m }}</div>
+    <div class="far">{% if tram_names %}{{ tram_names[:2] | join(" · ") }}{% else %}{% trans %}within 500 m{% endtrans %}{% endif %}</div>
+  </div>
+  <div class="amen">
+    <div class="nm">{% trans %}Parks{% endtrans %}</div>
+    <div class="v">{{ score.parks_large_within_500m }}</div>
+    <div class="far">{% if park_names %}{{ park_names[:2] | join(" · ") }}{% else %}{% trans %}within 500 m{% endtrans %}{% endif %}</div>
+  </div>
+  <div class="amen">
+    <div class="nm">{% trans %}Markets{% endtrans %}</div>
+    <div class="v">{{ score.supermarkets_within_500m }}</div>
+    <div class="far">{% if market_names %}{{ market_names[:2] | join(" · ") }}{% else %}{% trans %}within 500 m{% endtrans %}{% endif %}</div>
+  </div>
+  <div class="amen">
+    <div class="nm">{% trans %}Schools{% endtrans %}</div>
+    <div class="v">{{ score.schools_within_500m }}</div>
+    <div class="far">{% if school_names %}{{ school_names[:2] | join(" · ") }}{% else %}{% trans %}within 500 m{% endtrans %}{% endif %}</div>
+  </div>
+  <div class="amen">
+    <div class="nm">{% trans %}Pharmacies{% endtrans %}</div>
+    <div class="v">{{ score.pharmacies_within_500m }}</div>
+    <div class="far">{% if pharmacy_names %}{{ pharmacy_names[:2] | join(" · ") }}{% else %}{% trans %}within 500 m{% endtrans %}{% endif %}</div>
+  </div>
+</div>
+<div style="margin-top:12px;display:flex;justify-content:space-between;font-family:var(--mono);font-size:12px;color:var(--ink-muted)">
+  <span>{% trans %}Combined amenity score{% endtrans %}</span>
+  <span style="color:var(--good)">+{{ "%.2f" | format(score.score_pct) }} %</span>
+</div>
+{% if score.items_within_500m %}
+<div class="map-wrap" style="margin-top:14px">
+  <div id="amenity-map" style="height:280px"></div>
+</div>
+{% endif %}

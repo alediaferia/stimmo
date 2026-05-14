@@ -525,11 +525,13 @@ def estimate(
         return _error(request, [_("OMI lookup failed: %(e)s") % {"e": e}])
     quote.zone_descr = zone_name
 
-    amenity_warning: str | None = None
+    amenity_status = "ok"
+    amenity_error: str | None = None
     try:
         amen = amenities.fetch_amenities(lat, lon)
     except Exception as e:
-        amenity_warning = _("Amenity query failed: %(e)s; using zero score") % {"e": e}
+        amenity_status = "failed"
+        amenity_error = str(e)
         amen = AmenityScore()
 
     est = engine.estimate(prop, quote, amen)
@@ -578,10 +580,38 @@ def estimate(
             "ntn_total": ntn_total,
             "bucket_label": bucket_label,
             "bucket_by_q": bucket_by_q,
-            "amenity_warning": amenity_warning,
+            "amenity_status": amenity_status,
+            "amenity_error": amenity_error,
             "semester_months_old": _semester_months_old(est.omi_quote.semester),
             "gauge": gauge,
         },
+    )
+
+
+@app.get("/{lang}/api/amenities")
+def api_amenities(
+    request: Request,
+    lang: str = FPath(pattern=_LANG_RE),
+    lat: float = 0.0,
+    lon: float = 0.0,
+) -> Response:
+    _set_locale(request, lang)
+    try:
+        score = amenities.fetch_amenities(lat, lon)
+    except amenities.AmenityFetchError as e:
+        return Response(
+            content=json.dumps({"status": "failed", "error": str(e), "attempts": e.attempts}),
+            media_type="application/json",
+        )
+    except Exception as e:
+        return Response(
+            content=json.dumps({"status": "failed", "error": str(e), "attempts": 1}),
+            media_type="application/json",
+        )
+    html = templates.env.get_template("_amenity_card.html").render(score=score)
+    return Response(
+        content=json.dumps({"status": "ok", "score": score.model_dump(), "html": html}),
+        media_type="application/json",
     )
 
 
