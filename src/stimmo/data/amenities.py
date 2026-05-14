@@ -2,12 +2,27 @@
 
 from __future__ import annotations
 
+import random
+import time
+from importlib.metadata import version as _pkg_version
+
 import requests
 
 from stimmo.models import AmenityItem, AmenityScore
 
 OVERPASS = "https://overpass-api.de/api/interpreter"
-UA = "stimmo/0.1 (Overpass amenity counter)"
+UA = (
+    f"stimmo/{_pkg_version('stimmo')} "
+    "(https://stimmo.it; https://github.com/alediaferia/stimmo; Overpass amenity counter)"
+)
+_TIMEOUT = 20  # seconds per call
+_MAX_RETRY_SLEEP = 2.0  # hard cap on added wait before giving up
+
+
+class AmenityFetchError(Exception):
+    def __init__(self, message: str, attempts: int) -> None:
+        super().__init__(message)
+        self.attempts = attempts
 
 # Caps to keep the +% adjustment bounded.
 SCORE_CAPS = {
@@ -20,6 +35,50 @@ SCORE_CAPS = {
 }
 # OMI zones already embed transit/amenity proximity; halved to avoid double-counting.
 TOTAL_CAP_PCT = 2.5
+
+
+def _post_overpass(query: str) -> dict:
+    """POST a query to Overpass with one auto-retry on transient failures."""
+    last_err = "unknown error"
+    for attempt in range(1, 3):
+        try:
+            r = requests.post(
+                OVERPASS, data={"data": query}, headers={"User-Agent": UA}, timeout=_TIMEOUT
+            )
+        except requests.RequestException as e:
+            last_err = str(e)
+            if attempt < 2:
+                time.sleep(1.5 + random.uniform(0, 0.5))
+            continue
+
+        if r.status_code == 429:
+            retry_after = float(r.headers.get("Retry-After", 99))
+            if attempt < 2 and retry_after <= _MAX_RETRY_SLEEP:
+                last_err = "HTTP 429"
+                time.sleep(retry_after)
+                continue
+            raise AmenityFetchError("Overpass rate-limited (HTTP 429)", attempts=attempt)
+
+        if r.status_code >= 500:
+            last_err = f"HTTP {r.status_code}"
+            if attempt < 2:
+                time.sleep(1.5 + random.uniform(0, 0.5))
+            continue
+
+        if not r.ok:
+            raise AmenityFetchError(f"HTTP {r.status_code}", attempts=attempt)
+
+        data = r.json()
+        remark = data.get("remark", "")
+        if ("runtime error" in remark or "timeout" in remark) and not data.get("elements"):
+            last_err = f"Overpass soft-failure: {remark}"
+            if attempt < 2:
+                time.sleep(1.5 + random.uniform(0, 0.5))
+            continue
+
+        return data
+
+    raise AmenityFetchError(last_err, attempts=2)
 
 
 def _query(lat: float, lon: float, radius: int = 500) -> dict:
@@ -39,9 +98,7 @@ def _query(lat: float, lon: float, radius: int = 500) -> dict:
 );
 out tags geom;
 """
-    r = requests.post(OVERPASS, data={"data": q}, headers={"User-Agent": UA}, timeout=60)
-    r.raise_for_status()
-    return r.json()
+    return _post_overpass(q)
 
 
 def _classify(el: dict) -> str | None:
