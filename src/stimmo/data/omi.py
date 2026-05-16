@@ -17,6 +17,9 @@ from stimmo.models import OmiCondition, OmiQuote, PropertyType
 ASSET = files("stimmo.data.assets") / "milano_omi_valori.csv"
 _MANIFEST = files("stimmo.data.assets") / "manifest.json"
 
+_CONDITION_ORDER = [OmiCondition.SCADENTE, OmiCondition.NORMALE, OmiCondition.OTTIMO]
+_CONDITION_RANK = {c: i for i, c in enumerate(_CONDITION_ORDER)}
+
 
 @cache
 def semester() -> str:
@@ -52,7 +55,9 @@ def lookup(zone_code: str, ptype: PropertyType, condition: OmiCondition) -> OmiQ
         raise LookupError(
             f"No OMI quote for zone={zone_code} type={ptype.value} condition={condition.value}"
         )
-    r = rows.iloc[0]
+    requested_rank = _CONDITION_RANK[condition.value]
+    dists = rows["Stato"].map(_CONDITION_RANK).sub(requested_rank).abs()
+    r = rows.loc[dists.idxmin()]
     return OmiQuote(
         zone_code=zone_code,
         property_type=ptype,

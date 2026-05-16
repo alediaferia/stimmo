@@ -12,6 +12,18 @@ def test_omi_lookup_returns_quote_for_known_zone():
     assert quote.eur_m2_max >= quote.eur_m2_min
 
 
+def test_omi_lookup_fallback_picks_closest_condition():
+    # Regression for issue #9: D10 has NORMALE but not SCADENTE — closest match must be
+    # NORMALE (distance 1), not OTTIMO (distance 2).
+    quote = omi.lookup("D10", PropertyType.CIVILI, OmiCondition.SCADENTE)
+    assert quote.condition == OmiCondition.NORMALE
+
+
+def test_condition_order_covers_all_omi_conditions():
+    # Fails if a new OmiCondition variant is added without updating _CONDITION_ORDER.
+    assert set(omi._CONDITION_ORDER) == set(OmiCondition)
+
+
 def test_zone_for_point_finds_milano_centre():
     # Piazza Duomo
     z = zones.zone_for_point(45.4642, 9.1900)
