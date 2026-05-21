@@ -28,7 +28,7 @@ dependencies = [
     "pandas>=3.0.3",
     "pydantic>=2.13.4",
     "python-multipart>=0.0.28",
-    "requests>=2.31",
+    "requests>=2.34.2",
     "shapely>=2.1.2",
     "uvicorn>=0.32.0",
 ]
