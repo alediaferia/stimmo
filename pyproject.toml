@@ -30,7 +30,7 @@ dependencies = [
     "python-multipart>=0.0.28",
     "requests>=2.34.2",
     "shapely>=2.1.2",
-    "uvicorn>=0.32.0",
+    "uvicorn>=0.47.0",
 ]
 
 [project.urls]
