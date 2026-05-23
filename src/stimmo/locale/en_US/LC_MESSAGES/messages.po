@@ -17,6 +17,92 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
+#: src/stimmo/models.py:18
+msgid "Street-facing"
+msgstr ""
+
+#: src/stimmo/models.py:19
+msgid "Mixed (street + courtyard)"
+msgstr ""
+
+#: src/stimmo/models.py:20
+msgid "Internal courtyard"
+msgstr ""
+
+#: src/stimmo/models.py:33
+msgid ""
+"Upscale residential — post-2000 build or prestigious older building, "
+"doorman (portineria), marble/parquet finish, prime zone. Pick this if the"
+" listing explicitly markets 'signorile'."
+msgstr ""
+
+#: src/stimmo/models.py:38
+msgid ""
+"Standard residential — typical condominium 1960s–90s, ordinary finishes, "
+"no doorman (most common choice for anything that doesn't clearly fit "
+"another category)."
+msgstr ""
+
+#: src/stimmo/models.py:42
+msgid ""
+"Economy residential — palazzina economica, peripheral or semi-peripheral "
+"area, basic finishes, pre-1960s low-spec build or post-war INA-casa type."
+msgstr ""
+
+#: src/stimmo/models.py:46
+msgid ""
+"Detached houses and small villas — independent or semi-detached with "
+"private garden/land."
+msgstr ""
+
+#: src/stimmo/models.py:94
+msgid "No outdoor space"
+msgstr ""
+
+#: src/stimmo/models.py:95
+msgid "Balcony"
+msgstr ""
+
+#: src/stimmo/models.py:96
+msgid "Small terrace (≤ 10 m²)"
+msgstr ""
+
+#: src/stimmo/models.py:97
+msgid "Large terrace (> 10 m²)"
+msgstr ""
+
+#: src/stimmo/models.py:110
+msgid "Pre-war (before 1945)"
+msgstr ""
+
+#: src/stimmo/models.py:111
+msgid "Post-war boom (1945–1980)"
+msgstr ""
+
+#: src/stimmo/models.py:112
+msgid "1980s–90s (1981–2000)"
+msgstr ""
+
+#: src/stimmo/models.py:113
+msgid "Contemporary (2001–2015)"
+msgstr ""
+
+#: src/stimmo/models.py:114
+msgid "Recent (after 2015)"
+msgstr ""
+
+#: src/stimmo/models.py:125
+msgid "South / south-west"
+msgstr ""
+
+#: src/stimmo/models.py:126
+msgid "East / west / mixed"
+msgstr ""
+
+#: src/stimmo/models.py:127
+msgid "North / north-east"
+msgstr ""
+
 #: src/stimmo/web/app.py:404
 msgid "Invalid import request"
 msgstr ""
