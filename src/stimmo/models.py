@@ -61,6 +61,18 @@ class FineCondition(StrEnum):
     DA_RISTRUTTURARE = "da ristrutturare"
 
 
+_FINE_TO_OMI: dict[FineCondition, OmiCondition] = {
+    FineCondition.NUOVO: OmiCondition.OTTIMO,
+    FineCondition.RISTRUTTURATO: OmiCondition.OTTIMO,
+    FineCondition.ABITABILE: OmiCondition.NORMALE,
+    FineCondition.DA_RISTRUTTURARE: OmiCondition.SCADENTE,
+}
+
+
+def derive_omi_condition(fine: FineCondition) -> OmiCondition:
+    return _FINE_TO_OMI[fine]
+
+
 class EnergyClass(StrEnum):
     A = "A"
     B = "B"

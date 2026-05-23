@@ -401,6 +401,9 @@
     .seg button:last-child { border-right: 0; }
     .seg button.on { background: var(--ink); color: var(--paper); }
 
+    .form-actions { display: flex; justify-content: flex-end; }
+    .form-actions .btn { padding: 14px 28px; font-size: 15px; }
+
     /* ------------ Buttons ------------ */
     .btn {
       appearance: none;
@@ -945,11 +948,21 @@
     @media (max-width: 880px) {
       .pagehead { grid-template-columns: 1fr; }
       .pagehead h1 { font-size: 40px; }
+      .pagehead .meta { text-align: left; }
       .verdict-label { font-size: 44px; }
       .wm-big { font-size: 64px; }
       .verdict-stats { grid-template-columns: 1fr 1fr; }
       main { padding: 20px 16px 60px; }
       .topbar-inner { padding: 12px 16px; }
+    }
+
+    @media (max-width: 620px) {
+      .form-grid { gap: 12px 14px; }
+      .field.col-12, .field.col-8, .field.col-6, .field.col-4 { grid-column: span 12; }
+      .field.col-3 { grid-column: span 6; }
+      .doc { padding: 18px 16px; }
+      .map { height: 280px; }
+      .form-actions .btn { width: 100%; justify-content: center; }
     }
   </style>
 </head>

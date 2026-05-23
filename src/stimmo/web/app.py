@@ -49,6 +49,7 @@ from stimmo.models import (
     Outdoor,
     Property,
     PropertyType,
+    derive_omi_condition,
 )
 from stimmo.valuation import engine
 from stimmo.valuation.verdict import HIGH_TOL
@@ -297,6 +298,16 @@ def set_lang(
 _LANG_RE = f"^({'|'.join(SUPPORTED_LANGS)})$"
 
 
+def _replay_fields(**fields: object) -> list[tuple[str, str]]:
+    """Serialize estimate-endpoint params as (name, value) pairs for hidden inputs."""
+    out: list[tuple[str, str]] = []
+    for name, val in fields.items():
+        if val is None or val == "":
+            continue
+        out.append((name, str(val)))
+    return out
+
+
 def _form_context(
     request: Request,
     defaults_override: dict | None = None,
@@ -304,7 +315,6 @@ def _form_context(
 ) -> dict:
     defaults = {
         "property_type": PropertyType.CIVILI.value,
-        "omi_condition": OmiCondition.NORMALE.value,
         "fine_condition": FineCondition.ABITABILE.value,
         "outdoor": Outdoor.NONE.value,
         "construction_era": ConstructionEra.POSTWAR_BOOM.value,
@@ -328,7 +338,6 @@ def _form_context(
         "property_types": [
             {"value": e.value, "hint": PROPERTY_TYPE_HINTS[e]} for e in PropertyType
         ],
-        "omi_conditions": [e.value for e in OmiCondition],
         "fine_conditions": [e.value for e in FineCondition],
         "energy_classes": ["", *[e.value for e in EnergyClass]],
         "outdoors": [{"value": e.value, "label": OUTDOOR_LABELS[e]} for e in Outdoor],
@@ -469,7 +478,6 @@ def estimate(
     address: str = Form(...),
     surface_m2: float = Form(...),
     property_type: str = Form(...),
-    omi_condition: str = Form(...),
     fine_condition: str = Form(...),
     floor: int = Form(...),
     total_floors: int = Form(...),
@@ -483,16 +491,22 @@ def estimate(
     has_second_bathroom: str = Form("off"),
     room_count: int | None = Form(None),
     asking_price_eur: float = Form(...),
+    omi_condition_override: str = Form(""),
 ) -> HTMLResponse:
     _set_locale(request, lang)
 
     try:
+        fine = FineCondition(fine_condition)
+        if omi_condition_override:
+            omi_cond = OmiCondition(omi_condition_override)
+        else:
+            omi_cond = derive_omi_condition(fine)
         prop = Property(
             address=address.strip(),
             surface_m2=surface_m2,
             property_type=PropertyType(property_type),
-            omi_condition=OmiCondition(omi_condition),
-            fine_condition=FineCondition(fine_condition),
+            omi_condition=omi_cond,
+            fine_condition=fine,
             floor=floor,
             total_floors=total_floors,
             has_lift=has_lift == "on",
@@ -518,6 +532,39 @@ def estimate(
     if z is None:
         return _error(request, [_("Address is outside the Milano comune — no OMI zone.")])
     zone_code, zone_name = z
+
+    if not omi_condition_override:
+        available = omi.available_conditions(zone_code, prop.property_type)
+        if available and prop.omi_condition not in available:
+            return _tpl(
+                request,
+                "omi_alternatives.html",
+                {
+                    "requested_condition": prop.omi_condition.value,
+                    "fine_condition": prop.fine_condition.value,
+                    "zone_code": zone_code,
+                    "zone_name": zone_name,
+                    "available_conditions": [c.value for c in available],
+                    "form_fields": _replay_fields(
+                        address=prop.address,
+                        surface_m2=surface_m2,
+                        property_type=property_type,
+                        fine_condition=fine_condition,
+                        floor=floor,
+                        total_floors=total_floors,
+                        has_lift=has_lift,
+                        energy_class=energy_class,
+                        outdoor=outdoor,
+                        has_box=has_box,
+                        construction_era=construction_era,
+                        orientation=orientation,
+                        exposure=exposure,
+                        has_second_bathroom=has_second_bathroom,
+                        room_count=room_count,
+                        asking_price_eur=asking_price_eur,
+                    ),
+                },
+            )
 
     try:
         quote = omi.lookup(zone_code, prop.property_type, prop.omi_condition)

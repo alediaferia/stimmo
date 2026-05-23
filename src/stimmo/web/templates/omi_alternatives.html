@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}stimmo — {% trans %}OMI condition mismatch{% endtrans %}{% endblock %}
+{% block content %}
+
+<div class="pagehead">
+  <div>
+    <h1>{% trans %}No OMI data for this <em>condition</em>{% endtrans %}</h1>
+    <p class="sub">
+      {% trans fine=fine_condition, requested=requested_condition, zone=zone_code %}
+        Your fine condition <b>{{ fine }}</b> maps to OMI bucket <b>{{ requested }}</b>, but OMI has no quote for that bucket in zone <b>{{ zone }}</b>.
+      {% endtrans %}
+    </p>
+  </div>
+  <div class="meta">
+    {% trans %}Zone{% endtrans %}<br>
+    <b>{{ zone_code }}</b>
+    <div style="margin-top:8px;opacity:0.7">{{ zone_name }}</div>
+  </div>
+</div>
+
+<div class="doc">
+  <div class="doc-head">
+    <h2 class="doc-title">{% trans %}Retry with an available bucket{% endtrans %}</h2>
+    <span class="doc-eyebrow">§ {% trans %}OMI fallback{% endtrans %}</span>
+  </div>
+  <p style="margin-top:0;color:var(--ink-2);font-size:14px">
+    {% trans %}Pick one of the OMI buckets that do have data for this zone &amp; property type — we'll re-run the estimate against that band. Everything else stays as you entered it.{% endtrans %}
+  </p>
+  <form method="post" action="/{{ lang }}/estimate" style="margin-top:14px">
+    {% for name, value in form_fields %}
+    <input type="hidden" name="{{ name }}" value="{{ value }}">
+    {% endfor %}
+    <div style="display:flex;flex-wrap:wrap;gap:10px">
+      {% for cond in available_conditions %}
+      <button type="submit" name="omi_condition_override" value="{{ cond }}" class="btn btn-ghost">
+        {% trans c=cond %}Try with {{ c }}{% endtrans %}
+        <span class="arrow">→</span>
+      </button>
+      {% endfor %}
+    </div>
+  </form>
+</div>
+
+<div class="note" style="margin-top:18px">
+  {% trans %}Why this happens: OMI publishes €/m² bands per zone × property type × condition, but not every combination has data in every zone. Picking a neighbouring bucket is a reasonable approximation — the band itself is the dominant input to the estimate.{% endtrans %}
+</div>
+
+{% endblock %}

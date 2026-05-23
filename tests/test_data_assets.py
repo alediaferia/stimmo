@@ -24,6 +24,17 @@ def test_condition_order_covers_all_omi_conditions():
     assert set(omi._CONDITION_ORDER) == set(OmiCondition)
 
 
+def test_available_conditions_for_known_zone():
+    # D10 has NORMALE for civili but not SCADENTE (see fallback regression test).
+    avail = omi.available_conditions("D10", PropertyType.CIVILI)
+    assert OmiCondition.NORMALE in avail
+    assert OmiCondition.SCADENTE not in avail
+
+
+def test_available_conditions_empty_for_unknown_zone():
+    assert omi.available_conditions("ZZ99", PropertyType.CIVILI) == []
+
+
 def test_zone_for_point_finds_milano_centre():
     # Piazza Duomo
     z = zones.zone_for_point(45.4642, 9.1900)

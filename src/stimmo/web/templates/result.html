@@ -213,6 +213,8 @@
         <span class="doc-eyebrow">§ {% trans %}The maths in plain sight{% endtrans %}</span>
       </div>
       <dl class="kv">
+        <dt>{% trans %}OMI condition{% endtrans %}</dt>
+        <dd class="mono">{{ est.omi_quote.condition.value }}</dd>
         <dt>{% trans %}OMI base{% endtrans %}</dt>
         <dd class="mono">€ {{ est.base_eur_m2_min | num }} – {{ est.base_eur_m2_max | num }} / m²</dd>
         <dt>{% trans %}Adjusted{% endtrans %}</dt>
@@ -262,7 +264,7 @@
       <input type="hidden" name="address" value="{{ p.address | e }}">
       <input type="hidden" name="surface_m2" value="{{ p.surface_m2 }}">
       <input type="hidden" name="property_type" value="{{ p.property_type.value | e }}">
-      <input type="hidden" name="omi_condition" value="{{ p.omi_condition.value | e }}">
+      <input type="hidden" name="omi_condition_override" value="{{ p.omi_condition.value | e }}">
       <input type="hidden" name="fine_condition" value="{{ p.fine_condition.value | e }}">
       <input type="hidden" name="floor" value="{{ p.floor }}">
       <input type="hidden" name="total_floors" value="{{ p.total_floors }}">

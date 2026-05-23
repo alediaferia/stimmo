@@ -61,7 +61,7 @@
           </div>
         </div>
 
-        <div class="field col-6">
+        <div class="field col-12">
           <label for="property_type">{% trans %}Property type{% endtrans %}</label>
           <select class="select" id="property_type" name="property_type"
             onchange="document.getElementById('property_type_hint').textContent = this.options[this.selectedIndex].dataset.hint;">
@@ -73,18 +73,6 @@
           <span class="hint" id="property_type_hint">
             {%- for pt in property_types -%}{%- if pt.value == defaults.property_type -%}{{ pt.hint }}{%- endif -%}{%- endfor -%}
           </span>
-        </div>
-
-        <div class="field col-6">
-          <label>{% trans %}OMI condition{% endtrans %}</label>
-          <div class="seg" role="group">
-            {% for v in omi_conditions %}
-            <button type="button" class="seg-btn{% if v == defaults.omi_condition %} on{% endif %}"
-              data-value="{{ v }}" onclick="setOmiCond(this)">{{ v | lower }}</button>
-            {% endfor %}
-          </div>
-          <input type="hidden" id="omi_condition" name="omi_condition"
-            value="{{ defaults.omi_condition }}">
         </div>
 
       </div>
@@ -173,7 +161,6 @@
         </div>
 
         <div class="field col-4">
-          <label>&nbsp;</label>
           <label class="check">
             <input type="checkbox" id="has_lift" name="has_lift"
               {% if defaults.has_lift %}checked{% endif %}>
@@ -182,7 +169,6 @@
         </div>
 
         <div class="field col-4">
-          <label>&nbsp;</label>
           <label class="check">
             <input type="checkbox" id="has_box" name="has_box"
               {% if defaults.has_box %}checked{% endif %}>
@@ -191,7 +177,6 @@
         </div>
 
         <div class="field col-4">
-          <label>&nbsp;</label>
           <label class="check">
             <input type="checkbox" id="has_second_bathroom" name="has_second_bathroom"
               {% if defaults.has_second_bathroom %}checked{% endif %}>
@@ -202,11 +187,10 @@
       </div>
     </div>
 
-    <div style="display:flex;gap:12px;margin-top:18px;align-items:center">
+    <div class="form-actions" style="margin-top:18px">
       <button class="btn" type="submit">
-        {% trans %}Run the check{% endtrans %} <span class="arrow">→</span>
+        {% trans %}Check{% endtrans %} <span class="arrow">→</span>
       </button>
-      <span style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--ink-fade);letter-spacing:0.08em;text-transform:uppercase">{% trans %}No data leaves your browser until submit{% endtrans %}</span>
     </div>
   </form>
 
@@ -249,13 +233,6 @@
 {% block scripts %}
 <script>
 (function () {
-  function setOmiCond(btn) {
-    btn.closest('.seg').querySelectorAll('.seg-btn').forEach(b => b.classList.remove('on'));
-    btn.classList.add('on');
-    document.getElementById('omi_condition').value = btn.dataset.value;
-  }
-  window.setOmiCond = setOmiCond;
-
   const map = L.map('zone-map', { zoomControl: true, scrollWheelZoom: false, attributionControl: false })
     .setView([45.4642, 9.19], 12);
 

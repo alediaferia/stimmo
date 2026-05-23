@@ -72,6 +72,19 @@ def available_zones() -> list[str]:
     return sorted(_df()["Zona"].dropna().unique().tolist())
 
 
+def available_conditions(zone_code: str, ptype: PropertyType) -> list[OmiCondition]:
+    """Return OMI conditions that have a quote for the given zone+type, ordered
+    from SCADENTE to OTTIMO."""
+    df = _df()
+    rows = df[
+        (df["Zona"] == zone_code)
+        & (df["Descr_Tipologia"] == ptype.value)
+        & df["Compr_min"].notna()
+    ]
+    states = {r for r in rows["Stato"].unique() if r in {c.value for c in OmiCondition}}
+    return [c for c in _CONDITION_ORDER if c.value in states]
+
+
 @cache
 def zone_price_index(
     ptype: PropertyType = PropertyType.CIVILI,
