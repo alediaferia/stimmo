@@ -1,6 +1,6 @@
 [project]
 name = "stimmo"
-version = "0.9.0"
+version = "0.10.0"
 description = "Fair-price estimator for Milan property listings, based on OMI quotations and OSM amenities."
 readme = "README.md"
 authors = [
