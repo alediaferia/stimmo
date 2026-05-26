@@ -4,14 +4,10 @@ from __future__ import annotations
 
 import json
 
-import pytest
-
 from stimmo.data import amenities, geocode, zones
-from stimmo.models import AmenityScore
 from stimmo.mcp import resources as _res
 from stimmo.mcp.tools import estimate_property, omi_history, omi_zone_for_point
-from stimmo.models import OmiCondition, PropertyType
-
+from stimmo.models import AmenityScore, OmiCondition, PropertyType
 
 # ── Resource locale tests ──────────────────────────────────────────────────
 

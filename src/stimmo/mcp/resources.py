@@ -34,17 +34,13 @@ def semester_resource() -> str:
 
 def property_type_vocab() -> str:
     items: list[dict[str, Any]] = [
-        {"value": pt.value, "hint": str(PROPERTY_TYPE_HINTS[pt])}
-        for pt in PropertyType
+        {"value": pt.value, "hint": str(PROPERTY_TYPE_HINTS[pt])} for pt in PropertyType
     ]
     return json.dumps(items, ensure_ascii=False)
 
 
 def fine_condition_vocab() -> str:
-    items = [
-        {"value": fc.value, "label": _FINE_CONDITION_LABELS[fc]}
-        for fc in FineCondition
-    ]
+    items = [{"value": fc.value, "label": _FINE_CONDITION_LABELS[fc]} for fc in FineCondition]
     return json.dumps(items, ensure_ascii=False)
 
 
@@ -59,18 +55,12 @@ def outdoor_vocab() -> str:
 
 
 def construction_era_vocab() -> str:
-    items = [
-        {"value": e.value, "label": str(CONSTRUCTION_ERA_LABELS[e])}
-        for e in ConstructionEra
-    ]
+    items = [{"value": e.value, "label": str(CONSTRUCTION_ERA_LABELS[e])} for e in ConstructionEra]
     return json.dumps(items, ensure_ascii=False)
 
 
 def orientation_vocab() -> str:
-    items = [
-        {"value": o.value, "label": str(ORIENTATION_LABELS[o])}
-        for o in Orientation
-    ]
+    items = [{"value": o.value, "label": str(ORIENTATION_LABELS[o])} for o in Orientation]
     return json.dumps(items, ensure_ascii=False)
 
 

@@ -23,7 +23,11 @@ def _gdf() -> gpd.GeoDataFrame:
 def list_zones() -> list[tuple[str, str]]:
     """Return (zone_code, zone_description) for every Milano OMI zone, sorted by code."""
     gdf = _gdf()
-    cols = gdf[["CODZONA", "Zona_Descr"]].drop_duplicates() if "Zona_Descr" in gdf.columns else gdf[["CODZONA"]].drop_duplicates()
+    cols = (
+        gdf[["CODZONA", "Zona_Descr"]].drop_duplicates()
+        if "Zona_Descr" in gdf.columns
+        else gdf[["CODZONA"]].drop_duplicates()
+    )
     out = []
     for _, row in cols.iterrows():
         code = str(row["CODZONA"])

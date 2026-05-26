@@ -10,12 +10,10 @@ from __future__ import annotations
 import json
 
 import httpx
-import pytest
 
 from stimmo.data import amenities, geocode, zones
 from stimmo.models import AmenityScore
 from tests.conftest import parse_mcp_response
-
 
 
 async def _initialize(client: httpx.AsyncClient) -> str | None:
@@ -133,7 +131,11 @@ async def test_prompts_get(http_client):
     assert "result" in data, data
     messages = data["result"]["messages"]
     assert len(messages) > 0
-    content = messages[0]["content"]["text"] if isinstance(messages[0]["content"], dict) else str(messages[0]["content"])
+    content = (
+        messages[0]["content"]["text"]
+        if isinstance(messages[0]["content"], dict)
+        else str(messages[0]["content"])
+    )
     assert "estimate_property" in content
 
 

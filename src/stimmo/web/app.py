@@ -152,7 +152,6 @@ class _CachedStaticFiles(StaticFiles):
 app.mount("/static", _CachedStaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
-
 # ---------------------------------------------------------------------------
 # Locale-neutral API endpoints
 # ---------------------------------------------------------------------------
@@ -707,6 +706,7 @@ def bare_path_redirect(request: Request, path: str) -> RedirectResponse:
 # strips the prefix and 307-redirects bare /mcp to /mcp/, which some MCP
 # clients don't follow on POST. Forwarding the scope verbatim sidesteps both.
 # ---------------------------------------------------------------------------
+
 
 async def application(scope, receive, send):
     if scope.get("type") in ("http", "websocket") and scope.get("path") == "/mcp":

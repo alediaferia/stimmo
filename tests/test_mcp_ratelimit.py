@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import json
-
 from starlette.testclient import TestClient
 
 from stimmo.mcp.ratelimit import RateLimitMiddleware
@@ -175,7 +173,7 @@ def test_all_expensive_tools_use_expensive_bucket():
 
         for _ in range(10):
             r = client.post("/", json=_expensive_body(tool_name), headers=headers)
-            assert r.status_code == 200, f"{tool_name}: expected 200 on call {_+1}"
+            assert r.status_code == 200, f"{tool_name}: expected 200 on call {_ + 1}"
 
         r = client.post("/", json=_expensive_body(tool_name), headers=headers)
         assert r.status_code == 429, f"{tool_name}: expected 429 on 11th call"

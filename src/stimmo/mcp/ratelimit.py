@@ -112,26 +112,30 @@ class RateLimitMiddleware:
 
         allowed, retry_after = self._bucket(ip, expensive).consume()
         if not allowed:
-            payload = json.dumps({
-                "jsonrpc": "2.0",
-                "error": {
-                    "code": -32000,
-                    "message": "rate_limited",
-                    "data": {
-                        "code": "rate_limited",
-                        "message": "Rate limit exceeded. Try again later.",
+            payload = json.dumps(
+                {
+                    "jsonrpc": "2.0",
+                    "error": {
+                        "code": -32000,
+                        "message": "rate_limited",
+                        "data": {
+                            "code": "rate_limited",
+                            "message": "Rate limit exceeded. Try again later.",
+                        },
                     },
-                },
-                "id": None,
-            }).encode()
-            await send({
-                "type": "http.response.start",
-                "status": 429,
-                "headers": [
-                    (b"content-type", b"application/json"),
-                    (b"retry-after", str(int(retry_after) + 1).encode()),
-                ],
-            })
+                    "id": None,
+                }
+            ).encode()
+            await send(
+                {
+                    "type": "http.response.start",
+                    "status": 429,
+                    "headers": [
+                        (b"content-type", b"application/json"),
+                        (b"retry-after", str(int(retry_after) + 1).encode()),
+                    ],
+                }
+            )
             await send({"type": "http.response.body", "body": payload})
             return
 

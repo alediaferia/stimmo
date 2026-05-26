@@ -73,9 +73,7 @@ def _resolve_zone(address: str, coords: tuple[float, float]) -> tuple[str, str]:
     return zone
 
 
-def _resolve_omi(
-    zone_code: str, property_type: PropertyType, omi_condition: OmiCondition
-) -> Any:
+def _resolve_omi(zone_code: str, property_type: PropertyType, omi_condition: OmiCondition) -> Any:
     available = omi_mod.available_conditions(zone_code, property_type)
     if available and omi_condition not in available:
         raise ToolError(

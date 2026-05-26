@@ -27,20 +27,14 @@ mcp.tool(description="Return the OMI €/m² band for an address without running
 )
 mcp.tool(
     description="Geocode a Milan address to (lat, lon) and verify it falls inside the comune."
-)(
-    _tools.geocode_milan_address
-)
+)(_tools.geocode_milan_address)
 mcp.tool(description="Return the OMI zone (code + description) for a (lat, lon) coordinate.")(
     _tools.omi_zone_for_point
 )
 mcp.tool(
     description="Return the amenity proximity score (transit, parks, shops) for a (lat, lon)."
-)(
-    _tools.amenity_score
-)
-mcp.tool(
-    description="Return the 8-semester OMI €/m² history series for a zone and property type."
-)(
+)(_tools.amenity_score)
+mcp.tool(description="Return the 8-semester OMI €/m² history series for a zone and property type.")(
     _tools.omi_history
 )
 
