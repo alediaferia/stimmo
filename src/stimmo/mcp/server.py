@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from mcp.server.fastmcp import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 
 from stimmo.mcp import resources as _res
 from stimmo.mcp import tools as _tools
@@ -15,6 +16,16 @@ mcp = FastMCP(
         "Consult stimmo://vocab/* resources for valid enum values before calling tools."
     ),
     stateless_http=True,
+    transport_security=TransportSecuritySettings(
+        enable_dns_rebinding_protection=True,
+        allowed_hosts=["stimmo.it", "localhost:*", "127.0.0.1:*"],
+        allowed_origins=[
+            "https://stimmo.it",
+            "https://claude.ai",
+            "http://localhost:*",
+            "http://127.0.0.1:*",
+        ],
+    ),
 )
 
 # ── Tools (register typed functions directly so FastMCP derives the schema) ─
