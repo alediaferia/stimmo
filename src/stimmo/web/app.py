@@ -121,7 +121,22 @@ def _tpl(request: Request, template: str, ctx: dict | None = None) -> HTMLRespon
 
 _IMPORT_REGISTRY = {"immobiliare": immobiliare.parse}
 
-app = FastAPI(title="stimmo — Milan fair-price estimator")
+# ── MCP: initialise before FastAPI app so the lifespan can wire the session manager ──
+from contextlib import asynccontextmanager  # noqa: E402
+
+from stimmo.mcp.server import build_mcp_app as _build_mcp_app  # noqa: E402
+from stimmo.mcp.server import get_session_manager as _get_mcp_sm  # noqa: E402
+
+_mcp_asgi_app = _build_mcp_app()
+
+
+@asynccontextmanager
+async def _lifespan(_app):
+    async with _get_mcp_sm().run():
+        yield
+
+
+app = FastAPI(title="stimmo — Milan fair-price estimator", lifespan=_lifespan)
 
 STATIC_DIR = Path(__file__).parent / "static"
 
@@ -135,6 +150,7 @@ class _CachedStaticFiles(StaticFiles):
 
 
 app.mount("/static", _CachedStaticFiles(directory=str(STATIC_DIR)), name="static")
+
 
 
 # ---------------------------------------------------------------------------
@@ -680,6 +696,23 @@ def bare_path_redirect(request: Request, path: str) -> RedirectResponse:
     if qs:
         target += f"?{qs}"
     return RedirectResponse(target, status_code=302)
+
+
+# ---------------------------------------------------------------------------
+# Top-level ASGI dispatcher: exact-match /mcp → MCP, everything else → FastAPI.
+#
+# MCP Streamable HTTP is a single endpoint (GET for SSE, POST for JSON-RPC) —
+# the spec defines no sub-paths under it, so exact-match is sufficient and
+# forward-stable. We avoid app.mount("/mcp", ...) because Starlette's Mount
+# strips the prefix and 307-redirects bare /mcp to /mcp/, which some MCP
+# clients don't follow on POST. Forwarding the scope verbatim sidesteps both.
+# ---------------------------------------------------------------------------
+
+async def application(scope, receive, send):
+    if scope.get("type") in ("http", "websocket") and scope.get("path") == "/mcp":
+        await _mcp_asgi_app(scope, receive, send)
+        return
+    await app(scope, receive, send)
 
 
 def _error(request: Request, errors: list[str]) -> HTMLResponse:

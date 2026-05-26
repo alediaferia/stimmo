@@ -20,6 +20,18 @@ def _gdf() -> gpd.GeoDataFrame:
     return gdf
 
 
+def list_zones() -> list[tuple[str, str]]:
+    """Return (zone_code, zone_description) for every Milano OMI zone, sorted by code."""
+    gdf = _gdf()
+    cols = gdf[["CODZONA", "Zona_Descr"]].drop_duplicates() if "Zona_Descr" in gdf.columns else gdf[["CODZONA"]].drop_duplicates()
+    out = []
+    for _, row in cols.iterrows():
+        code = str(row["CODZONA"])
+        descr = str(row["Zona_Descr"]).strip() if "Zona_Descr" in row.index else code
+        out.append((code, descr))
+    return sorted(out, key=lambda z: z[0])
+
+
 def zone_for_point(lat: float, lon: float) -> tuple[str, str] | None:
     """Returns (zone_code, zone_description) or None if the point is outside Milan."""
     gdf = _gdf()

@@ -40,8 +40,23 @@ Override the bind address via `STIMMO_HOST` / `STIMMO_PORT` env vars.
 - `src/stimmo/data/` — bundled OMI quotations, zone polygons, and history CSV; live calls to Nominatim and Overpass.
 - `src/stimmo/valuation/` — the estimation pipeline: adjustments (single tuning surface), engine, and verdict classifier.
 - `src/stimmo/web/` — FastAPI app and Jinja templates; `stimmo-web` entry point.
+- `src/stimmo/mcp/` — MCP server exposing the valuation pipeline over Streamable HTTP (mounted at `/mcp`).
 - `scripts/` — data refresh tooling (pulls latest OMI assets from the CKAN API).
 - `tests/` — pytest suite.
+
+## Connect from Claude
+
+stimmo speaks the [Model Context Protocol](https://modelcontextprotocol.io) at **`https://stimmo.it/mcp`** (Streamable HTTP, no auth, per-IP rate limits). Add to your Claude Desktop or Claude Code config:
+
+```json
+{
+  "mcpServers": {
+    "stimmo": { "type": "http", "url": "https://stimmo.it/mcp" }
+  }
+}
+```
+
+Tools: `estimate_property`, `lookup_omi_quote`, `geocode_milan_address`, `omi_zone_for_point`, `amenity_score`, `omi_history`. See [docs/mcp-server.md](docs/mcp-server.md) for the full surface, resources, prompts, and rate-limit tiers.
 
 ## Refreshing the data
 

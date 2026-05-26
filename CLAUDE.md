@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Status of the project
+
+This project is live and running at https://stimmo.it
+
 ## Commands
 
 ```sh
@@ -51,6 +55,16 @@ The engine is intentionally thin (`valuation/engine.py`): it asks `adjustments.c
 ### Frontend
 
 - `web/` — FastAPI (`web/app.py`) + Jinja templates (`web/templates/`), entry point `web/server.py` (`stimmo-web` script).
+
+### MCP server
+
+The `stimmo/mcp/` package exposes the valuation pipeline as a remote MCP server (Streamable HTTP) at `/mcp`. See [docs/mcp-server.md](docs/mcp-server.md) for the full reference. Key invariants:
+
+- **No `app.mount("/mcp", ...)`.** Streamable HTTP is a single endpoint with no sub-paths, so exact-match dispatch is sufficient. We avoid `Mount` because it strips the prefix and 307-redirects bare `/mcp` to `/mcp/`, which not every MCP client follows on POST. `web/app.py` defines a top-level `application` ASGI callable that exact-matches `/mcp` to the MCP sub-app and routes everything else to the FastAPI `app`. `stimmo-web` runs uvicorn against `stimmo.web.app:application`, not `:app`.
+- **Session manager started in the FastAPI lifespan.** `FastMCP.streamable_http_app()` is built once at import time so the session manager is a stable singleton; `_lifespan` drives `session_manager.run()`.
+- **Client IP is `CF-Connecting-IP`.** `mcp/ratelimit.py` reads this header (Cloudflare-set, unspoofable because the VPS exposes no public ports). Do not read `X-Forwarded-For` — in this topology it points at the cloudflared sidecar.
+- **No new pricing logic in tools.** `mcp/tools.py` is a thin async wrapper over `data/` and `valuation/engine.py`. Multipliers stay in `valuation/adjustments.py`.
+- **Cache + rate-limit interfaces.** `InMemoryCache` is behind a `Cache` protocol and the rate limiter uses an in-process dict — both designed to swap to Redis without touching tool code if a second replica is ever added.
 
 ### i18n
 
