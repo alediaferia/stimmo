@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  stimmo\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-23 08:49+0200\n"
+"POT-Creation-Date: 2026-05-27 08:37+0200\n"
 "PO-Revision-Date: 2026-05-05 08:34+0200\n"
 "Last-Translator: Alessandro Diaferia\n"
 "Language: it_IT\n"
@@ -114,77 +114,77 @@ msgstr "Est / ovest / misto"
 msgid "North / north-east"
 msgstr "Nord / nord-est"
 
-#: src/stimmo/web/app.py:404
+#: src/stimmo/web/app.py:419
 msgid "Invalid import request"
 msgstr "Richiesta di importazione non valida"
 
-#: src/stimmo/web/app.py:410
+#: src/stimmo/web/app.py:425
 msgid "Payload too large"
 msgstr "Carico utile troppo grande"
 
-#: src/stimmo/web/app.py:413
+#: src/stimmo/web/app.py:428
 msgid "Malformed import payload"
 msgstr "Carico utile di importazione malformato"
 
-#: src/stimmo/web/app.py:429
+#: src/stimmo/web/app.py:444
 msgid "Missing source or HTML content"
 msgstr "Mancano fonte o contenuto HTML"
 
-#: src/stimmo/web/app.py:432
+#: src/stimmo/web/app.py:447
 msgid "Pasted HTML too large"
 msgstr "HTML incollato troppo grande"
 
-#: src/stimmo/web/app.py:440
+#: src/stimmo/web/app.py:455
 msgid "Could not find listing data in pasted HTML"
 msgstr "Impossibile trovare i dati dell'annuncio nell'HTML incollato"
 
-#: src/stimmo/web/app.py:445
+#: src/stimmo/web/app.py:460
 msgid "Could not parse listing data"
 msgstr "Impossibile analizzare i dati dell'annuncio"
 
-#: src/stimmo/web/app.py:449
+#: src/stimmo/web/app.py:464
 msgid "Could not locate listing fields in pasted data"
 msgstr "Impossibile individuare i campi dell'annuncio nei dati incollati"
 
-#: src/stimmo/web/app.py:461
+#: src/stimmo/web/app.py:476
 msgid "Bookmarklet not available"
 msgstr "Bookmarklet non disponibile"
 
-#: src/stimmo/web/app.py:465
+#: src/stimmo/web/app.py:480
 msgid "stimmo: could not find listing data on this page"
 msgstr "stimmo: impossibile trovare i dati dell'annuncio in questa pagina"
 
-#: src/stimmo/web/app.py:529
+#: src/stimmo/web/app.py:544
 #, python-format
 msgid "Geocoding failed: %(e)s"
 msgstr "Geocodifica fallita: %(e)s"
 
-#: src/stimmo/web/app.py:533
+#: src/stimmo/web/app.py:548
 msgid "Address is outside the Milano comune — no OMI zone."
 msgstr "L'indirizzo è fuori dal comune di Milano — nessuna zona OMI."
 
-#: src/stimmo/web/app.py:572
+#: src/stimmo/web/app.py:587
 #, python-format
 msgid "OMI lookup failed: %(e)s"
 msgstr "Ricerca OMI fallita: %(e)s"
 
-#: src/stimmo/web/app.py:609
+#: src/stimmo/web/app.py:624
 msgid "OMI low"
 msgstr "OMI basso"
 
-#: src/stimmo/web/app.py:610
+#: src/stimmo/web/app.py:625
 msgid "Ask low"
 msgstr "Prezzo richiesto basso"
 
-#: src/stimmo/web/app.py:611
+#: src/stimmo/web/app.py:626
 msgid "Ask mid"
 msgstr "Prezzo richiesto medio"
 
-#: src/stimmo/web/app.py:612
+#: src/stimmo/web/app.py:627
 msgid "OMI high"
 msgstr "OMI alto"
 
-#: src/stimmo/web/app.py:613
+#: src/stimmo/web/app.py:628
 msgid "Ask high"
 msgstr "Prezzo richiesto alto"
 
@@ -243,7 +243,7 @@ msgstr "Pianta scomoda (%(rooms)s locali · %(m2_per_locale)s m²/locale)"
 
 #: src/stimmo/web/labels.py:62
 msgid "Lift"
-msgstr ""
+msgstr "Ascensore"
 
 #: src/stimmo/web/labels.py:64 src/stimmo/web/templates/form.html:183
 msgid "Second bathroom"
@@ -1028,8 +1028,8 @@ msgid "Back to form"
 msgstr "Torna al modulo"
 
 #: src/stimmo/web/templates/form.html:2
-msgid "estimate"
-msgstr "stima"
+msgid "Milan property listings: is the price right?"
+msgstr "Annunci immobiliari a Milano: il prezzo è giusto?"
 
 #: src/stimmo/web/templates/form.html:12
 msgid "Is this Milan listing <em>fair</em>?"
@@ -1628,4 +1628,7 @@ msgstr "Immobile"
 
 #~ msgid "No data leaves your browser until submit"
 #~ msgstr "Nessun dato lascia il tuo browser fino all'invio"
+
+#~ msgid "estimate"
+#~ msgstr "stima"
 

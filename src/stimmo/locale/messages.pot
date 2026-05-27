@@ -102,77 +102,77 @@ msgstr ""
 msgid "North / north-east"
 msgstr ""
 
-#: src/stimmo/web/app.py:404
+#: src/stimmo/web/app.py:419
 msgid "Invalid import request"
 msgstr ""
 
-#: src/stimmo/web/app.py:410
+#: src/stimmo/web/app.py:425
 msgid "Payload too large"
 msgstr ""
 
-#: src/stimmo/web/app.py:413
+#: src/stimmo/web/app.py:428
 msgid "Malformed import payload"
 msgstr ""
 
-#: src/stimmo/web/app.py:429
+#: src/stimmo/web/app.py:444
 msgid "Missing source or HTML content"
 msgstr ""
 
-#: src/stimmo/web/app.py:432
+#: src/stimmo/web/app.py:447
 msgid "Pasted HTML too large"
 msgstr ""
 
-#: src/stimmo/web/app.py:440
+#: src/stimmo/web/app.py:455
 msgid "Could not find listing data in pasted HTML"
 msgstr ""
 
-#: src/stimmo/web/app.py:445
+#: src/stimmo/web/app.py:460
 msgid "Could not parse listing data"
 msgstr ""
 
-#: src/stimmo/web/app.py:449
+#: src/stimmo/web/app.py:464
 msgid "Could not locate listing fields in pasted data"
 msgstr ""
 
-#: src/stimmo/web/app.py:461
+#: src/stimmo/web/app.py:476
 msgid "Bookmarklet not available"
 msgstr ""
 
-#: src/stimmo/web/app.py:465
+#: src/stimmo/web/app.py:480
 msgid "stimmo: could not find listing data on this page"
 msgstr ""
 
-#: src/stimmo/web/app.py:529
+#: src/stimmo/web/app.py:544
 #, python-format
 msgid "Geocoding failed: %(e)s"
 msgstr ""
 
-#: src/stimmo/web/app.py:533
+#: src/stimmo/web/app.py:548
 msgid "Address is outside the Milano comune — no OMI zone."
 msgstr ""
 
-#: src/stimmo/web/app.py:572
+#: src/stimmo/web/app.py:587
 #, python-format
 msgid "OMI lookup failed: %(e)s"
 msgstr ""
 
-#: src/stimmo/web/app.py:609
+#: src/stimmo/web/app.py:624
 msgid "OMI low"
 msgstr ""
 
-#: src/stimmo/web/app.py:610
+#: src/stimmo/web/app.py:625
 msgid "Ask low"
 msgstr ""
 
-#: src/stimmo/web/app.py:611
+#: src/stimmo/web/app.py:626
 msgid "Ask mid"
 msgstr ""
 
-#: src/stimmo/web/app.py:612
+#: src/stimmo/web/app.py:627
 msgid "OMI high"
 msgstr ""
 
-#: src/stimmo/web/app.py:613
+#: src/stimmo/web/app.py:628
 msgid "Ask high"
 msgstr ""
 
@@ -910,7 +910,7 @@ msgid "Back to form"
 msgstr ""
 
 #: src/stimmo/web/templates/form.html:2
-msgid "estimate"
+msgid "Milan property listings: is the price right?"
 msgstr ""
 
 #: src/stimmo/web/templates/form.html:12
