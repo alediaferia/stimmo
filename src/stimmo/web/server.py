@@ -17,6 +17,11 @@ def _parse_port(raw: str) -> int:
 def main() -> None:
     host = os.environ.get("STIMMO_HOST", "127.0.0.1")
     port = _parse_port(os.environ.get("STIMMO_PORT", "8000"))
+    metrics_port = os.environ.get("STIMMO_METRICS_PORT")
+    if metrics_port:
+        from stimmo.web.metrics import start_metrics_server
+
+        start_metrics_server(int(metrics_port))
     uvicorn.run("stimmo.web.app:application", host=host, port=port, reload=False)
 
 
