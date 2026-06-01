@@ -19,6 +19,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import ValidationError
 
 from stimmo.data import amenities, geocode, history, ntn, omi, zones
+from stimmo.web import metrics as _metrics
 from stimmo.data.importers import immobiliare
 from stimmo.i18n import (
     LANG_TO_LOCALE,
@@ -708,11 +709,16 @@ def bare_path_redirect(request: Request, path: str) -> RedirectResponse:
 # ---------------------------------------------------------------------------
 
 
-async def application(scope, receive, send):
+async def _dispatch(scope, receive, send):
     if scope.get("type") in ("http", "websocket") and scope.get("path") == "/mcp":
+        # Hard-code endpoint name so the metrics middleware labels this branch "mcp".
+        scope["endpoint"] = type("_mcp_endpoint", (), {"__name__": "mcp"})()
         await _mcp_asgi_app(scope, receive, send)
         return
     await app(scope, receive, send)
+
+
+application = _metrics.instrument(_dispatch)
 
 
 def _error(request: Request, errors: list[str]) -> HTMLResponse:
