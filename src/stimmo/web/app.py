@@ -19,7 +19,6 @@ from fastapi.templating import Jinja2Templates
 from pydantic import ValidationError
 
 from stimmo.data import amenities, geocode, history, ntn, omi, zones
-from stimmo.web import metrics as _metrics
 from stimmo.data.importers import immobiliare
 from stimmo.i18n import (
     LANG_TO_LOCALE,
@@ -55,6 +54,7 @@ from stimmo.models import (
 from stimmo.valuation import engine
 from stimmo.valuation.verdict import HIGH_TOL
 from stimmo.web import labels as _labels
+from stimmo.web import metrics as _metrics
 
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))

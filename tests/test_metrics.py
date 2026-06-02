@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from stimmo.web.metrics import instrument, REQUESTS, LATENCY
-
+from stimmo.web.metrics import LATENCY, REQUESTS, instrument
 
 # ---------------------------------------------------------------------------
 # Helpers
