@@ -48,7 +48,7 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
-    "anyio[trio]>=4.0",
+    "anyio[trio]>=4.13.0",
     "commitizen>=4.15.1",
     "fonttools[woff]>=4.63.0",
     "httpx>=0.28.1",
