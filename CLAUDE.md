@@ -79,3 +79,18 @@ All routes are prefixed `/{lang}/` (`it` or `en`). Locale negotiation order: `st
 Adding or changing UI strings: edit the template, run `pybabel extract` + `pybabel update`, then run `scripts/translate_po.py --locale it_IT` to fill in Italian translations (never write `msgstr` values by hand), then run `pybabel compile`.
 
 **Translation invariant — never hand-write `msgstr` values.** All Italian translations must be produced by `scripts/translate_po.py`. Writing Italian text directly into `.po` files bypasses the approved translation pipeline and must not happen, even for short or "obvious" strings.
+
+### Observability
+
+`web/metrics.py` wraps the top-level ASGI dispatcher with a Prometheus middleware. Collectors:
+
+- `stimmo_http_requests_total` — Counter, labels: `method`, `route`, `status`
+- `stimmo_http_request_duration_seconds` — Histogram, labels: `method`, `route`
+
+Key invariants:
+
+- **Instrumented at the dispatcher, not FastAPI.** `_dispatch` in `web/app.py` is wrapped by `metrics.instrument()`; this is the only place that sees every request including `/mcp`.
+- **`route` label = `scope["endpoint"].__name__`**, not the raw path. For the `/mcp` branch a synthetic endpoint object is injected before dispatch. Never label by path — lang prefixes and dynamic segments would explode cardinality.
+- **`/metrics` is NOT a FastAPI route.** It is served by `prometheus_client.start_http_server()` on a separate port (`:9100`), started in `server.py:main()` only when `STIMMO_METRICS_PORT` is set. This keeps it off the public Cloudflare tunnel.
+- **Single process** — default global registry is correct. If `--workers` is ever added, switch to `prometheus_client` multiprocess mode.
+- Grafana is accessible only via SSH tunnel (`ssh -L 3000:127.0.0.1:3000 <vps>`); Prometheus is internal to `stimmo-net` only.
