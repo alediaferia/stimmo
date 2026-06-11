@@ -17,14 +17,16 @@ Required:
 - asking_price_eur (positive number)
 - construction_era (one of: "pre_war", "postwar_boom", "eighties_90s", "contemporary", "recent")
 
-Optional — use these defaults when not clearly stated, do NOT ask the user:
-- energy_class        → null
-- outdoor             → "none"
+Optional — ask the user before calling the tool if not clearly stated in the listing:
+- energy_class        (one of: "A4","A3","A2","A1","B","C","D","E","F","G"; null if truly unknown)
+- outdoor             (one of: "none","balcony","terrace","garden")
+- room_count          (positive integer, Italian "locali")
+- has_second_bathroom (true / false)
+
+Optional — use these defaults silently, do NOT ask the user:
 - has_box             → false
 - orientation         → "mixed"
 - exposure            → "street"
-- has_second_bathroom → false
-- room_count          → null
 
 After calling `estimate_property`, present:
 1. Verdict (under-priced / fair / over-priced)
