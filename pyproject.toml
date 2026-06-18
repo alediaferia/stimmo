@@ -33,6 +33,7 @@ dependencies = [
     "shapely>=2.1.2",
     "uvicorn>=0.48.0",
     "prometheus-client>=0.21",
+    "httpx2>=2.4.0",
 ]
 
 [project.urls]
