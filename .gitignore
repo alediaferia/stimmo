@@ -12,6 +12,9 @@ src/stimmo/locale/**/*.mo
 # Virtual environments
 .venv
 
+# Local environment / secrets
+.env
+
 # Editor
 .vscode/
 .idea/
@@ -19,13 +22,13 @@ src/stimmo/locale/**/*.mo
 # OMI staging directories (Forniture OMI downloads, imported then deleted)
 src/stimmo/data/assets/omi-*/
 
-# Claude Code (and other agent CLIs) — session-scoped, never share
+# Claude Code (and other agent CLIs) — session-scoped or personal, never share.
+# Shared, portable config lives in .claude/settings.json and .claude/agents/ (committed).
 .claude/plans/
 .claude/reports/
 .claude/journals/
 .claude/memory/
 .claude/settings.local.json
-.claude/settings.json
 
 # Other agent tooling
 .aider*

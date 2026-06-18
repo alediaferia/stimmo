@@ -30,6 +30,12 @@ uv run python scripts/translate_po.py --locale it_IT --dry-run # preview only
 
 Python >= 3.12. Dependency + script management is via `uv` (see `pyproject.toml`); don't invoke `python` / `pip` directly.
 
+## Working in this repo
+
+- **Repository.** Hosted at github.com/alediaferia/stimmo as a public repository.
+- **Committing.** When the user asks to commit pending changes, use the `git-commit-curator` subagent (Agent tool with `subagent_type: "git-commit-curator"`); do not commit directly with Bash. Commits follow strict Conventional Commits — see `CONTRIBUTING.md`.
+- **CI/CD.** For pipeline-specific work (debugging CI failures, extending GitHub Actions), use the `github-ci-pipeline-maintainer` subagent.
+
 ## Architecture
 
 stimmo estimates whether a Milan listing's asking price is under/fair/over, built around a single-pass pipeline with **no ML** — the entire tuning surface is one coefficients file.
