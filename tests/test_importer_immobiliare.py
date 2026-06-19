@@ -170,12 +170,16 @@ class TestParserFieldExtraction:
         assert result["has_box"] is True
 
     def test_address_null_street_number(self):
-        payload = {"location": {"address": "Via Lomazzo , 4", "streetNumber": None, "city": "Milano"}}
+        payload = {
+            "location": {"address": "Via Lomazzo , 4", "streetNumber": None, "city": "Milano"}
+        }
         result = parse(payload)
         assert result["address"] == "Via Lomazzo , 4, Milano"
 
     def test_address_city_as_object(self):
-        payload = {"location": {"address": "Via Test", "streetNumber": "5", "city": {"name": "Milano"}}}
+        payload = {
+            "location": {"address": "Via Test", "streetNumber": "5", "city": {"name": "Milano"}}
+        }
         result = parse(payload)
         assert result["address"] == "Via Test, 5, Milano"
 

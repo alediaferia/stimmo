@@ -191,7 +191,9 @@ def _parse_total_floors(floors_str: str | None) -> int | None:
 
 
 def _build_type_search_string(payload: dict) -> str:
-    """Build lowercase search string from typologyValue, typology.name, category.name, mainFeatures labels."""
+    """Build lowercase search string from typologyValue, typology.name,
+    category.name, mainFeatures labels.
+    """
     parts = []
     if payload.get("typologyValue"):
         parts.append(str(payload["typologyValue"]))
@@ -309,10 +311,7 @@ def _parse_has_box(payload: dict) -> bool:
 
     # Also check the top-level "garage" string field (e.g. "2 in box privato/box in garage")
     garage_str = str(payload.get("garage") or "").lower()
-    if any(w in garage_str for w in ["garage", "box", "posto auto"]):
-        return True
-
-    return False
+    return any(w in garage_str for w in ["garage", "box", "posto auto"])
 
 
 def _year_to_era(year: int) -> ConstructionEra | None:
