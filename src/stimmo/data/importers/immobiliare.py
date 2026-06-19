@@ -23,10 +23,13 @@ def parse(payload: dict) -> dict[str, Any]:
     result: dict[str, Any] = {}
 
     # address: combine location.address, streetNumber, city
+    # Use `or ""` instead of default="" so explicit null values don't cause AttributeError.
     try:
-        address = payload.get("location", {}).get("address", "").strip()
-        street_num = payload.get("location", {}).get("streetNumber", "").strip()
-        city = payload.get("location", {}).get("city", "").strip()
+        loc = payload.get("location") or {}
+        address = (loc.get("address") or "").strip()
+        street_num = (loc.get("streetNumber") or "").strip()
+        city_raw = loc.get("city") or ""
+        city = city_raw.get("name", "") if isinstance(city_raw, dict) else str(city_raw).strip()
         parts = [address, street_num, city]
         full = ", ".join(p for p in parts if p)
         if full:
@@ -188,7 +191,7 @@ def _parse_total_floors(floors_str: str | None) -> int | None:
 
 
 def _build_type_search_string(payload: dict) -> str:
-    """Build lowercase search string from typologyValue, typology.name, category.name."""
+    """Build lowercase search string from typologyValue, typology.name, category.name, mainFeatures labels."""
     parts = []
     if payload.get("typologyValue"):
         parts.append(str(payload["typologyValue"]))
@@ -196,6 +199,9 @@ def _build_type_search_string(payload: dict) -> str:
         parts.append(str(payload["typology"]["name"]))
     if payload.get("category", {}).get("name"):
         parts.append(str(payload["category"]["name"]))
+    for feat in payload.get("mainFeatures", []):
+        if feat.get("label"):
+            parts.append(str(feat["label"]))
     return " ".join(parts).lower()
 
 
@@ -300,6 +306,11 @@ def _parse_has_box(payload: dict) -> bool:
             return True
         if any(w in feat for w in ["basement", "cantina"]):
             continue
+
+    # Also check the top-level "garage" string field (e.g. "2 in box privato/box in garage")
+    garage_str = str(payload.get("garage") or "").lower()
+    if any(w in garage_str for w in ["garage", "box", "posto auto"]):
+        return True
 
     return False
 

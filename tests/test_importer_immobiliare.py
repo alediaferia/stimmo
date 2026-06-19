@@ -169,6 +169,29 @@ class TestParserFieldExtraction:
         result = parse(payload)
         assert result["has_box"] is True
 
+    def test_address_null_street_number(self):
+        payload = {"location": {"address": "Via Lomazzo , 4", "streetNumber": None, "city": "Milano"}}
+        result = parse(payload)
+        assert result["address"] == "Via Lomazzo , 4, Milano"
+
+    def test_address_city_as_object(self):
+        payload = {"location": {"address": "Via Test", "streetNumber": "5", "city": {"name": "Milano"}}}
+        result = parse(payload)
+        assert result["address"] == "Via Test, 5, Milano"
+
+    def test_has_box_from_garage_field(self):
+        payload = {"garage": "2 in box privato/box in garage"}
+        result = parse(payload)
+        assert result["has_box"] is True
+
+    def test_property_type_signorili_from_main_features_label(self):
+        payload = {
+            "typologyValue": "Appartamento",
+            "mainFeatures": [{"type": "rooms", "label": "Lusso"}],
+        }
+        result = parse(payload)
+        assert result["property_type"] == PropertyType.SIGNORILI.value
+
     def test_has_box_excludes_basement(self):
         payload = {
             "primaryFeatures": [
