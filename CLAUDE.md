@@ -33,8 +33,10 @@ Python >= 3.12. Dependency + script management is via `uv` (see `pyproject.toml`
 ## Working in this repo
 
 - **Repository.** Hosted at github.com/alediaferia/stimmo as a public repository.
+- **Default routing.** For concrete build/fix work (features, bug fixes, refactors), use the `stimmo-maintainer` subagent (Agent tool with `subagent_type: "stimmo-maintainer"`) — the hands-on implementer that knows the architecture invariants. For open-ended direction (what to build next, dependency/health/modernization, large architectural changes), use the `stimmo-architect` subagent (`subagent_type: "stimmo-architect"`) — it proposes and prioritizes, then hands implementation back to the maintainer. The top-level session stays the orchestrator: spawn these agents rather than relying on them to spawn one another.
 - **Committing.** When the user asks to commit pending changes, use the `git-commit-curator` subagent (Agent tool with `subagent_type: "git-commit-curator"`); do not commit directly with Bash. Commits follow strict Conventional Commits — see `CONTRIBUTING.md`.
 - **CI/CD.** For pipeline-specific work (debugging CI failures, extending GitHub Actions), use the `github-ci-pipeline-maintainer` subagent.
+- **End-to-end validation.** After significant changes (engine, adjustments, importer, web, i18n, MCP), use the `stimmo-e2e-validator` subagent to smoke-test the real import → estimate flow against a live Milan listing.
 
 ## Architecture
 
