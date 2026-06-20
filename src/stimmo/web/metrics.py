@@ -20,6 +20,16 @@ LATENCY: prometheus_client.Histogram = prometheus_client.Histogram(
     ["method", "route"],
 )
 
+# Share-link adoption + token-health. `outcome` is needed because invalid/expired
+# tokens are served as normal 200/404 responses and would otherwise be invisible
+# in the HTTP counters. event=open (share page) | og_render (social card image);
+# outcome=ok | invalid (bad/forged token) | error (valid token, recompute failed).
+SHARE_EVENTS: prometheus_client.Counter = prometheus_client.Counter(
+    "stimmo_share_events_total",
+    "Share-link open / OG-render outcomes",
+    ["event", "outcome"],
+)
+
 
 def instrument(app_callable: Callable) -> Callable:
     """Wrap an ASGI callable to record per-route request count and latency."""
