@@ -8,6 +8,7 @@
   <meta name="theme-color" content="#caa869">
   <meta name="description" content="{% trans %}Fair-price check for Milan apartment listings — OMI-anchored, no machine learning, every multiplier visible.{% endtrans %}">
 
+  {% block og_meta %}
   <meta property="og:type" content="website">
   <meta property="og:title" content="stimmo — {% trans %}Milan fair-price check{% endtrans %}">
   <meta property="og:description" content="{% trans %}Fair-price check for Milan apartment listings — OMI-anchored, no machine learning, every multiplier visible.{% endtrans %}">
@@ -19,6 +20,7 @@
   <meta name="twitter:title" content="stimmo — {% trans %}Milan fair-price check{% endtrans %}">
   <meta name="twitter:description" content="{% trans %}Fair-price check for Milan apartment listings — OMI-anchored, no machine learning, every multiplier visible.{% endtrans %}">
   <meta name="twitter:image" content="{{ request.base_url }}{{ static_url('og-image.png').lstrip('/') }}">
+  {% endblock %}
 
   <link rel="icon" type="image/svg+xml" href="{{ static_url('stimmo-favicon.svg') }}">
   <link rel="icon" type="image/png" sizes="64x64" href="{{ static_url('favicon-64.png') }}">

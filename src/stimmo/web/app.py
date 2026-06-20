@@ -45,6 +45,7 @@ from stimmo.models import (
     Exposure,
     FineCondition,
     OmiCondition,
+    OmiQuote,
     Orientation,
     Outdoor,
     Property,
@@ -55,6 +56,8 @@ from stimmo.valuation import engine
 from stimmo.valuation.verdict import HIGH_TOL
 from stimmo.web import labels as _labels
 from stimmo.web import metrics as _metrics
+from stimmo.web import ogimage as _ogimage
+from stimmo.web import share as _share
 
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
@@ -487,6 +490,83 @@ def bookmarklet_page(request: Request, lang: str = FPath(pattern=_LANG_RE)) -> H
     return _tpl(request, "bookmarklet.html", {"bookmarklet_href": bookmarklet_href})
 
 
+def _build_result_context(
+    request: Request,
+    lang: str,
+    prop: Property,
+    lat: float,
+    lon: float,
+    amen: AmenityScore,
+    quote: OmiQuote,
+    zone_code: str,
+    amenity_status: str = "ok",
+    amenity_error: str | None = None,
+) -> dict:
+    """Build the full template context for result.html from resolved inputs.
+
+    Shared by the live estimate POST path and the share-token GET path so the
+    engine, history, NTN, gauge, and share-URL logic stay in one place.  Callers
+    own the zone lookup and OMI quote fetch (their error handling differs) and
+    pass the resolved ``quote``/``zone_code`` in.
+    """
+    est = engine.estimate(prop, quote, amen)
+    series = history.series(zone_code, prop.property_type, prop.omi_condition)
+    ntn_total = ntn.total_quarters(last_n=8)
+    bucket_label, ntn_bucket = ntn.by_bucket_quarters(prop.surface_m2, last_n=8)
+    bucket_by_q = {p_.quarter: p_.ntn for p_ in ntn_bucket}
+
+    asking = prop.asking_price_eur
+    verdict_high = est.ask_range_high_eur * HIGH_TOL
+    g_lo = min(est.ask_range_low_eur, est.range_low_eur) * 0.92
+    g_hi = max(verdict_high, asking, est.range_high_eur) * 1.06
+
+    def _x(v: float) -> float:
+        return (v - g_lo) / (g_hi - g_lo) * 100
+
+    gauge = {
+        "omi_band": {
+            "left": _x(est.range_low_eur),
+            "width": _x(est.range_high_eur) - _x(est.range_low_eur),
+        },
+        "ask_band": {
+            "left": _x(est.ask_range_low_eur),
+            "width": _x(verdict_high) - _x(est.ask_range_low_eur),
+        },
+        "ticks": [
+            {"label": _("OMI low"), "value": est.range_low_eur, "x": _x(est.range_low_eur)},
+            {"label": _("Ask low"), "value": est.ask_range_low_eur, "x": _x(est.ask_range_low_eur)},
+            {"label": _("Ask mid"), "value": est.ask_range_mid_eur, "x": _x(est.ask_range_mid_eur)},
+            {"label": _("OMI high"), "value": est.range_high_eur, "x": _x(est.range_high_eur)},
+            {"label": _("Ask high"), "value": verdict_high, "x": _x(verdict_high)},
+        ],
+        "asking_x": _x(asking),
+    }
+
+    # Build absolute share URL (works behind Cloudflare: use request.base_url for scheme+host)
+    token = _share.encode(prop, lat, lon, amen)
+    base = str(request.base_url).rstrip("/")
+    share_url = f"{base}/{lang}/s/{token}"
+    og_image_url = f"{base}/og/{token}.png"
+
+    return {
+        "p": prop,
+        "est": est,
+        "lat": lat,
+        "lon": lon,
+        "history_series": series,
+        "ntn_total": ntn_total,
+        "bucket_label": bucket_label,
+        "bucket_by_q": bucket_by_q,
+        "amenity_status": amenity_status,
+        "amenity_error": amenity_error,
+        "semester_months_old": _semester_months_old(est.omi_quote.semester),
+        "gauge": gauge,
+        "share_url": share_url,
+        "og_image_url": og_image_url,
+        "token": token,
+    }
+
+
 @app.post("/{lang}/estimate", response_class=HTMLResponse)
 def estimate(
     request: Request,
@@ -597,57 +677,85 @@ def estimate(
         amenity_error = str(e)
         amen = AmenityScore()
 
-    est = engine.estimate(prop, quote, amen)
-    series = history.series(zone_code, prop.property_type, prop.omi_condition)
-    ntn_total = ntn.total_quarters(last_n=8)
-    bucket_label, ntn_bucket = ntn.by_bucket_quarters(prop.surface_m2, last_n=8)
-
-    bucket_by_q = {p_.quarter: p_.ntn for p_ in ntn_bucket}
-
-    asking = prop.asking_price_eur
-    verdict_high = est.ask_range_high_eur * HIGH_TOL
-    g_lo = min(est.ask_range_low_eur, est.range_low_eur) * 0.92
-    g_hi = max(verdict_high, asking, est.range_high_eur) * 1.06
-
-    def _x(v: float) -> float:
-        return (v - g_lo) / (g_hi - g_lo) * 100
-
-    gauge = {
-        "omi_band": {
-            "left": _x(est.range_low_eur),
-            "width": _x(est.range_high_eur) - _x(est.range_low_eur),
-        },
-        "ask_band": {
-            "left": _x(est.ask_range_low_eur),
-            "width": _x(verdict_high) - _x(est.ask_range_low_eur),
-        },
-        "ticks": [
-            {"label": _("OMI low"), "value": est.range_low_eur, "x": _x(est.range_low_eur)},
-            {"label": _("Ask low"), "value": est.ask_range_low_eur, "x": _x(est.ask_range_low_eur)},
-            {"label": _("Ask mid"), "value": est.ask_range_mid_eur, "x": _x(est.ask_range_mid_eur)},
-            {"label": _("OMI high"), "value": est.range_high_eur, "x": _x(est.range_high_eur)},
-            {"label": _("Ask high"), "value": verdict_high, "x": _x(verdict_high)},
-        ],
-        "asking_x": _x(asking),
-    }
-
-    return _tpl(
+    ctx = _build_result_context(
         request,
-        "result.html",
-        {
-            "p": prop,
-            "est": est,
-            "lat": lat,
-            "lon": lon,
-            "history_series": series,
-            "ntn_total": ntn_total,
-            "bucket_label": bucket_label,
-            "bucket_by_q": bucket_by_q,
-            "amenity_status": amenity_status,
-            "amenity_error": amenity_error,
-            "semester_months_old": _semester_months_old(est.omi_quote.semester),
-            "gauge": gauge,
-        },
+        lang,
+        prop,
+        lat,
+        lon,
+        amen,
+        quote,
+        zone_code,
+        amenity_status=amenity_status,
+        amenity_error=amenity_error,
+    )
+    return _tpl(request, "result.html", ctx)
+
+
+@app.get("/{lang}/s/{token}", response_class=HTMLResponse)
+def share_view(
+    request: Request,
+    lang: str = FPath(pattern=_LANG_RE),
+    token: str = FPath(min_length=1),
+) -> HTMLResponse:
+    """Decode a share token and render result.html without hitting live services."""
+    _set_locale(request, lang)
+    try:
+        prop, lat, lon, amen = _share.decode(token)
+    except _share.ShareTokenError:
+        _metrics.SHARE_EVENTS.labels(event="open", outcome="invalid").inc()
+        return _error(request, [_("Invalid or expired share link.")])
+
+    z = zones.zone_for_point(lat, lon)
+    if z is None:
+        _metrics.SHARE_EVENTS.labels(event="open", outcome="error").inc()
+        return _error(request, [_("Address is outside the Milano comune — no OMI zone.")])
+    zone_code, zone_name = z
+
+    try:
+        quote = omi.lookup(zone_code, prop.property_type, prop.omi_condition)
+    except LookupError as e:
+        _metrics.SHARE_EVENTS.labels(event="open", outcome="error").inc()
+        return _error(request, [_("OMI lookup failed: %(e)s") % {"e": e}])
+    quote.zone_descr = zone_name
+
+    ctx = _build_result_context(request, lang, prop, lat, lon, amen, quote, zone_code)
+    ctx["is_shared_view"] = True
+    _metrics.SHARE_EVENTS.labels(event="open", outcome="ok").inc()
+    return _tpl(request, "result.html", ctx)
+
+
+@app.get("/og/{token}.png")
+def og_image(token: str) -> Response:
+    """Render a 1200×630 branded OG image for the given share token."""
+    try:
+        prop, _lat, _lon, amen = _share.decode(token)
+    except _share.ShareTokenError as exc:
+        _metrics.SHARE_EVENTS.labels(event="og_render", outcome="invalid").inc()
+        raise HTTPException(status_code=404, detail="Invalid share token") from exc
+
+    # Recompute estimate for the image (zone + OMI lookup — cheap, bundled data)
+    z = zones.zone_for_point(_lat, _lon)
+    if z is None:
+        _metrics.SHARE_EVENTS.labels(event="og_render", outcome="error").inc()
+        raise HTTPException(status_code=404, detail="Address outside Milano comune")
+    zone_code, zone_name = z
+
+    try:
+        quote = omi.lookup(zone_code, prop.property_type, prop.omi_condition)
+    except LookupError as exc:
+        _metrics.SHARE_EVENTS.labels(event="og_render", outcome="error").inc()
+        raise HTTPException(status_code=404, detail="OMI lookup failed") from exc
+    quote.zone_descr = zone_name
+
+    est = engine.estimate(prop, quote, amen)
+
+    png_bytes = _ogimage.render(est, prop)
+    _metrics.SHARE_EVENTS.labels(event="og_render", outcome="ok").inc()
+    return Response(
+        content=png_bytes,
+        media_type="image/png",
+        headers={"Cache-Control": "public, max-age=86400, immutable"},
     )
 
 

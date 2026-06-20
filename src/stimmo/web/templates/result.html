@@ -1,5 +1,32 @@
 {% extends "base.html" %}
 {% block title %}stimmo — {{ p.address.split(',')[0] }}{% endblock %}
+
+{% block og_meta %}
+{% if share_url %}
+<meta property="og:type" content="article">
+<meta property="og:title" content="stimmo · {{ est.verdict | upper }} · {{ p.address.split(',')[0] }}">
+<meta property="og:description" content="{{ p.surface_m2 }} m² · {{ p.asking_price_eur | eur }} · {% trans %}adjusted{% endtrans %} {{ est.adjusted_eur_m2_mid | num }} €/m²">
+<meta property="og:image" content="{{ og_image_url }}">
+<meta property="og:url" content="{{ share_url }}">
+<meta property="og:locale" content="{{ locale }}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="stimmo · {{ est.verdict | upper }} · {{ p.address.split(',')[0] }}">
+<meta name="twitter:description" content="{{ p.surface_m2 }} m² · {{ p.asking_price_eur | eur }} · {% trans %}adjusted{% endtrans %} {{ est.adjusted_eur_m2_mid | num }} €/m²">
+<meta name="twitter:image" content="{{ og_image_url }}">
+{% else %}
+<meta property="og:type" content="website">
+<meta property="og:title" content="stimmo — {% trans %}Milan fair-price check{% endtrans %}">
+<meta property="og:description" content="{% trans %}Fair-price check for Milan apartment listings — OMI-anchored, no machine learning, every multiplier visible.{% endtrans %}">
+<meta property="og:image" content="{{ request.base_url }}{{ static_url('og-image.png').lstrip('/') }}">
+<meta property="og:url" content="{{ request.url }}">
+<meta property="og:locale" content="{{ locale }}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="stimmo — {% trans %}Milan fair-price check{% endtrans %}">
+<meta name="twitter:description" content="{% trans %}Fair-price check for Milan apartment listings — OMI-anchored, no machine learning, every multiplier visible.{% endtrans %}">
+<meta name="twitter:image" content="{{ request.base_url }}{{ static_url('og-image.png').lstrip('/') }}">
+{% endif %}
+{% endblock %}
+
 {% block content %}
 
 <div class="pagehead">
@@ -18,8 +45,11 @@
     {% trans %}Zone{% endtrans %} <b>{{ est.omi_quote.zone_code }}</b><br>
     {{ est.omi_quote.zone_descr or "" }}<br>
     <span style="opacity:0.7">{% trans %}Semester{% endtrans %} {{ est.omi_quote.semester }}</span>
-    <div style="margin-top:10px">
+    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
       <a href="/{{ lang }}/" class="btn btn-ghost" style="padding:6px 12px;font-size:12px">← {% trans %}Edit listing{% endtrans %}</a>
+      {% if share_url %}
+      <button id="share-btn" type="button" class="btn btn-ghost" style="padding:6px 12px;font-size:12px" data-url="{{ share_url | e }}">{% trans %}Share{% endtrans %} ↗</button>
+      {% endif %}
     </div>
   </div>
 </div>
@@ -314,6 +344,37 @@
 {% endblock %}
 
 {% block scripts %}
+{% if share_url %}
+<script>
+(function () {
+  var btn = document.getElementById('share-btn');
+  if (!btn) return;
+  var orig = btn.textContent.trim();
+  btn.addEventListener('click', function () {
+    var url = btn.dataset.url;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(function () {
+        btn.textContent = '{% trans %}Copied!{% endtrans %}';
+        setTimeout(function () { btn.textContent = orig; }, 2000);
+      }).catch(function () { _fallbackCopy(url); });
+    } else {
+      _fallbackCopy(url);
+    }
+  });
+  function _fallbackCopy(url) {
+    var ta = document.createElement('textarea');
+    ta.value = url;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try { document.execCommand('copy'); btn.textContent = '{% trans %}Copied!{% endtrans %}'; setTimeout(function () { btn.textContent = orig; }, 2000); } catch (e) { window.prompt('{% trans %}Copy this link:{% endtrans %}', url); }
+    document.body.removeChild(ta);
+  }
+})();
+</script>
+{% endif %}
 {% if amenity_status == "failed" %}
 <script>
 (function () {
