@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 First public release. Milan-only OMI fair-price estimator with FastAPI + Jinja
 front end, OSM amenity counting via Overpass, and Nominatim geocoding.
 
+## v0.14.0 (2026-06-20)
+
+### Feat
+
+- **web**: add stimmo_share_events_total metric for observability
+- **web**: add share + OG image routes and shared result-context
+- **web**: render Open Graph card for shared estimates
+- **web**: add share-token encode/decode for estimate links
+
 ## v0.13.1 (2026-06-19)
 
 ### Fix

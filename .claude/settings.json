@@ -1,8 +1,12 @@
 {
-  "plansDirectory": "./.claude/plans",
   "permissions": {
     "allow": [
-      "Bash(git check-ignore *)"
+      "Bash(git check-ignore *)",
+      "Bash(ls /System/Library/Fonts/*.ttf 2>/dev/null | head -10; ls /Library/Fonts/*.ttf 2>/dev/null | head -10; ls /opt/homebrew/share/fonts/ 2>/dev/null | head -5)",
+      "Read(//System/Library/Fonts/**)",
+      "Read(//Library/Fonts/**)",
+      "Read(//opt/homebrew/share/**)"
     ]
-  }
+  },
+  "plansDirectory": "./.claude/plans"
 }
