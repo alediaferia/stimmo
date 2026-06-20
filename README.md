@@ -58,6 +58,10 @@ stimmo speaks the [Model Context Protocol](https://modelcontextprotocol.io) at *
 
 Tools: `estimate_property`, `lookup_omi_quote`, `geocode_milan_address`, `omi_zone_for_point`, `amenity_score`, `omi_history`. See [docs/mcp-server.md](docs/mcp-server.md) for the full surface, resources, prompts, and rate-limit tiers.
 
+## Sharing estimates
+
+Every estimate has a **Share ↗** button that produces a self-contained link (`/{lang}/s/{token}`) re-rendering the full result, plus a per-estimate Open Graph card (`/og/{token}.png`) so the link unfurls richly on social apps. The estimate is encoded in the URL — no datastore — and recomputed on open against current data. See [docs/sharing-estimates.md](docs/sharing-estimates.md).
+
 ## Refreshing the data
 
 OMI semestral assets (sales €/m² + zone polygons) are bundled in

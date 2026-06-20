@@ -94,6 +94,7 @@ Adding or changing UI strings: edit the template, run `pybabel extract` + `pybab
 
 - `stimmo_http_requests_total` — Counter, labels: `method`, `route`, `status`
 - `stimmo_http_request_duration_seconds` — Histogram, labels: `method`, `route`
+- `stimmo_share_events_total` — Counter, labels: `event` (`open`/`og_render`), `outcome` (`ok`/`invalid`/`error`). Incremented in the `share_view` and `og_image` handlers (not the dispatcher) because invalid/expired tokens are served as a normal 400/404 and would otherwise be indistinguishable from other failures in the HTTP counters.
 
 Key invariants:
 
