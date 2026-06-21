@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
+import base64
 import io
+import zlib
 
 import pytest
 from fastapi.testclient import TestClient
 
 from stimmo.data import amenities, geocode
 from stimmo.models import (
+    AmenityItem,
     AmenityScore,
     ConstructionEra,
     EnergyClass,
@@ -22,6 +25,7 @@ from stimmo.models import (
 )
 from stimmo.web import share as _share
 from stimmo.web.app import app
+from stimmo.web.share_store import SqliteShareStore
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -441,3 +445,523 @@ class TestShareMetrics:
         r = TestClient(app).get("/og/BADTOKEN.png")
         assert r.status_code == 404
         assert self._count("og_render", "invalid") == before + 1
+
+
+# ---------------------------------------------------------------------------
+# Step 0 — payload/blob primitives: legacy byte-identity
+# ---------------------------------------------------------------------------
+
+
+class TestPayloadBlobPrimitives:
+    """encode() must produce the exact same bytes as before the refactor.
+
+    The fixed fixture captures the token format (version byte + zlib blob) so
+    we can assert the refactored primitives produce the same compressed blob.
+    """
+
+    def test_legacy_encode_uses_primitives_byte_identical(self):
+        """encode() == b'\\x01' + _compress_payload(_payload_dict(...))."""
+        prop = _sample_property()
+        amen = _sample_amenity()
+        lat, lon = 45.4642, 9.1900
+
+        # Produce token via the public API.
+        token = _share.encode(prop, lat, lon, amen)
+        token_bytes = base64.urlsafe_b64decode(token + "=" * (-len(token) % 4))
+
+        # Reproduce via primitives.
+        payload = _share._payload_dict(prop, lat, lon, amen)
+        blob_from_primitives = _share._compress_payload(payload)
+
+        assert token_bytes == b"\x01" + blob_from_primitives
+
+    def test_compress_decompress_round_trip(self):
+        prop = _sample_property()
+        amen = _sample_amenity()
+        payload = _share._payload_dict(prop, 45.4642, 9.1900, amen)
+        blob = _share._compress_payload(payload)
+        recovered = _share._decompress_payload(blob)
+        assert recovered["v"] == 1
+        assert recovered["lat"] == round(45.4642, 6)
+        assert recovered["lon"] == round(9.1900, 6)
+
+    def test_payload_dict_excludes_items_within_500m(self):
+        prop = _sample_property()
+        amen = AmenityScore(
+            metro_within_500m=1,
+            items_within_500m=[
+                AmenityItem(kind="metro", name="Duomo M3", lat=45.464, lon=9.190)
+            ],
+        )
+        payload = _share._payload_dict(prop, 45.4642, 9.1900, amen)
+        assert "items_within_500m" not in payload.get("a", {})
+
+    def test_legacy_decode_still_round_trips(self):
+        """Full legacy encode → decode round-trip is unchanged after refactor."""
+        prop = _sample_property()
+        amen = _sample_amenity()
+        token = _share.encode(prop, 45.4642, 9.1900, amen)
+        p2, lat2, _lon2, a2 = _share.decode(token)
+        assert p2.address == prop.address
+        assert abs(lat2 - 45.4642) < 1e-9
+        assert a2.metro_within_500m == amen.metro_within_500m
+
+    def test_legacy_token_has_no_m_key(self):
+        """Legacy encode must NOT add the 'm' marker key (keeps token small, Q5)."""
+        prop = _sample_property()
+        amen = AmenityScore(
+            metro_within_500m=2,
+            items_within_500m=[
+                AmenityItem(kind="metro", name="Cadorna", lat=45.466, lon=9.178)
+            ],
+        )
+        token = _share.encode(prop, 45.4642, 9.1900, amen)
+        raw = base64.urlsafe_b64decode(token + "=" * (-len(token) % 4))
+        payload = _share._decompress_payload(raw[1:])  # skip version byte
+        assert "m" not in payload
+
+
+# ---------------------------------------------------------------------------
+# Step 1 — encode_blob / decode_blob with "m" markers
+# ---------------------------------------------------------------------------
+
+
+class TestEncodeDecodeBlob:
+    def _make_amen_with_items(self) -> AmenityScore:
+        return AmenityScore(
+            metro_within_500m=1,
+            tram_within_500m=1,
+            score_pct=6.0,
+            items_within_500m=[
+                AmenityItem(kind="metro", name="Duomo M1/M3", lat=45.4641, lon=9.1899),
+                AmenityItem(kind="tram", name="Via Torino", lat=45.4635, lon=9.1901),
+                AmenityItem(kind="park", name=None, lat=45.4650, lon=9.1920),
+            ],
+        )
+
+    def test_encode_blob_returns_bytes(self):
+        prop = _sample_property()
+        amen = self._make_amen_with_items()
+        blob = _share.encode_blob(prop, 45.4642, 9.1900, amen)
+        assert isinstance(blob, bytes)
+        assert len(blob) > 0
+
+    def test_encode_blob_has_no_version_byte(self):
+        """Stored blob is raw zlib — no b'\\x01' prefix (the store is codec-agnostic)."""
+        prop = _sample_property()
+        blob = _share.encode_blob(prop, 45.4642, 9.1900, AmenityScore())
+        # Should be valid zlib (decompress without stripping a version byte).
+        decompressed = zlib.decompress(blob)
+        import json
+
+        payload = json.loads(decompressed)
+        assert payload.get("v") == 1
+
+    def test_decode_blob_round_trips_property(self):
+        prop = _sample_property()
+        amen = self._make_amen_with_items()
+        blob = _share.encode_blob(prop, 45.4642, 9.1900, amen)
+        p2, lat2, lon2, _a2 = _share.decode_blob(blob)
+        assert p2.address == prop.address
+        assert p2.surface_m2 == prop.surface_m2
+        assert abs(lat2 - 45.4642) < 1e-9
+        assert abs(lon2 - 9.1900) < 1e-9
+
+    def test_decode_blob_markers_present_and_names_absent(self):
+        """items_within_500m should be populated with kind+coords; name must be None."""
+        prop = _sample_property()
+        amen = self._make_amen_with_items()
+        blob = _share.encode_blob(prop, 45.4642, 9.1900, amen)
+        _, _, _, a2 = _share.decode_blob(blob)
+        items = a2.items_within_500m
+        assert len(items) == 3
+        for item in items:
+            assert item.name is None  # names omitted (D6)
+        kinds = {i.kind for i in items}
+        assert "metro" in kinds
+        assert "tram" in kinds
+        assert "park" in kinds
+
+    def test_decode_blob_marker_coords_preserved(self):
+        prop = _sample_property()
+        amen = AmenityScore(
+            items_within_500m=[
+                AmenityItem(kind="pharmacy", name="Farmacia", lat=45.4610, lon=9.1950)
+            ]
+        )
+        blob = _share.encode_blob(prop, 45.4642, 9.1900, amen)
+        _, _, _, a2 = _share.decode_blob(blob)
+        assert len(a2.items_within_500m) == 1
+        item = a2.items_within_500m[0]
+        assert item.kind == "pharmacy"
+        assert abs(item.lat - 45.4610) < 1e-5
+        assert abs(item.lon - 9.1950) < 1e-5
+
+    def test_decode_blob_more_than_12_capped(self):
+        """Items beyond the 12-marker cap must be dropped."""
+        prop = _sample_property()
+        items = [
+            AmenityItem(kind="metro", name=f"Station {i}", lat=45.46 + i * 0.001, lon=9.19)
+            for i in range(20)
+        ]
+        amen = AmenityScore(metro_within_500m=20, items_within_500m=items)
+        blob = _share.encode_blob(prop, 45.4642, 9.1900, amen)
+        _, _, _, a2 = _share.decode_blob(blob)
+        assert len(a2.items_within_500m) <= 12
+
+    def test_encode_blob_caps_markers_at_12(self):
+        """encode_blob must only include the first 12 items in the 'm' key."""
+        import json
+
+        prop = _sample_property()
+        items = [
+            AmenityItem(kind="tram", name=f"Stop {i}", lat=45.46 + i * 0.001, lon=9.19)
+            for i in range(15)
+        ]
+        amen = AmenityScore(tram_within_500m=15, items_within_500m=items)
+        blob = _share.encode_blob(prop, 45.4642, 9.1900, amen)
+        payload = json.loads(zlib.decompress(blob))
+        assert len(payload["m"]) == 12
+
+    def test_decode_blob_no_markers(self):
+        """Blobs without 'm' key (e.g. from encode_blob with empty items) decode fine."""
+        prop = _sample_property()
+        blob = _share.encode_blob(prop, 45.4642, 9.1900, AmenityScore())
+        _, _, _, a2 = _share.decode_blob(blob)
+        assert a2.items_within_500m == []
+
+    def test_decode_blob_amen_counters_preserved(self):
+        """AmenityScore counters and score_pct must survive the encode_blob/decode_blob cycle."""
+        prop = _sample_property()
+        amen = AmenityScore(metro_within_500m=3, tram_within_500m=5, score_pct=7.5)
+        blob = _share.encode_blob(prop, 45.4642, 9.1900, amen)
+        _, _, _, a2 = _share.decode_blob(blob)
+        assert a2.metro_within_500m == 3
+        assert a2.tram_within_500m == 5
+        assert abs(a2.score_pct - 7.5) < 1e-6
+
+
+# ---------------------------------------------------------------------------
+# Step 1 — kind order (§5.3)
+# ---------------------------------------------------------------------------
+
+
+class TestMarkerKindOrder:
+    def test_kind_indices_match_spec(self):
+        """Verify the fixed kind order matches §5.3."""
+        assert _share._MARKER_KINDS == (
+            "metro", "tram", "park", "supermarket", "school", "pharmacy"
+        )
+
+    def test_round_trip_all_kinds(self):
+        """All six kinds survive encode_blob → decode_blob."""
+        prop = _sample_property()
+        items = [
+            AmenityItem(kind="metro", name="x", lat=45.461, lon=9.190),
+            AmenityItem(kind="tram", name="x", lat=45.462, lon=9.191),
+            AmenityItem(kind="park", name="x", lat=45.463, lon=9.192),
+            AmenityItem(kind="supermarket", name="x", lat=45.464, lon=9.193),
+            AmenityItem(kind="school", name="x", lat=45.465, lon=9.194),
+            AmenityItem(kind="pharmacy", name="x", lat=45.466, lon=9.195),
+        ]
+        amen = AmenityScore(items_within_500m=items)
+        blob = _share.encode_blob(prop, 45.4642, 9.1900, amen)
+        _, _, _, a2 = _share.decode_blob(blob)
+        recovered_kinds = {i.kind for i in a2.items_within_500m}
+        assert recovered_kinds == {"metro", "tram", "park", "supermarket", "school", "pharmacy"}
+
+
+# ---------------------------------------------------------------------------
+# Step 0 — resolve() helper
+# ---------------------------------------------------------------------------
+
+
+class TestResolve:
+    """Tests for share.resolve() dual-path logic (§5.5)."""
+
+    def _make_store(self) -> SqliteShareStore:
+        return SqliteShareStore(":memory:")
+
+    def test_resolve_store_path(self):
+        """A short alnum id stored in the store resolves via decode_blob."""
+        prop = _sample_property()
+        amen = AmenityScore(metro_within_500m=1)
+        store = self._make_store()
+        blob = _share.encode_blob(prop, 45.4642, 9.1900, amen)
+        id_ = store.put(blob)
+
+        p2, lat2, _lon2, a2 = _share.resolve(id_, store)
+        assert p2.address == prop.address
+        assert abs(lat2 - 45.4642) < 1e-9
+        assert a2.metro_within_500m == 1
+
+    def test_resolve_legacy_path(self):
+        """A long legacy token resolves via decode() even with an empty store."""
+        prop = _sample_property()
+        amen = _sample_amenity()
+        token = _share.encode(prop, 45.4642, 9.1900, amen)
+        store = self._make_store()
+
+        p2, _lat2, _lon2, _a2 = _share.resolve(token, store)
+        assert p2.address == prop.address
+
+    def test_resolve_invalid_raises(self):
+        """Neither store nor legacy path resolves a garbage id."""
+        store = self._make_store()
+        with pytest.raises(_share.ShareTokenError):
+            _share.resolve("ZZZZZZZZ", store)
+
+    def test_resolve_store_miss_falls_back_to_legacy(self):
+        """A short-looking alnum id not in the store falls back to legacy decode.
+        If the fallback also fails it raises ShareTokenError (not a silent miss)."""
+        store = self._make_store()
+        # 8-char alnum id that is NOT in the store AND is not a valid legacy token.
+        with pytest.raises(_share.ShareTokenError):
+            _share.resolve("ABCDEFGH", store)
+
+    def test_resolve_legacy_long_token_still_resolves(self):
+        """A pre-existing legacy long token must still resolve after the store is wired in."""
+        prop = _sample_property()
+        token = _share.encode(prop, 45.4642, 9.1900, AmenityScore())
+        store = self._make_store()
+        # Token is long and contains base64url chars (dashes, underscores), so
+        # resolve() falls back to the legacy decode() path.
+        p2, _, _, _ = _share.resolve(token, store)
+        assert p2.address == prop.address
+
+
+# ---------------------------------------------------------------------------
+# Step 3 — /s/{id} short route
+# ---------------------------------------------------------------------------
+
+
+class TestShareViewShort:
+    """Tests for the new lang-free GET /s/{id} route."""
+
+    def _make_stored_id(self) -> str:
+        """Store a valid blob and return its short id."""
+        from stimmo.web.app import _share_store as _store
+
+        prop = _sample_property()
+        amen = AmenityScore()
+        blob = _share.encode_blob(prop, 45.4642, 9.1900, amen)
+        return _store.put(blob)
+
+    def test_short_route_renders_result_html(self):
+        id_ = self._make_stored_id()
+        client = TestClient(app)
+        r = client.get(f"/s/{id_}")
+        assert r.status_code == 200
+        body = r.text
+        # Result page should contain the report heading and a verdict label.
+        assert "Report" in body
+        assert "Verdetto" in body or "Verdict" in body
+
+    def test_short_route_id_length_lte_10(self):
+        """The share_url emitted by the write path must be …/s/<≤10 char id>."""
+        from stimmo.web.app import _share_store as _store
+
+        prop = _sample_property()
+        amen = AmenityScore()
+        blob = _share.encode_blob(prop, 45.4642, 9.1900, amen)
+        id_ = _store.put(blob)
+        assert len(id_) <= 10
+
+    def test_short_route_bad_id_returns_400(self):
+        client = TestClient(app)
+        r = client.get("/s/NOTEXIST1")
+        assert r.status_code == 400
+
+    def test_short_route_locale_negotiation_italian_cookie(self):
+        """stimmo_lang=it cookie → Italian result page."""
+        id_ = self._make_stored_id()
+        client = TestClient(app, cookies={"stimmo_lang": "it"})
+        r = client.get(f"/s/{id_}")
+        assert r.status_code == 200
+        # Italian verdict labels should be present.
+        assert "Verdetto" in r.text
+
+    def test_short_route_locale_negotiation_english_cookie(self):
+        """stimmo_lang=en cookie → English result page."""
+        id_ = self._make_stored_id()
+        client = TestClient(app, cookies={"stimmo_lang": "en"})
+        r = client.get(f"/s/{id_}")
+        assert r.status_code == 200
+        assert "Verdict" in r.text
+
+    def test_short_route_locale_negotiation_accept_language(self):
+        """Accept-Language: en → English result page (no cookie present)."""
+        id_ = self._make_stored_id()
+        client = TestClient(app)
+        r = client.get(f"/s/{id_}", headers={"Accept-Language": "en-US,en;q=0.9"})
+        assert r.status_code == 200
+        assert "Verdict" in r.text
+
+    def test_short_route_locale_fallback_italian(self):
+        """No cookie, no Accept-Language → it_IT default."""
+        id_ = self._make_stored_id()
+        client = TestClient(app)
+        r = client.get(f"/s/{id_}")
+        assert r.status_code == 200
+        # Italian is the default locale
+        assert "Verdetto" in r.text
+
+    def test_short_route_no_lang_prefix_in_url(self, monkeypatch):
+        """The share_url produced by the estimate route must NOT contain /{lang}/s/."""
+        import re
+
+        import stimmo.web.app as _app
+        from stimmo.data import amenities as _amen_mod
+        from stimmo.data import geocode as _gc
+
+        old_store = _app._share_store
+        try:
+            _app._share_store = SqliteShareStore(":memory:")
+            monkeypatch.setattr(_gc, "geocode", lambda addr, *, city="Milano": (45.4642, 9.1900))
+            monkeypatch.setattr(_amen_mod, "fetch_amenities", lambda lat, lon: AmenityScore())
+            client = TestClient(app)
+            data = {
+                "address": "Piazza Duomo, Milano",
+                "surface_m2": "80",
+                "property_type": "Abitazioni civili",
+                "fine_condition": "abitabile",
+                "floor": "2",
+                "total_floors": "5",
+                "has_lift": "on",
+                "energy_class": "",
+                "outdoor": "none",
+                "has_box": "off",
+                "construction_era": "postwar_boom",
+                "orientation": "mixed",
+                "has_second_bathroom": "off",
+                "asking_price_eur": "650000",
+            }
+            r = client.post("/en/estimate", data=data)
+            assert r.status_code == 200
+            body = r.text
+            # The share URL should be /s/<id>, NOT /en/s/<token>
+            assert "/s/" in body
+            # Ensure the share_url does NOT have /en/s/ or /it/s/ (lang prefix)
+            lang_prefixed = re.search(r"/[a-z]{2}/s/", body)
+            assert lang_prefixed is None, f"Found lang-prefixed share URL: {lang_prefixed.group()}"
+        finally:
+            _app._share_store = old_store
+
+
+# ---------------------------------------------------------------------------
+# Step 3 — OG image route resolves both store ids and legacy tokens
+# ---------------------------------------------------------------------------
+
+
+class TestOgImageDualPath:
+    def test_og_image_with_store_id(self):
+        """OG route must accept a short store id."""
+        from stimmo.web.app import _share_store as _store
+
+        prop = _sample_property()
+        amen = AmenityScore()
+        blob = _share.encode_blob(prop, 45.4642, 9.1900, amen)
+        id_ = _store.put(blob)
+        client = TestClient(app)
+        r = client.get(f"/og/{id_}.png")
+        assert r.status_code == 200
+        assert r.headers["content-type"] == "image/png"
+
+    def test_og_image_with_legacy_token_still_works(self):
+        """OG route must still accept the legacy long token (D5)."""
+        token = _share.encode(_sample_property(), 45.4642, 9.1900, AmenityScore())
+        client = TestClient(app)
+        r = client.get(f"/og/{token}.png")
+        assert r.status_code == 200
+        assert r.headers["content-type"] == "image/png"
+
+
+# ---------------------------------------------------------------------------
+# Step 3 — SHARE_RESOLVE metrics
+# ---------------------------------------------------------------------------
+
+
+class TestShareResolveMetrics:
+    @staticmethod
+    def _resolve_count(path: str) -> float:
+        from prometheus_client import REGISTRY
+
+        return (
+            REGISTRY.get_sample_value("stimmo_share_resolve_total", {"path": path}) or 0.0
+        )
+
+    def test_store_path_increments_store_counter(self):
+        from stimmo.web.app import _share_store as _store
+
+        prop = _sample_property()
+        blob = _share.encode_blob(prop, 45.4642, 9.1900, AmenityScore())
+        id_ = _store.put(blob)
+        before = self._resolve_count("store")
+        TestClient(app).get(f"/s/{id_}")
+        assert self._resolve_count("store") == before + 1
+
+    def test_legacy_path_increments_legacy_counter(self):
+        """A long legacy token resolved via /s/<token> should increment 'legacy' path."""
+        token = _share.encode(_sample_property(), 45.4642, 9.1900, AmenityScore())
+        before = self._resolve_count("legacy")
+        r = TestClient(app).get(f"/s/{token}")
+        assert r.status_code == 200
+        assert self._resolve_count("legacy") == before + 1
+
+    def test_miss_increments_miss_counter(self):
+        """An unknown id on the /s/ route should increment the 'miss' counter."""
+        before = self._resolve_count("miss")
+        r = TestClient(app).get("/s/NOTEXIST1")
+        assert r.status_code == 400
+        assert self._resolve_count("miss") == before + 1
+
+
+# ---------------------------------------------------------------------------
+# Step 3 — write path emits /s/<id> and /og/<id>.png (no lang prefix)
+# ---------------------------------------------------------------------------
+
+
+class TestWritePathUrls:
+    """Verify the URLs emitted by _build_result_context after Step 3."""
+
+    def test_estimate_emits_short_share_url(self, monkeypatch):
+        import re
+
+        import stimmo.web.app as _app
+
+        monkeypatch.setattr(geocode, "geocode", lambda addr, *, city="Milano": (45.4642, 9.1900))
+        monkeypatch.setattr(amenities, "fetch_amenities", lambda lat, lon: AmenityScore())
+
+        old_store = _app._share_store
+        try:
+            _app._share_store = SqliteShareStore(":memory:")
+            client = TestClient(app)
+            data = {
+                "address": "Piazza Duomo, Milano",
+                "surface_m2": "80",
+                "property_type": "Abitazioni civili",
+                "fine_condition": "abitabile",
+                "floor": "2",
+                "total_floors": "5",
+                "has_lift": "on",
+                "energy_class": "",
+                "outdoor": "none",
+                "has_box": "off",
+                "construction_era": "postwar_boom",
+                "orientation": "mixed",
+                "has_second_bathroom": "off",
+                "asking_price_eur": "650000",
+            }
+            r = client.post("/en/estimate", data=data)
+            assert r.status_code == 200
+            body = r.text
+            # Must have /s/ link
+            assert "/s/" in body
+            # Must have /og/ link
+            assert "/og/" in body
+            # Confirm the /s/<id> id length is ≤ 10 chars by extracting it
+            match = re.search(r"/s/([A-Za-z0-9]+)", body)
+            assert match is not None
+            assert len(match.group(1)) <= 10
+        finally:
+            _app._share_store = old_store

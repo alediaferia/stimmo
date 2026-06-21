@@ -4,6 +4,7 @@ import base64
 import binascii
 import hashlib
 import json
+import os
 import re
 from datetime import date
 from functools import lru_cache
@@ -58,6 +59,7 @@ from stimmo.web import labels as _labels
 from stimmo.web import metrics as _metrics
 from stimmo.web import ogimage as _ogimage
 from stimmo.web import share as _share
+from stimmo.web.share_store import SqliteShareStore
 
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
@@ -122,6 +124,23 @@ def _tpl(request: Request, template: str, ctx: dict | None = None) -> HTMLRespon
         base.update(ctx)
     return templates.TemplateResponse(request, template, base)
 
+
+# ---------------------------------------------------------------------------
+# Share-link store
+#
+# Constructed once at module import time from the STIMMO_SHARE_DB env var.
+# Defaults to var/share.db (repo-local, git-ignored) when the env var is unset.
+# Tests inject their own SqliteShareStore (tmp_path or ":memory:") via the
+# module-level _share_store reference — see tests/test_share_store.py.
+# ---------------------------------------------------------------------------
+_share_db_path = os.environ.get(
+    "STIMMO_SHARE_DB",
+    str(Path(__file__).parent.parent.parent.parent / "var" / "share.db"),
+)
+# Ensure the parent directory exists (for the default var/ path; STIMMO_SHARE_DB
+# paths are the operator's responsibility).
+Path(_share_db_path).parent.mkdir(parents=True, exist_ok=True)
+_share_store: SqliteShareStore = SqliteShareStore(_share_db_path)
 
 _IMPORT_REGISTRY = {"immobiliare": immobiliare.parse}
 
@@ -542,11 +561,16 @@ def _build_result_context(
         "asking_x": _x(asking),
     }
 
-    # Build absolute share URL (works behind Cloudflare: use request.base_url for scheme+host)
-    token = _share.encode(prop, lat, lon, amen)
+    # Build absolute share URL (works behind Cloudflare: use request.base_url for scheme+host).
+    # New path: store the blob and emit a short /s/<id> link (no /{lang}/ prefix, D4).
+    # The legacy long-token encode() is retained for the fallback decode path (D5).
+    blob = _share.encode_blob(prop, lat, lon, amen)
+    share_id = _share_store.put(blob)
     base = str(request.base_url).rstrip("/")
-    share_url = f"{base}/{lang}/s/{token}"
-    og_image_url = f"{base}/og/{token}.png"
+    share_url = f"{base}/s/{share_id}"
+    og_image_url = f"{base}/og/{share_id}.png"
+    # Legacy token kept for the retained /{lang}/s/{token} route (D5).
+    token = _share.encode(prop, lat, lon, amen)
 
     return {
         "p": prop,
@@ -698,7 +722,10 @@ def share_view(
     lang: str = FPath(pattern=_LANG_RE),
     token: str = FPath(min_length=1),
 ) -> HTMLResponse:
-    """Decode a share token and render result.html without hitting live services."""
+    """Decode a share token and render result.html without hitting live services.
+
+    Legacy route retained indefinitely (D5).  New short links use share_view_short.
+    """
     _set_locale(request, lang)
     try:
         prop, lat, lon, amen = _share.decode(token)
@@ -725,14 +752,67 @@ def share_view(
     return _tpl(request, "result.html", ctx)
 
 
+@app.get("/s/{id}", response_class=HTMLResponse)
+def share_view_short(
+    request: Request,
+    id: str = FPath(min_length=1),
+) -> HTMLResponse:
+    """Lang-free short share route (D4).  Negotiate locale: cookie → Accept-Language → it_IT."""
+    cookie = request.cookies.get("stimmo_lang")
+    accept_lang = request.headers.get("Accept-Language")
+    locale = negotiate_locale(cookie, accept_lang)
+    lang = LOCALE_TO_LANG.get(locale, "it")
+    _set_locale(request, lang)
+
+    try:
+        prop, lat, lon, amen = _share.resolve(id, _share_store)
+        # Determine which path resolve() took without a second store read:
+        # short+alnum ids that exist in the store go through the store path;
+        # everything else is the legacy decode path.
+        _is_short_alnum = len(id) <= 10 and id.isalnum()
+        _resolve_path = "store" if _is_short_alnum else "legacy"
+    except _share.ShareTokenError:
+        _metrics.SHARE_EVENTS.labels(event="open", outcome="invalid").inc()
+        _metrics.SHARE_RESOLVE.labels(path="miss").inc()
+        return _error(request, [_("Invalid or expired share link.")])
+
+    _metrics.SHARE_RESOLVE.labels(path=_resolve_path).inc()
+
+    z = zones.zone_for_point(lat, lon)
+    if z is None:
+        _metrics.SHARE_EVENTS.labels(event="open", outcome="error").inc()
+        return _error(request, [_("Address is outside the Milano comune — no OMI zone.")])
+    zone_code, zone_name = z
+
+    try:
+        quote = omi.lookup(zone_code, prop.property_type, prop.omi_condition)
+    except LookupError as e:
+        _metrics.SHARE_EVENTS.labels(event="open", outcome="error").inc()
+        return _error(request, [_("OMI lookup failed: %(e)s") % {"e": e}])
+    quote.zone_descr = zone_name
+
+    ctx = _build_result_context(request, lang, prop, lat, lon, amen, quote, zone_code)
+    ctx["is_shared_view"] = True
+    _metrics.SHARE_EVENTS.labels(event="open", outcome="ok").inc()
+    return _tpl(request, "result.html", ctx)
+
+
 @app.get("/og/{token}.png")
 def og_image(token: str) -> Response:
-    """Render a 1200×630 branded OG image for the given share token."""
+    """Render a 1200×630 branded OG image.
+
+    Accepts both short store ids and legacy long tokens (dual-path via resolve, D5).
+    """
     try:
-        prop, _lat, _lon, amen = _share.decode(token)
+        prop, _lat, _lon, amen = _share.resolve(token, _share_store)
+        _is_short_alnum = len(token) <= 10 and token.isalnum()
+        _resolve_path = "store" if _is_short_alnum else "legacy"
     except _share.ShareTokenError as exc:
         _metrics.SHARE_EVENTS.labels(event="og_render", outcome="invalid").inc()
+        _metrics.SHARE_RESOLVE.labels(path="miss").inc()
         raise HTTPException(status_code=404, detail="Invalid share token") from exc
+
+    _metrics.SHARE_RESOLVE.labels(path=_resolve_path).inc()
 
     # Recompute estimate for the image (zone + OMI lookup — cheap, bundled data)
     z = zones.zone_for_point(_lat, _lon)

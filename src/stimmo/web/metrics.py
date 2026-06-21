@@ -30,6 +30,15 @@ SHARE_EVENTS: prometheus_client.Counter = prometheus_client.Counter(
     ["event", "outcome"],
 )
 
+# Resolve-path breakdown: distinguishes store hits, legacy-token fallbacks, and
+# complete misses.  Incremented in handlers (not _dispatch) per the observability
+# invariant.  path=store | legacy | miss.
+SHARE_RESOLVE: prometheus_client.Counter = prometheus_client.Counter(
+    "stimmo_share_resolve_total",
+    "Share-link resolve path (store id / legacy token / miss)",
+    ["path"],
+)
+
 
 def instrument(app_callable: Callable) -> Callable:
     """Wrap an ASGI callable to record per-route request count and latency."""
