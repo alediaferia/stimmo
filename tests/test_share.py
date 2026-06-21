@@ -747,6 +747,24 @@ class TestShareViewShort:
         blob = _share.encode_blob(prop, 45.4642, 9.1900, amen)
         return _store.put(blob)
 
+    def _make_stored_id_with_markers(self) -> str:
+        """Store a blob with amenity markers and return its short id (Step 4)."""
+        from stimmo.web.app import _share_store as _store
+
+        prop = _sample_property()
+        amen = AmenityScore(
+            metro_within_500m=1,
+            tram_within_500m=1,
+            score_pct=5.0,
+            items_within_500m=[
+                AmenityItem(kind="metro", name="Duomo M1/M3", lat=45.4641, lon=9.1899),
+                AmenityItem(kind="tram", name="Via Torino", lat=45.4635, lon=9.1901),
+                AmenityItem(kind="park", name=None, lat=45.4650, lon=9.1920),
+            ],
+        )
+        blob = _share.encode_blob(prop, 45.4642, 9.1900, amen)
+        return _store.put(blob)
+
     def test_short_route_renders_result_html(self):
         id_ = self._make_stored_id()
         client = TestClient(app)
@@ -805,6 +823,45 @@ class TestShareViewShort:
         assert r.status_code == 200
         # Italian is the default locale
         assert "Verdetto" in r.text
+
+    # ------------------------------------------------------------------
+    # Step 4 — bug #2: markers must render on a short-link shared view
+    # ------------------------------------------------------------------
+
+    def test_short_route_with_markers_renders_marker_block(self):
+        """GET /s/<id> for a blob with amenity items must render the marker block.
+
+        Acceptance criterion (Step 4): the template ``{% if est.amenity_score
+        .items_within_500m %}`` block must fire, producing the L.circleMarker
+        calls and the kindColors JS object in the response body.
+        The markers come from the stored blob (kinds+coords, names=None);
+        tooltips fall back to the kind label because name is None.
+        """
+        id_ = self._make_stored_id_with_markers()
+        client = TestClient(app, cookies={"stimmo_lang": "en"})
+        r = client.get(f"/s/{id_}")
+        assert r.status_code == 200
+        body = r.text
+        # The kindColors JS object is only emitted inside the marker block.
+        assert "kindColors" in body, "marker block did not render (kindColors absent)"
+        # The property dot tooltip is inside the same block.
+        assert "Property" in body
+        # At least the metro kind should appear in the marker loop output.
+        assert "metro" in body
+        # Tooltip should fall back to the kind label (name is None in stored blob).
+        # The Jinja template renders (item.name or item.kind) — with name=None,
+        # item.kind is used, which we can verify is present in the output.
+        assert "L.circleMarker" in body
+
+    def test_short_route_without_markers_omits_marker_block(self):
+        """GET /s/<id> for a blob WITHOUT items must NOT render the marker block."""
+        id_ = self._make_stored_id()  # AmenityScore() — no items
+        client = TestClient(app, cookies={"stimmo_lang": "en"})
+        r = client.get(f"/s/{id_}")
+        assert r.status_code == 200
+        body = r.text
+        # Without items_within_500m, the kindColors block must not be present.
+        assert "kindColors" not in body
 
     def test_short_route_no_lang_prefix_in_url(self, monkeypatch):
         """The share_url produced by the estimate route must NOT contain /{lang}/s/."""
