@@ -1022,3 +1022,115 @@ class TestWritePathUrls:
             assert len(match.group(1)) <= 10
         finally:
             _app._share_store = old_store
+
+
+# ---------------------------------------------------------------------------
+# Step 5 — async name-enrichment script (result.html)
+# ---------------------------------------------------------------------------
+
+
+class TestEnrichmentScript:
+    """Assert the enrichment script is present/absent in the right contexts.
+
+    The script is gated on ``is_shared_view`` (set only on the /s/<id> route)
+    AND on ``est.amenity_score.items_within_500m`` being non-empty, because
+    there are no markers to enrich otherwise.
+
+    Real DOM behaviour (IntersectionObserver firing, tooltip patch) is covered
+    by the e2e validator — these tests cover the template gating invariant.
+    """
+
+    def _make_stored_id_with_markers(self) -> str:
+        """Store a blob with amenity markers; return its short id."""
+        from stimmo.web.app import _share_store as _store
+
+        prop = _sample_property()
+        amen = AmenityScore(
+            metro_within_500m=1,
+            score_pct=2.5,
+            items_within_500m=[
+                AmenityItem(kind="metro", name="Duomo M1", lat=45.4641, lon=9.1899),
+            ],
+        )
+        blob = _share.encode_blob(prop, 45.4642, 9.1900, amen)
+        return _store.put(blob)
+
+    def test_enrichment_script_present_on_shared_view_with_markers(self):
+        """GET /s/<id> with markers → enrichment script injected into page."""
+        id_ = self._make_stored_id_with_markers()
+        client = TestClient(app, cookies={"stimmo_lang": "en"})
+        r = client.get(f"/s/{id_}")
+        assert r.status_code == 200
+        body = r.text
+        # The enrichment script is identified by its call to the amenities endpoint.
+        assert "/api/amenities" in body, "enrichment script not found in shared view"
+
+    def test_enrichment_script_references_api_amenities_endpoint(self):
+        """The enrichment script must reference /api/amenities (not a new endpoint)."""
+        id_ = self._make_stored_id_with_markers()
+        client = TestClient(app, cookies={"stimmo_lang": "en"})
+        r = client.get(f"/s/{id_}")
+        assert r.status_code == 200
+        # Exact substring from the template JS.
+        assert "/api/amenities?lat=" in r.text
+
+    def test_enrichment_script_absent_on_normal_result_view(self, monkeypatch):
+        """POST /estimate (non-shared view) must NOT contain the enrichment script.
+
+        The script is gated on ``is_shared_view`` which is only set by the
+        short and legacy share routes, not the primary estimate route.
+        """
+        monkeypatch.setattr(geocode, "geocode", lambda addr, *, city="Milano": (45.4642, 9.1900))
+        monkeypatch.setattr(
+            amenities,
+            "fetch_amenities",
+            lambda lat, lon: AmenityScore(
+                metro_within_500m=1,
+                score_pct=2.5,
+                items_within_500m=[
+                    AmenityItem(kind="metro", name="Duomo M1", lat=45.4641, lon=9.1899),
+                ],
+            ),
+        )
+        client = TestClient(app)
+        data = {
+            "address": "Piazza Duomo, Milano",
+            "surface_m2": "80",
+            "property_type": "Abitazioni civili",
+            "fine_condition": "abitabile",
+            "floor": "2",
+            "total_floors": "5",
+            "has_lift": "on",
+            "energy_class": "",
+            "outdoor": "none",
+            "has_box": "off",
+            "construction_era": "postwar_boom",
+            "orientation": "mixed",
+            "has_second_bathroom": "off",
+            "asking_price_eur": "650000",
+        }
+        r = client.post("/en/estimate", data=data)
+        assert r.status_code == 200
+        body = r.text
+        # The map block fires because items_within_500m is populated by the live fetch.
+        assert "kindColors" in body
+        # But the enrichment script must NOT be injected (is_shared_view=False).
+        # We check for the IntersectionObserver setup which is unique to the enrichment.
+        assert "IntersectionObserver" not in body, (
+            "enrichment script must not appear on non-shared result views"
+        )
+
+    def test_enrichment_script_absent_on_shared_view_without_markers(self):
+        """GET /s/<id> for a blob WITHOUT markers → enrichment script absent (nothing to enrich)."""
+        from stimmo.web.app import _share_store as _store
+
+        prop = _sample_property()
+        amen = AmenityScore()  # no items_within_500m
+        blob = _share.encode_blob(prop, 45.4642, 9.1900, amen)
+        id_ = _store.put(blob)
+
+        client = TestClient(app, cookies={"stimmo_lang": "en"})
+        r = client.get(f"/s/{id_}")
+        assert r.status_code == 200
+        # No marker block, so no enrichment script.
+        assert "IntersectionObserver" not in r.text

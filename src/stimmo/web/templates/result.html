@@ -450,17 +450,77 @@
     pharmacy:    { color: '#76448a', fill: '#a569bd' },
   };
 
+  // Accumulate snapshot markers so the enrichment script can patch tooltips.
+  window._stimmoMarkers = [];
   {% for item in est.amenity_score.items_within_500m %}
   (function() {
     var k = {{ item.kind | tojson }};
     var c = kindColors[k] || { color: '#555', fill: '#888' };
-    L.circleMarker([{{ item.lat }}, {{ item.lon }}], {
+    var m = L.circleMarker([{{ item.lat }}, {{ item.lon }}], {
       radius: 6, color: c.color, weight: 1.5,
       fillColor: c.fill, fillOpacity: 0.85,
     }).addTo(map).bindTooltip({{ (item.name or item.kind) | tojson }}, { permanent: false });
+    window._stimmoMarkers.push({ layer: m, kind: k, lat: {{ item.lat }}, lon: {{ item.lon }} });
   })();
   {% endfor %}
 })();
 </script>
+{% if is_shared_view %}
+<script>
+// Step 5 — Async name enrichment for shared views (D6).
+// Names are omitted from the stored blob (keeps it tiny); we fetch them lazily
+// from the existing /api/amenities endpoint once the map scrolls into view.
+// Markers from the snapshot stay authoritative for position/count — we only
+// patch tooltip text.  On any failure we leave the kind labels in place.
+(function () {
+  var enriched = false;
+
+  function _dist2(lat1, lon1, lat2, lon2) {
+    // Squared Euclidean distance in degrees — sufficient for the ~30 m tolerance check.
+    var dlat = lat1 - lat2, dlon = lon1 - lon2;
+    return dlat * dlat + dlon * dlon;
+  }
+
+  function _enrich() {
+    if (enriched) return;
+    enriched = true;
+    var url = '/{{ lang }}/api/amenities?lat={{ lat }}&lon={{ lon }}';
+    fetch(url, { signal: AbortSignal.timeout(10000) })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data || data.status === 'failed') return;
+        var items = (data.score && data.score.items_within_500m) || [];
+        // Build a mutable list of snapshot markers to consume one-to-one.
+        var remaining = (window._stimmoMarkers || []).slice();
+        items.forEach(function (item) {
+          if (!item.name) return;
+          // Find the nearest unconsumed snapshot marker of the same kind within ~30 m.
+          // 30 m ≈ 0.00027 degrees; squared ≈ 7.3e-8.
+          var TOL2 = 7.3e-8;
+          var bestIdx = -1, bestD2 = Infinity;
+          for (var i = 0; i < remaining.length; i++) {
+            var m = remaining[i];
+            if (m.kind !== item.kind) continue;
+            var d2 = _dist2(m.lat, m.lon, item.lat, item.lon);
+            if (d2 < TOL2 && d2 < bestD2) { bestD2 = d2; bestIdx = i; }
+          }
+          if (bestIdx >= 0) {
+            remaining[bestIdx].layer.setTooltipContent(item.name);
+            remaining.splice(bestIdx, 1);
+          }
+        });
+      })
+      .catch(function () { /* graceful degradation — kind labels remain */ });
+  }
+
+  var mapEl = document.getElementById('amenity-map');
+  if (mapEl && 'IntersectionObserver' in window) {
+    new IntersectionObserver(function (entries, obs) {
+      if (entries[0].isIntersecting) { obs.disconnect(); _enrich(); }
+    }, { threshold: 0.1 }).observe(mapEl);
+  }
+})();
+</script>
+{% endif %}
 {% endif %}
 {% endblock %}
