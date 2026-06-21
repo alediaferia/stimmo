@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import random
 import time
+from collections import OrderedDict
 from importlib.metadata import version as _pkg_version
 
 import requests
@@ -173,7 +174,8 @@ def _score_for_counts(kind: str, count: int, weight: float = 1.0) -> float:
         return cap * weight if count >= 3 else cap * weight * (count / 3)
 
 
-def fetch_amenities(lat: float, lon: float) -> AmenityScore:
+def _fetch_amenities_uncached(lat: float, lon: float) -> AmenityScore:
+    """Fetch amenity data from Overpass without any caching."""
     data_500 = _query(lat, lon, radius=500)
     counts_500 = _count_elements(data_500)
     counts_1000 = _count_elements(_query(lat, lon, radius=1000))
@@ -202,3 +204,89 @@ def fetch_amenities(lat: float, lon: float) -> AmenityScore:
         score_pct=round(score, 2),
         items_within_500m=_extract_items(data_500),
     )
+
+
+# ---------------------------------------------------------------------------
+# TTL+LRU cache for fetch_amenities (D9, §5.8)
+# ---------------------------------------------------------------------------
+
+
+class _AmenityCache:
+    """Process-local TTL+LRU cache for AmenityScore results.
+
+    Keyed by quantized (lat, lon) coordinates — ``round(_, 3)`` gives a
+    ~111 m grid that coalesces near-identical opens (D9).
+
+    Design mirrors ``InMemoryCache`` in ``stimmo/mcp/cache.py``:
+    injectable clock for deterministic tests; LRU eviction via OrderedDict.
+
+    Parameters
+    ----------
+    ttl_s:
+        Time-to-live in seconds per entry.  Default 1 h.
+    maxsize:
+        Maximum number of cached entries.  Least-recently-used entry is
+        evicted when the limit is reached.  Default 512.
+    clock:
+        Callable returning the current monotonic time in seconds.
+        Injectable for tests; default ``time.monotonic``.
+    """
+
+    def __init__(
+        self,
+        *,
+        ttl_s: float = 3600,
+        maxsize: int = 512,
+        clock=time.monotonic,
+    ) -> None:
+        self._ttl = ttl_s
+        self._maxsize = maxsize
+        self._clock = clock
+        # Maps key → (stored_at, AmenityScore); OrderedDict maintains LRU order.
+        self._store: OrderedDict[tuple[float, float], tuple[float, AmenityScore]] = OrderedDict()
+
+    def get(self, key: tuple[float, float]) -> AmenityScore | None:
+        """Return cached AmenityScore for *key*, or None if absent/expired."""
+        entry = self._store.get(key)
+        if entry is None:
+            return None
+        stored_at, score = entry
+        if self._clock() - stored_at > self._ttl:
+            # Expired — remove and return None.
+            del self._store[key]
+            return None
+        # Bump to most-recently-used position.
+        self._store.move_to_end(key)
+        return score
+
+    def put(self, key: tuple[float, float], value: AmenityScore) -> None:
+        """Store *value* under *key*, evicting the LRU entry if at capacity."""
+        if key in self._store:
+            self._store.move_to_end(key)
+        self._store[key] = (self._clock(), value)
+        if len(self._store) > self._maxsize:
+            self._store.popitem(last=False)  # evict oldest (LRU)
+
+
+_default_cache: _AmenityCache = _AmenityCache()
+
+
+def fetch_amenities(
+    lat: float, lon: float, *, _cache: _AmenityCache = _default_cache
+) -> AmenityScore:
+    """Return amenity data for the given coordinates, using a TTL+LRU cache.
+
+    The cache key is the quantized coordinate pair ``(round(lat, 3), round(lon, 3))``,
+    giving a ~111 m grid that coalesces near-identical opens (D9, §5.8).  The
+    underlying Overpass queries are only fired on a cache miss or after TTL expiry.
+
+    The ``_cache`` parameter is injectable for tests; production code always uses
+    the module-level ``_default_cache`` singleton.
+    """
+    key = (round(lat, 3), round(lon, 3))
+    hit = _cache.get(key)
+    if hit is not None:
+        return hit
+    score = _fetch_amenities_uncached(lat, lon)
+    _cache.put(key, score)
+    return score
