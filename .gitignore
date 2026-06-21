@@ -22,6 +22,9 @@ src/stimmo/locale/**/*.mo
 # OMI staging directories (Forniture OMI downloads, imported then deleted)
 src/stimmo/data/assets/omi-*/
 
+# Share-link SQLite store (default local dev path; production uses STIMMO_SHARE_DB)
+var/
+
 # Claude Code (and other agent CLIs) — session-scoped or personal, never share.
 # Shared, portable config lives in .claude/settings.json and .claude/agents/ (committed).
 .claude/plans/
