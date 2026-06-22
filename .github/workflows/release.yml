@@ -16,6 +16,9 @@ jobs:
       - name: Install dependencies
         run: uv sync --all-groups
 
+      - name: Compile translations
+        run: uv run pybabel compile -d src/stimmo/locale
+
       - name: Lint
         run: |
           uv run ruff check
