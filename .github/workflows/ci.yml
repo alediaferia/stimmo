@@ -17,6 +17,7 @@ jobs:
         with:
           enable-cache: true
       - run: uv sync --all-extras --dev
+      - run: uv run pybabel compile -d src/stimmo/locale
       - run: uv run ruff check
       - run: uv run ruff format --check
       - run: uv run pytest -v
