@@ -489,9 +489,7 @@ class TestPayloadBlobPrimitives:
         prop = _sample_property()
         amen = AmenityScore(
             metro_within_500m=1,
-            items_within_500m=[
-                AmenityItem(kind="metro", name="Duomo M3", lat=45.464, lon=9.190)
-            ],
+            items_within_500m=[AmenityItem(kind="metro", name="Duomo M3", lat=45.464, lon=9.190)],
         )
         payload = _share._payload_dict(prop, 45.4642, 9.1900, amen)
         assert "items_within_500m" not in payload.get("a", {})
@@ -511,9 +509,7 @@ class TestPayloadBlobPrimitives:
         prop = _sample_property()
         amen = AmenityScore(
             metro_within_500m=2,
-            items_within_500m=[
-                AmenityItem(kind="metro", name="Cadorna", lat=45.466, lon=9.178)
-            ],
+            items_within_500m=[AmenityItem(kind="metro", name="Cadorna", lat=45.466, lon=9.178)],
         )
         token = _share.encode(prop, 45.4642, 9.1900, amen)
         raw = base64.urlsafe_b64decode(token + "=" * (-len(token) % 4))
@@ -650,7 +646,12 @@ class TestMarkerKindOrder:
     def test_kind_indices_match_spec(self):
         """Verify the fixed kind order matches §5.3."""
         assert _share._MARKER_KINDS == (
-            "metro", "tram", "park", "supermarket", "school", "pharmacy"
+            "metro",
+            "tram",
+            "park",
+            "supermarket",
+            "school",
+            "pharmacy",
         )
 
     def test_round_trip_all_kinds(self):
@@ -943,9 +944,7 @@ class TestShareResolveMetrics:
     def _resolve_count(path: str) -> float:
         from prometheus_client import REGISTRY
 
-        return (
-            REGISTRY.get_sample_value("stimmo_share_resolve_total", {"path": path}) or 0.0
-        )
+        return REGISTRY.get_sample_value("stimmo_share_resolve_total", {"path": path}) or 0.0
 
     def test_store_path_increments_store_counter(self):
         from stimmo.web.app import _share_store as _store

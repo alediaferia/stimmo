@@ -157,9 +157,7 @@ class SqliteShareStore:
             )
 
         # Read back to detect collision.
-        row = self._conn.execute(
-            "SELECT blob FROM shares WHERE id = ?", (share_id,)
-        ).fetchone()
+        row = self._conn.execute("SELECT blob FROM shares WHERE id = ?", (share_id,)).fetchone()
 
         if row is None:
             # Should not happen (we just inserted/ignored), but be safe.
@@ -177,17 +175,13 @@ class SqliteShareStore:
 
     def get(self, id: str) -> bytes | None:
         """Return the blob for *id*, bumping last_seen.  Returns None if absent."""
-        row = self._conn.execute(
-            "SELECT blob FROM shares WHERE id = ?", (id,)
-        ).fetchone()
+        row = self._conn.execute("SELECT blob FROM shares WHERE id = ?", (id,)).fetchone()
 
         if row is None:
             return None
 
         now = int(self._clock())
         with self._conn:
-            self._conn.execute(
-                "UPDATE shares SET last_seen = ? WHERE id = ?", (now, id)
-            )
+            self._conn.execute("UPDATE shares SET last_seen = ? WHERE id = ?", (now, id))
 
         return bytes(row[0])

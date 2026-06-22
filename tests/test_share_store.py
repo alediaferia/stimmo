@@ -113,9 +113,7 @@ class TestClockInjection:
         store = SqliteShareStore(":memory:", clock=lambda: fixed_time, id_len=8)
         blob = b"clock test"
         id_ = store.put(blob)
-        row = store._conn.execute(
-            "SELECT created_at FROM shares WHERE id = ?", (id_,)
-        ).fetchone()
+        row = store._conn.execute("SELECT created_at FROM shares WHERE id = ?", (id_,)).fetchone()
         assert row[0] == fixed_time
 
     def test_last_seen_uses_injected_clock_on_get(self):
@@ -135,9 +133,7 @@ class TestClockInjection:
         id_ = store.put(blob)
         store.get(id_)
 
-        row = store._conn.execute(
-            "SELECT last_seen FROM shares WHERE id = ?", (id_,)
-        ).fetchone()
+        row = store._conn.execute("SELECT last_seen FROM shares WHERE id = ?", (id_,)).fetchone()
         assert row[0] == get_time
 
 

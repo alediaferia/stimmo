@@ -194,8 +194,12 @@ def decode_blob(blob: bytes) -> tuple[Property, float, float, AmenityScore]:
                 continue  # skip malformed entries defensively
 
         # Rebuild AmenityScore with items populated (all other counts already decoded).
-        amen = AmenityScore(**{**amen_base.model_dump(exclude={"items_within_500m"}),
-                               "items_within_500m": [i.model_dump() for i in items]})
+        amen = AmenityScore(
+            **{
+                **amen_base.model_dump(exclude={"items_within_500m"}),
+                "items_within_500m": [i.model_dump() for i in items],
+            }
+        )
         return prop, lat, lon, amen
 
     return prop, lat, lon, amen_base
