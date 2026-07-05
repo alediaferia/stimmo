@@ -33,7 +33,7 @@ dependencies = [
     "shapely>=2.1.2",
     "uvicorn>=0.49.0",
     "prometheus-client>=0.21",
-    "httpx2>=2.4.0",
+    "httpx2>=2.5.0",
     "pillow>=11.0",
 ]
 
