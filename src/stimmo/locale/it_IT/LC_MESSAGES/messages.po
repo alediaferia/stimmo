@@ -1315,14 +1315,12 @@ msgstr ""
 "stessa è l'input dominante per la stima."
 
 #: src/stimmo/web/templates/privacy.html:2
-#, fuzzy
 msgid "privacy"
 msgstr "Privacy"
 
 #: src/stimmo/web/templates/privacy.html:10
-#, fuzzy
 msgid "What stimmo does<br>with <em>your data</em>."
-msgstr "Cosa stimmo non modella"
+msgstr "Cosa fa stimmo<br>con <em>i tuoi dati</em>."
 
 #: src/stimmo/web/templates/privacy.html:11
 msgid ""
@@ -1389,9 +1387,8 @@ msgstr ""
 "terze parti."
 
 #: src/stimmo/web/templates/privacy.html:36
-#, fuzzy
 msgid "Share links"
-msgstr "Condividi"
+msgstr "Link condivisi"
 
 #: src/stimmo/web/templates/privacy.html:38
 msgid ""
@@ -1409,9 +1406,8 @@ msgstr ""
 "un link di condivisione a chi lo ha creato."
 
 #: src/stimmo/web/templates/privacy.html:43
-#, fuzzy
 msgid "Metrics"
-msgstr "Verdetti"
+msgstr "Metriche"
 
 #: src/stimmo/web/templates/privacy.html:45
 msgid ""
