@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}stimmo — {% trans %}privacy{% endtrans %}{% endblock %}
+{% block content %}
+
+<div class="pagehead">
+  <div>
+    <div class="stepper">
+      <span class="step on"><span class="num">i</span> {% trans %}Privacy{% endtrans %}</span>
+    </div>
+    <h1>{% trans %}What stimmo does<br>with <em>your data</em>.{% endtrans %}</h1>
+    <p class="sub">{% trans %}Plain and factual — not legal boilerplate. If anything here is unclear, ask.{% endtrans %}</p>
+  </div>
+</div>
+
+<div class="doc" style="max-width:760px">
+  <div class="doc-head">
+    <h2 class="doc-title">{% trans %}No accounts, no persistent profile{% endtrans %}</h2>
+  </div>
+  <p>{% trans %}stimmo has no user accounts, no login, and no persistent per-visitor profile. Each form submission is processed as an independent request: the address, surface, condition and other listing details you enter are used only to compute that one estimate and are not stored against your identity.{% endtrans %}</p>
+</div>
+
+<div class="doc" style="max-width:760px">
+  <div class="doc-head">
+    <h2 class="doc-title">{% trans %}Third-party lookups{% endtrans %}</h2>
+  </div>
+  <p>{% trans %}Producing an estimate requires two lookups against external, non-profit map data providers:{% endtrans %}</p>
+  <ul>
+    <li>{% trans %}the address you enter is geocoded to coordinates via OpenStreetMap's Nominatim service;{% endtrans %}</li>
+    <li>{% trans %}nearby amenities (schools, transit, parks, and similar) are looked up via the Overpass API, which also serves OpenStreetMap data.{% endtrans %}</li>
+  </ul>
+  <p>{% trans %}Both are called per-request with the coordinates needed to answer the query; stimmo does not otherwise share your input with third parties.{% endtrans %}</p>
+</div>
+
+<div class="doc" style="max-width:760px">
+  <div class="doc-head">
+    <h2 class="doc-title">{% trans %}Share links{% endtrans %}</h2>
+  </div>
+  <p>{% trans %}If you use the "share" button on a result, the estimate payload (the listing details and computed verdict — explicitly not any personal data about you) is stored in a small, self-hosted, content-addressed SQLite database so the short link keeps working when others open it. There is nothing tying a share link back to who created it.{% endtrans %}</p>
+</div>
+
+<div class="doc" style="max-width:760px">
+  <div class="doc-head">
+    <h2 class="doc-title">{% trans %}Metrics{% endtrans %}</h2>
+  </div>
+  <p>{% trans %}stimmo collects aggregate, anonymous Prometheus counters — request counts and latencies by route, and share-link open/render outcomes. These are operational metrics, not per-user tracking: they carry no IP address, cookie, or identifier tied to a specific visitor.{% endtrans %}</p>
+  <p>{% trans %}If a Cloudflare Web Analytics token is configured, this page also loads Cloudflare's privacy-first analytics beacon, which does not use cookies or persistent identifiers to track individuals across sites.{% endtrans %}</p>
+</div>
+
+<div class="doc" style="max-width:760px">
+  <div class="doc-head">
+    <h2 class="doc-title">{% trans %}Infrastructure{% endtrans %}</h2>
+  </div>
+  <p>{% trans %}stimmo runs behind Cloudflare, used as a reverse proxy and CDN to serve the site reliably. Cloudflare processes standard connection metadata (like your IP address) as part of routing the request, under its own privacy policy.{% endtrans %}</p>
+</div>
+
+{% endblock %}
