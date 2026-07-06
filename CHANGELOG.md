@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 First public release. Milan-only OMI fair-price estimator with FastAPI + Jinja
 front end, OSM amenity counting via Overpass, and Nominatim geocoding.
 
+## v0.16.0 (2026-07-06)
+
+### Feat
+
+- **web**: add privacy page explaining visitor data practices
+- **web**: add crawlability, SEO, and privacy infrastructure
+
+### Fix
+
+- **i18n**: correct Italian translations for privacy page strings
+- **web**: trust X-Forwarded-Proto header from cloudflared proxy
+
 ## v0.15.2 (2026-07-05)
 
 ## v0.15.1 (2026-06-24)
