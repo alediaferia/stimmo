@@ -1,5 +1,29 @@
 {% extends "base.html" %}
 {% block title %}{% trans %}Milan property listings: is the price right?{% endtrans %} — Stimmo{% endblock %}
+{% block json_ld %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "stimmo",
+  "url": {{ canonical_url | tojson }},
+  "description": {{ _("Fair-price check for Milan apartment listings — OMI-anchored, no machine learning, every multiplier visible.") | tojson }},
+  "applicationCategory": "FinanceApplication",
+  "operatingSystem": "Web",
+  "isAccessibleForFree": true,
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "EUR"
+  },
+  "creator": {
+    "@type": "Person",
+    "name": "Alessandro Diaferia",
+    "url": "https://github.com/alediaferia"
+  }
+}
+</script>
+{% endblock %}
 {% block content %}
 
 <div class="pagehead">

@@ -91,6 +91,16 @@ def static_url(rel_path: str) -> str:
 templates.env.globals["static_url"] = static_url
 
 
+def _cf_beacon_token() -> str | None:
+    """Cloudflare Web Analytics beacon token, read lazily so tests can toggle it
+    via monkeypatch without needing to reimport the app module. Unset by default
+    — no beacon script is emitted until the operator configures it in compose."""
+    return os.environ.get("STIMMO_CF_BEACON_TOKEN")
+
+
+templates.env.globals["cf_beacon_token"] = _cf_beacon_token
+
+
 def _fmt_num(n: float) -> str:
     from babel.numbers import format_decimal
 
@@ -115,11 +125,36 @@ def _set_locale(request: Request, lang: str) -> str:
     return locale
 
 
+def _seo_urls(request: Request, lang: str) -> dict:
+    """Build canonical + per-lang hreflang alternates for the current path.
+
+    Uses the request's own scheme/host (which reflects https once uvicorn is
+    told to trust the cloudflared proxy headers, see server.py) so this works
+    both in production and in local/test runs without hardcoding the origin.
+    """
+    path = request.url.path
+    prefix = f"/{lang}"
+    suffix = path[len(prefix) :] if path.startswith(prefix) else path
+    if not suffix.startswith("/"):
+        suffix = "/" + suffix
+    scheme = request.url.scheme
+    host = request.url.netloc
+
+    def _abs(other_lang: str) -> str:
+        return f"{scheme}://{host}/{other_lang}{suffix}"
+
+    return {
+        "canonical_url": _abs(lang),
+        "hreflang_it": _abs("it"),
+        "hreflang_en": _abs("en"),
+    }
+
+
 def _tpl(request: Request, template: str, ctx: dict | None = None) -> HTMLResponse:
     """Render a template with locale context merged in."""
     locale = getattr(request.state, "locale", "it_IT")
     lang = LOCALE_TO_LANG.get(locale, "it")
-    base: dict = {"lang": lang, "locale": locale}
+    base: dict = {"lang": lang, "locale": locale, **_seo_urls(request, lang)}
     if ctx:
         base.update(ctx)
     return templates.TemplateResponse(request, template, base)
@@ -246,17 +281,93 @@ def zones_geojson() -> Response:
 
 
 # ---------------------------------------------------------------------------
+# Crawlability: robots.txt + sitemap.xml
+#
+# Locale-neutral, no-lang-prefix routes. Must be registered before
+# bare_path_redirect (the /{path:path} catch-all further down) — FastAPI/
+# Starlette route matching is order-sensitive.
+# ---------------------------------------------------------------------------
+
+SITE_ORIGIN = "https://stimmo.it"
+
+# Being readable by AI crawlers is a deliberate distribution channel for this
+# product (see docs/distribution-plan.md) — allow everything, search and AI.
+_ROBOTS_TXT = """User-agent: *
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: meta-externalagent
+Allow: /
+
+Sitemap: https://stimmo.it/sitemap.xml
+"""
+
+# Indexable, lang-prefixed pages. Excludes /s/<id> share pages and /og/<id>.png
+# image routes — those are per-instance, not meant for search indexing.
+_SITEMAP_PATHS: tuple[str, ...] = ("/", "/about", "/bookmarklet", "/privacy")
+
+
+@app.api_route("/robots.txt", methods=["GET", "HEAD"])
+def robots_txt() -> Response:
+    return Response(content=_ROBOTS_TXT, media_type="text/plain")
+
+
+@lru_cache(maxsize=1)
+def _sitemap_xml() -> str:
+    langs = sorted(SUPPORTED_LANGS)
+    entries: list[str] = []
+    for path in _SITEMAP_PATHS:
+        suffix = "" if path == "/" else path
+        locs = {lang: f"{SITE_ORIGIN}/{lang}/" if path == "/" else f"{SITE_ORIGIN}/{lang}{suffix}"
+                for lang in langs}
+        for lang in langs:
+            alt_links = "\n".join(
+                f'    <xhtml:link rel="alternate" hreflang="{alt_lang}" href="{alt_loc}"/>'
+                for alt_lang, alt_loc in locs.items()
+            )
+            it_loc = locs["it"]
+            alt_links += (
+                f'\n    <xhtml:link rel="alternate" hreflang="x-default" href="{it_loc}"/>'
+            )
+            entries.append(f"  <url>\n    <loc>{locs[lang]}</loc>\n{alt_links}\n  </url>")
+    body = "\n".join(entries)
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" '
+        'xmlns:xhtml="http://www.w3.org/1999/xhtml">\n'
+        f"{body}\n"
+        "</urlset>\n"
+    )
+
+
+@app.api_route("/sitemap.xml", methods=["GET", "HEAD"])
+def sitemap_xml() -> Response:
+    return Response(content=_sitemap_xml(), media_type="application/xml")
+
+
+# ---------------------------------------------------------------------------
 # Locale negotiation for entry-point redirects
 # ---------------------------------------------------------------------------
 
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 def root_redirect(request: Request) -> RedirectResponse:
     cookie = request.cookies.get("stimmo_lang")
     accept_lang = request.headers.get("Accept-Language")
     locale = negotiate_locale(cookie, accept_lang)
     lang = LOCALE_TO_LANG[locale]
-    return RedirectResponse(f"/{lang}/", status_code=302)
+    return RedirectResponse(f"/{lang}/", status_code=301)
 
 
 @app.get("/import")
@@ -286,22 +397,22 @@ async def import_redirect_post(request: Request) -> RedirectResponse:
     return RedirectResponse(target, status_code=308)
 
 
-@app.get("/about")
+@app.api_route("/about", methods=["GET", "HEAD"])
 def about_redirect(request: Request) -> RedirectResponse:
     cookie = request.cookies.get("stimmo_lang")
     accept_lang = request.headers.get("Accept-Language")
     locale = negotiate_locale(cookie, accept_lang)
     lang = LOCALE_TO_LANG[locale]
-    return RedirectResponse(f"/{lang}/about", status_code=302)
+    return RedirectResponse(f"/{lang}/about", status_code=301)
 
 
-@app.get("/bookmarklet")
+@app.api_route("/bookmarklet", methods=["GET", "HEAD"])
 def bookmarklet_redirect(request: Request) -> RedirectResponse:
     cookie = request.cookies.get("stimmo_lang")
     accept_lang = request.headers.get("Accept-Language")
     locale = negotiate_locale(cookie, accept_lang)
     lang = LOCALE_TO_LANG[locale]
-    return RedirectResponse(f"/{lang}/bookmarklet", status_code=302)
+    return RedirectResponse(f"/{lang}/bookmarklet", status_code=301)
 
 
 @app.post("/set-lang")
@@ -402,6 +513,12 @@ def about(request: Request, lang: str = FPath(pattern=_LANG_RE)) -> HTMLResponse
             "zone_count": len(omi.available_zones()),
         },
     )
+
+
+@app.get("/{lang}/privacy", response_class=HTMLResponse)
+def privacy(request: Request, lang: str = FPath(pattern=_LANG_RE)) -> HTMLResponse:
+    _set_locale(request, lang)
+    return _tpl(request, "privacy.html")
 
 
 @app.get("/{lang}/", response_class=HTMLResponse)
@@ -866,7 +983,7 @@ def api_amenities(
     )
 
 
-@app.get("/{path:path}")
+@app.api_route("/{path:path}", methods=["GET", "HEAD"])
 def bare_path_redirect(request: Request, path: str) -> RedirectResponse:
     # Redirect bare paths (e.g. /about) to the negotiated locale prefix.
     # Paths already carrying a lang prefix that didn't match a real route
@@ -883,7 +1000,7 @@ def bare_path_redirect(request: Request, path: str) -> RedirectResponse:
     target = f"/{lang}/{path}"
     if qs:
         target += f"?{qs}"
-    return RedirectResponse(target, status_code=302)
+    return RedirectResponse(target, status_code=301)
 
 
 # ---------------------------------------------------------------------------
