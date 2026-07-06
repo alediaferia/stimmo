@@ -16,17 +16,17 @@ class TestBarePathRedirects:
 
     def test_root_redirects(self, client: TestClient):
         r = client.get("/")
-        assert r.status_code == 302
+        assert r.status_code == 301
         assert r.headers["location"] in ("/it/", "/en/")
 
     def test_about_redirects(self, client: TestClient):
         r = client.get("/about")
-        assert r.status_code == 302
+        assert r.status_code == 301
         assert r.headers["location"] in ("/it/about", "/en/about")
 
     def test_bookmarklet_redirects(self, client: TestClient):
         r = client.get("/bookmarklet")
-        assert r.status_code == 302
+        assert r.status_code == 301
         assert r.headers["location"] in ("/it/bookmarklet", "/en/bookmarklet")
 
     def test_import_redirects(self, client: TestClient):
@@ -43,7 +43,7 @@ class TestBarePathRedirects:
 
     def test_unknown_path_catch_all(self, client: TestClient):
         r = client.get("/nonexistent-page")
-        assert r.status_code == 302
+        assert r.status_code == 301
         assert r.headers["location"] in ("/it/nonexistent-page", "/en/nonexistent-page")
 
     def test_lang_prefixed_unknown_path_404s(self, client: TestClient):
