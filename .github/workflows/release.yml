@@ -63,19 +63,47 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
+        env:
+          DEPLOY_GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEPLOY_GH_ACTOR: ${{ github.actor }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
+          # Forward this run's ephemeral GITHUB_TOKEN so the VPS never needs a
+          # long-lived, rotatable PAT stored via `docker login`.
+          envs: DEPLOY_GH_TOKEN,DEPLOY_GH_ACTOR
           script: |
+            set -euo pipefail
+
             IMAGE="ghcr.io/alediaferia/stimmo:${{ github.ref_name }}"
+
+            # Authenticate fresh on every run with this workflow run's own
+            # short-lived token instead of relying on a credential stored on
+            # the host, which can silently rotate/expire.
+            echo "$DEPLOY_GH_TOKEN" | docker login ghcr.io -u "$DEPLOY_GH_ACTOR" --password-stdin
+
             sed -i "s|image: ghcr.io/alediaferia/stimmo:.*|image: $IMAGE|" /opt/stimmo/docker-compose.yml
             docker compose -f /opt/stimmo/docker-compose.yml pull
             docker compose -f /opt/stimmo/docker-compose.yml up -d --remove-orphans
             docker image prune -f
+
+            # Guard against `up -d` silently no-op'ing (e.g. `pull` not
+            # actually erroring, or compose deciding nothing changed):
+            # verify the running `stimmo` container is on the image we just
+            # deployed before declaring success.
+            CONTAINER_ID="$(docker compose -f /opt/stimmo/docker-compose.yml ps -q stimmo)"
+            RUNNING_IMAGE="$(docker inspect --format '{{.Config.Image}}' "$CONTAINER_ID")"
+            if [ "$RUNNING_IMAGE" != "$IMAGE" ]; then
+              echo "Deployed image mismatch: expected $IMAGE, running container is on $RUNNING_IMAGE" >&2
+              exit 1
+            fi
 
   github-release:
     needs: deploy
