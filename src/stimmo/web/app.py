@@ -329,17 +329,17 @@ def _sitemap_xml() -> str:
     entries: list[str] = []
     for path in _SITEMAP_PATHS:
         suffix = "" if path == "/" else path
-        locs = {lang: f"{SITE_ORIGIN}/{lang}/" if path == "/" else f"{SITE_ORIGIN}/{lang}{suffix}"
-                for lang in langs}
+        locs = {
+            lang: f"{SITE_ORIGIN}/{lang}/" if path == "/" else f"{SITE_ORIGIN}/{lang}{suffix}"
+            for lang in langs
+        }
         for lang in langs:
             alt_links = "\n".join(
                 f'    <xhtml:link rel="alternate" hreflang="{alt_lang}" href="{alt_loc}"/>'
                 for alt_lang, alt_loc in locs.items()
             )
             it_loc = locs["it"]
-            alt_links += (
-                f'\n    <xhtml:link rel="alternate" hreflang="x-default" href="{it_loc}"/>'
-            )
+            alt_links += f'\n    <xhtml:link rel="alternate" hreflang="x-default" href="{it_loc}"/>'
             entries.append(f"  <url>\n    <loc>{locs[lang]}</loc>\n{alt_links}\n  </url>")
     body = "\n".join(entries)
     return (

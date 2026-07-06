@@ -158,14 +158,14 @@ class TestHeadTags:
     @pytest.mark.parametrize("lang", ["it", "en"])
     def test_json_ld_on_home(self, client: TestClient, lang: str):
         body = client.get(f"/{lang}/").text
-        assert 'application/ld+json' in body
+        assert "application/ld+json" in body
         assert '"@type": "WebApplication"' in body
         assert '"name": "stimmo"' in body
 
     @pytest.mark.parametrize("lang", ["it", "en"])
     def test_json_ld_on_about(self, client: TestClient, lang: str):
         body = client.get(f"/{lang}/about").text
-        assert 'application/ld+json' in body
+        assert "application/ld+json" in body
         assert '"@type": "WebApplication"' in body
 
 
