@@ -102,86 +102,83 @@ msgstr ""
 msgid "North / north-east"
 msgstr ""
 
-#: src/stimmo/web/app.py:422
+#: src/stimmo/web/app.py:556
 msgid "Invalid import request"
 msgstr ""
 
-#: src/stimmo/web/app.py:428
+#: src/stimmo/web/app.py:562
 msgid "Payload too large"
 msgstr ""
 
-#: src/stimmo/web/app.py:431
+#: src/stimmo/web/app.py:565
 msgid "Malformed import payload"
 msgstr ""
 
-#: src/stimmo/web/app.py:447
+#: src/stimmo/web/app.py:581
 msgid "Missing source or HTML content"
 msgstr ""
 
-#: src/stimmo/web/app.py:450
+#: src/stimmo/web/app.py:584
 msgid "Pasted HTML too large"
 msgstr ""
 
-#: src/stimmo/web/app.py:458
+#: src/stimmo/web/app.py:592
 msgid "Could not find listing data in pasted HTML"
 msgstr ""
 
-#: src/stimmo/web/app.py:463
+#: src/stimmo/web/app.py:597
 msgid "Could not parse listing data"
 msgstr ""
 
-#: src/stimmo/web/app.py:467
+#: src/stimmo/web/app.py:601
 msgid "Could not locate listing fields in pasted data"
 msgstr ""
 
-#: src/stimmo/web/app.py:479
+#: src/stimmo/web/app.py:613
 msgid "Bookmarklet not available"
 msgstr ""
 
-#: src/stimmo/web/app.py:483
+#: src/stimmo/web/app.py:617
 msgid "stimmo: could not find listing data on this page"
 msgstr ""
 
-#: src/stimmo/web/app.py:546 src/stimmo/web/app.py:715
-#: src/stimmo/web/app.py:801
+#: src/stimmo/web/app.py:669
 msgid "OMI low"
 msgstr ""
 
-#: src/stimmo/web/app.py:547 src/stimmo/web/app.py:716
-#: src/stimmo/web/app.py:802
+#: src/stimmo/web/app.py:670
 msgid "Ask low"
 msgstr ""
 
-#: src/stimmo/web/app.py:548 src/stimmo/web/app.py:717
-#: src/stimmo/web/app.py:803
+#: src/stimmo/web/app.py:671
 msgid "Ask mid"
 msgstr ""
 
-#: src/stimmo/web/app.py:549 src/stimmo/web/app.py:718
-#: src/stimmo/web/app.py:804
+#: src/stimmo/web/app.py:672
 msgid "OMI high"
 msgstr ""
 
-#: src/stimmo/web/app.py:550 src/stimmo/web/app.py:719
-#: src/stimmo/web/app.py:805
+#: src/stimmo/web/app.py:673
 msgid "Ask high"
 msgstr ""
 
-#: src/stimmo/web/app.py:635
+#: src/stimmo/web/app.py:763
 #, python-format
 msgid "Geocoding failed: %(e)s"
 msgstr ""
 
-#: src/stimmo/web/app.py:639 src/stimmo/web/app.py:768
+#: src/stimmo/web/app.py:767 src/stimmo/web/app.py:853
+#: src/stimmo/web/app.py:898
 msgid "Address is outside the Milano comune — no OMI zone."
 msgstr ""
 
-#: src/stimmo/web/app.py:678 src/stimmo/web/app.py:774
+#: src/stimmo/web/app.py:806 src/stimmo/web/app.py:860
+#: src/stimmo/web/app.py:905
 #, python-format
 msgid "OMI lookup failed: %(e)s"
 msgstr ""
 
-#: src/stimmo/web/app.py:764
+#: src/stimmo/web/app.py:848 src/stimmo/web/app.py:891
 msgid "Invalid or expired share link."
 msgstr ""
 
@@ -242,7 +239,7 @@ msgstr ""
 msgid "Lift"
 msgstr ""
 
-#: src/stimmo/web/labels.py:64 src/stimmo/web/templates/form.html:183
+#: src/stimmo/web/labels.py:64 src/stimmo/web/templates/form.html:207
 msgid "Second bathroom"
 msgstr ""
 
@@ -296,240 +293,251 @@ msgstr ""
 msgid "about"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:8 src/stimmo/web/templates/base.html:983
+#: src/stimmo/web/templates/about.html:10 src/stimmo/web/templates/base.html:9
+#: src/stimmo/web/templates/base.html:14 src/stimmo/web/templates/base.html:21
+#: src/stimmo/web/templates/form.html:10
+#: src/stimmo/web/templates/result.html:19
+#: src/stimmo/web/templates/result.html:25
+msgid ""
+"Fair-price check for Milan apartment listings — OMI-anchored, no machine "
+"learning, every multiplier visible."
+msgstr ""
+
+#: src/stimmo/web/templates/about.html:32
+#: src/stimmo/web/templates/base.html:994
 msgid "About"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:10
+#: src/stimmo/web/templates/about.html:34
 msgid "How stimmo turns an address<br>into <em>a verdict</em>."
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:11
+#: src/stimmo/web/templates/about.html:35
 msgid ""
 "A six-step pipeline, one coefficients file, no machine learning. Same "
 "inputs, same output — every time."
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:14
-#: src/stimmo/web/templates/form.html:219
+#: src/stimmo/web/templates/about.html:38
+#: src/stimmo/web/templates/form.html:243
 msgid "Methodology"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:16
+#: src/stimmo/web/templates/about.html:40
 msgid "microzones · Milano"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:26
+#: src/stimmo/web/templates/about.html:50
 msgid ""
 "A transparent, OMI-anchored fair-price check<br>\n"
 "      for Milan apartment listings."
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:39
+#: src/stimmo/web/templates/about.html:63
 #: src/stimmo/web/templates/result.html:67
 msgid "fair"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:40
+#: src/stimmo/web/templates/about.html:64
 msgid "over"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:41
+#: src/stimmo/web/templates/about.html:65
 msgid "under"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:42
+#: src/stimmo/web/templates/about.html:66
 msgid "Verdicts"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:50
+#: src/stimmo/web/templates/about.html:74
 msgid "The pipeline"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:51
+#: src/stimmo/web/templates/about.html:75
 msgid "Address → verdict · 6 steps"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:56
+#: src/stimmo/web/templates/about.html:80
 msgid "Geocode"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:56
+#: src/stimmo/web/templates/about.html:80
 msgid ""
 "OSM Nominatim resolves the address to lat / lon. Queries are restricted "
 "to Milano comune."
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:60
+#: src/stimmo/web/templates/about.html:84
 msgid "Locate the OMI zone"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:60
+#: src/stimmo/web/templates/about.html:84
 msgid "Point-in-polygon against Milano's official OMI microzone shapes."
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:64
+#: src/stimmo/web/templates/about.html:88
 msgid "Pull the €/m² band"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:64
+#: src/stimmo/web/templates/about.html:88
 msgid "Compr_min – Compr_max for that zone × property type × condition bucket."
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:68
+#: src/stimmo/web/templates/about.html:92
 msgid "Count amenities"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:68
+#: src/stimmo/web/templates/about.html:92
 msgid "OSM Overpass — schools, transit, markets, pharmacies, parks within 500 m."
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:72
+#: src/stimmo/web/templates/about.html:96
 msgid "Adjust the band"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:72
+#: src/stimmo/web/templates/about.html:96
 msgid ""
 "A single coefficients table multiplies floor, lift, size, condition, "
 "energy, outdoor, era, orientation, exposure, room density, second "
 "bathroom, parking box, and amenities."
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:76
+#: src/stimmo/web/templates/about.html:100
 msgid "Classify"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:76
+#: src/stimmo/web/templates/about.html:100
 msgid ""
 "Compare asking price to an ask-shifted band (rogito + 6 %). ±5 % around "
 "it is fair."
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:82
+#: src/stimmo/web/templates/about.html:106
 msgid "Data sources"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:87
+#: src/stimmo/web/templates/about.html:111
 #, python-format
 msgid "microzones · Milano · %(semester)s"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:89
+#: src/stimmo/web/templates/about.html:113
 msgid "OMI quotations"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:90
-#: src/stimmo/web/templates/about.html:103
-#: src/stimmo/web/templates/about.html:116
-#: src/stimmo/web/templates/about.html:129
+#: src/stimmo/web/templates/about.html:114
+#: src/stimmo/web/templates/about.html:127
+#: src/stimmo/web/templates/about.html:140
+#: src/stimmo/web/templates/about.html:153
 msgid "Bundled"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:91
+#: src/stimmo/web/templates/about.html:115
 msgid ""
 "Per-zone €/m² ranges for sales, split by property type and condition "
 "(Normale / Scadente / Ottimo). The spine of every estimate."
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:93
-#: src/stimmo/web/templates/about.html:106
-#: src/stimmo/web/templates/about.html:119
-#: src/stimmo/web/templates/about.html:132
-#: src/stimmo/web/templates/about.html:145
-#: src/stimmo/web/templates/about.html:158
+#: src/stimmo/web/templates/about.html:117
+#: src/stimmo/web/templates/about.html:130
+#: src/stimmo/web/templates/about.html:143
+#: src/stimmo/web/templates/about.html:156
+#: src/stimmo/web/templates/about.html:169
+#: src/stimmo/web/templates/about.html:182
 msgid "License"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:94
-#: src/stimmo/web/templates/about.html:107
-#: src/stimmo/web/templates/about.html:120
-#: src/stimmo/web/templates/about.html:133
-#: src/stimmo/web/templates/about.html:146
-#: src/stimmo/web/templates/about.html:159
+#: src/stimmo/web/templates/about.html:118
+#: src/stimmo/web/templates/about.html:131
+#: src/stimmo/web/templates/about.html:144
+#: src/stimmo/web/templates/about.html:157
+#: src/stimmo/web/templates/about.html:170
+#: src/stimmo/web/templates/about.html:183
 msgid "File"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:100
+#: src/stimmo/web/templates/about.html:124
 msgid "comune · no metropolitan belt"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:102
+#: src/stimmo/web/templates/about.html:126
 msgid "OMI zone polygons"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:104
+#: src/stimmo/web/templates/about.html:128
 msgid ""
 "Microzone shapes used for point-in-polygon zone assignment. Comune di "
 "Milano only — addresses outside the comune are rejected."
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:113
+#: src/stimmo/web/templates/about.html:137
 msgid "semesters · ~4 years"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:115
+#: src/stimmo/web/templates/about.html:139
 msgid "OMI history"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:117
+#: src/stimmo/web/templates/about.html:141
 msgid ""
 "Trailing 8 semesters (~4 years) of bands per zone × type × condition. "
 "Drives the trend strip on the report."
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:126
+#: src/stimmo/web/templates/about.html:150
 msgid "quarterly · by surface bucket"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:128
+#: src/stimmo/web/templates/about.html:152
 msgid "transactions"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:130
+#: src/stimmo/web/templates/about.html:154
 msgid ""
 "Numero di Transazioni Normalizzate, quarterly. Shown for market context "
 "only — never used as a pricing input."
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:139
+#: src/stimmo/web/templates/about.html:163
 msgid "request per estimate"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:141
+#: src/stimmo/web/templates/about.html:165
 msgid "geocoding"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:142
-#: src/stimmo/web/templates/about.html:155
+#: src/stimmo/web/templates/about.html:166
+#: src/stimmo/web/templates/about.html:179
 msgid "Live"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:143
+#: src/stimmo/web/templates/about.html:167
 msgid ""
 "Free geocoder, called once per estimate. Queries are scoped to Milano to "
 "avoid stray matches."
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:152
+#: src/stimmo/web/templates/about.html:176
 msgid "radius · 6 categories"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:154
+#: src/stimmo/web/templates/about.html:178
 msgid "amenities"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:156
+#: src/stimmo/web/templates/about.html:180
 msgid ""
 "Counts of schools, pharmacies, markets, transit stops and parks within "
 "500 m. If unreachable, the estimate still renders with a zero amenity "
 "score and a warning."
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:168
+#: src/stimmo/web/templates/about.html:192
 msgid "No machine learning."
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:170
+#: src/stimmo/web/templates/about.html:194
 msgid ""
 "stimmo has no trained model. The entire tuning surface is a single\n"
 "      file — <span class=\"mono\">valuation/adjustments.py</span>. Every\n"
@@ -540,7 +548,7 @@ msgid ""
 "      lives there in plain Python."
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:177
+#: src/stimmo/web/templates/about.html:201
 msgid ""
 "The verdict is <em>deterministic</em>: same inputs, same output.\n"
 "      If you disagree with a coefficient, you can read the line where it "
@@ -548,18 +556,18 @@ msgid ""
 "      change it, and re-run."
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:192
+#: src/stimmo/web/templates/about.html:216
 msgid "Ask-shifted, not rogito."
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:194
+#: src/stimmo/web/templates/about.html:218
 msgid ""
 "OMI publishes <em>transacted</em> prices — what changed hands at the\n"
 "      notary, after negotiation. In Milano, asking prices typically run\n"
 "      <b> 5–10 %</b> above the eventual sale price."
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:218
+#: src/stimmo/web/templates/about.html:242
 msgid ""
 "We shift the OMI band upward by a fixed <b>+6 %</b> ask-premium before\n"
 "      classifying. ±5 % around the shifted band is \"fair\". The constant"
@@ -567,112 +575,103 @@ msgid ""
 "      in <span class=\"mono\">verdict.py::ASK_PREMIUM_PCT</span>."
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:226
+#: src/stimmo/web/templates/about.html:250
 msgid "What stimmo doesn't model"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:231
+#: src/stimmo/web/templates/about.html:255
 msgid ""
 "Routine condominium fees and extraordinary works (lavori straordinari "
 "deliberati). Can shift true cost €10–50 k. Invisible to OMI."
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:236
+#: src/stimmo/web/templates/about.html:260
 msgid ""
 "The classic 1° piano premium in storied buildings. Inside the same "
 "building, can drive ±5–10 %."
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:240
+#: src/stimmo/web/templates/about.html:264
 msgid "Street noise &amp; view"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:241
+#: src/stimmo/web/templates/about.html:265
 msgid ""
 "A unit on a quiet cortile vs. one on Corso Buenos Aires. OMI averages, "
 "doesn't see this."
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:245
+#: src/stimmo/web/templates/about.html:269
 msgid "Comparable listings"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:246
+#: src/stimmo/web/templates/about.html:270
 msgid ""
 "Italian per-transaction sale data isn't public. We don't fit a model on "
 "stale asking prices — by design."
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:250
+#: src/stimmo/web/templates/about.html:274
 msgid "Metropolitan belt"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:251
+#: src/stimmo/web/templates/about.html:275
 msgid ""
 "Sesto, Cinisello, Cologno, Rho — outside the Milano comune polygon. Will "
 "fail with \"outside Milano\"."
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:255
+#: src/stimmo/web/templates/about.html:279
 msgid "Commercial property"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:256
+#: src/stimmo/web/templates/about.html:280
 msgid ""
 "Shops, offices, ateliers — different OMI category, different dynamics. "
 "Residential subtypes only."
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:263
+#: src/stimmo/web/templates/about.html:287
 msgid "not a perizia"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:264
+#: src/stimmo/web/templates/about.html:288
 msgid "fairness check"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:267
+#: src/stimmo/web/templates/about.html:291
 msgid "stimmo is a fairness check, not an official appraisal."
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:268
+#: src/stimmo/web/templates/about.html:292
 msgid ""
 "It does not replace a qualified <em>perito</em> and should not be used as"
 " the basis for legal, fiscal, or contractual decisions. Use it to sanity-"
 "check an asking price, negotiate, or walk away — not to sign anything."
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:273
+#: src/stimmo/web/templates/about.html:297
 msgid "Run an estimate"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:274
+#: src/stimmo/web/templates/about.html:298
 msgid "Install the bookmarklet"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:278
+#: src/stimmo/web/templates/about.html:302
 msgid "Built by"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:279
+#: src/stimmo/web/templates/about.html:303
 msgid "stimmo is open source — view the code on"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:280
+#: src/stimmo/web/templates/about.html:304
 msgid "Have a feature request, found a bug, or want to suggest an improvement?"
 msgstr ""
 
-#: src/stimmo/web/templates/about.html:281
+#: src/stimmo/web/templates/about.html:305
 msgid "Open a GitHub issue"
-msgstr ""
-
-#: src/stimmo/web/templates/base.html:9 src/stimmo/web/templates/base.html:14
-#: src/stimmo/web/templates/base.html:21
-#: src/stimmo/web/templates/result.html:19
-#: src/stimmo/web/templates/result.html:25
-msgid ""
-"Fair-price check for Milan apartment listings — OMI-anchored, no machine "
-"learning, every multiplier visible."
 msgstr ""
 
 #: src/stimmo/web/templates/base.html:13 src/stimmo/web/templates/base.html:20
@@ -681,23 +680,29 @@ msgstr ""
 msgid "Milan fair-price check"
 msgstr ""
 
-#: src/stimmo/web/templates/base.html:977
+#: src/stimmo/web/templates/base.html:988
 msgid "Fair-price check"
 msgstr ""
 
-#: src/stimmo/web/templates/base.html:981
+#: src/stimmo/web/templates/base.html:992
 msgid "Estimate"
 msgstr ""
 
-#: src/stimmo/web/templates/base.html:982
+#: src/stimmo/web/templates/base.html:993
 msgid "Bookmarklet"
 msgstr ""
 
-#: src/stimmo/web/templates/base.html:994
+#: src/stimmo/web/templates/base.html:1005
 msgid "By"
 msgstr ""
 
-#: src/stimmo/web/templates/base.html:998
+#: src/stimmo/web/templates/base.html:1009
+#: src/stimmo/web/templates/bookmarklet.html:22
+#: src/stimmo/web/templates/privacy.html:8
+msgid "Privacy"
+msgstr ""
+
+#: src/stimmo/web/templates/base.html:1010
 msgid "Requests &amp; feedback"
 msgstr ""
 
@@ -710,13 +715,13 @@ msgid "Import"
 msgstr ""
 
 #: src/stimmo/web/templates/bookmarklet.html:10
-#: src/stimmo/web/templates/form.html:8 src/stimmo/web/templates/form.html:32
+#: src/stimmo/web/templates/form.html:32 src/stimmo/web/templates/form.html:56
 #: src/stimmo/web/templates/result.html:35
 msgid "Listing"
 msgstr ""
 
 #: src/stimmo/web/templates/bookmarklet.html:12
-#: src/stimmo/web/templates/form.html:10
+#: src/stimmo/web/templates/form.html:34
 #: src/stimmo/web/templates/result.html:37
 msgid "Verdict"
 msgstr ""
@@ -732,10 +737,6 @@ msgid ""
 " Milano listing — stimmo opens with\n"
 "      address, surface, price, floor, lift, energy class, condition, "
 "outdoor space, era and bathrooms already filled in."
-msgstr ""
-
-#: src/stimmo/web/templates/bookmarklet.html:22
-msgid "Privacy"
 msgstr ""
 
 #: src/stimmo/web/templates/bookmarklet.html:23
@@ -926,199 +927,199 @@ msgstr ""
 msgid "Milan property listings: is the price right?"
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:12
+#: src/stimmo/web/templates/form.html:36
 msgid "Is this Milan listing <em>fair</em>?"
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:13
+#: src/stimmo/web/templates/form.html:37
 msgid ""
 "Anchored to <b>OMI</b> €/m² bands per zone and a single, public "
 "coefficients table. No black box — every multiplier shows up in your "
 "report."
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:16
+#: src/stimmo/web/templates/form.html:40
 msgid "OMI semester"
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:24
+#: src/stimmo/web/templates/form.html:48
 msgid "Prefilled from"
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:24
+#: src/stimmo/web/templates/form.html:48
 msgid "please verify all fields before estimating."
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:33
+#: src/stimmo/web/templates/form.html:57
 msgid "Property &amp; price"
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:38
+#: src/stimmo/web/templates/form.html:62
 msgid "Address"
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:42 src/stimmo/web/templates/form.html:313
+#: src/stimmo/web/templates/form.html:66 src/stimmo/web/templates/form.html:337
 msgid "Street + civic number, Milano comune only."
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:46
+#: src/stimmo/web/templates/form.html:70
 #: src/stimmo/web/templates/result.html:254
 msgid "Surface"
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:55
+#: src/stimmo/web/templates/form.html:79
 #: src/stimmo/web/templates/result.html:111
 #: src/stimmo/web/templates/result.html:264
 msgid "Asking price"
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:65
+#: src/stimmo/web/templates/form.html:89
 msgid "Property type"
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:83
+#: src/stimmo/web/templates/form.html:107
 msgid "Building &amp; unit"
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:84
+#: src/stimmo/web/templates/form.html:108
 #: src/stimmo/web/templates/result.html:143
 msgid "Adjustments"
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:89
+#: src/stimmo/web/templates/form.html:113
 msgid "Fine condition"
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:98
+#: src/stimmo/web/templates/form.html:122
 msgid "Energy class"
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:101
+#: src/stimmo/web/templates/form.html:125
 msgid "— unknown —"
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:107
+#: src/stimmo/web/templates/form.html:131
 msgid "Floor"
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:110
+#: src/stimmo/web/templates/form.html:134
 msgid "0 = ground · −1 = basement"
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:114
+#: src/stimmo/web/templates/form.html:138
 msgid "Total floors"
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:120
+#: src/stimmo/web/templates/form.html:144
 msgid "Outdoor space"
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:129
+#: src/stimmo/web/templates/form.html:153
 msgid "Construction era"
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:138
+#: src/stimmo/web/templates/form.html:162
 msgid "Orientation"
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:147
+#: src/stimmo/web/templates/form.html:171
 msgid "Exposure"
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:156
+#: src/stimmo/web/templates/form.html:180
 msgid "Rooms (locali)"
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:159
+#: src/stimmo/web/templates/form.html:183
 msgid "optional"
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:160
+#: src/stimmo/web/templates/form.html:184
 msgid ""
 "1 = monolocale · 2 = bilocale · 3 = trilocale … (optional) — cramped-"
 "layout penalty for 3+ locali: −2 % below 22 m²/locale, −4 % below 18 "
 "m²/locale"
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:167
+#: src/stimmo/web/templates/form.html:191
 msgid "Lift in building"
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:175
+#: src/stimmo/web/templates/form.html:199
 msgid "Box auto / garage"
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:192
+#: src/stimmo/web/templates/form.html:216
 msgid "Check"
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:200
+#: src/stimmo/web/templates/form.html:224
 msgid "OMI zones"
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:208
+#: src/stimmo/web/templates/form.html:232
 msgid "lower"
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:210
+#: src/stimmo/web/templates/form.html:234
 msgid "higher"
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:212
+#: src/stimmo/web/templates/form.html:236
 msgid "zones · click for €/m² band"
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:218
+#: src/stimmo/web/templates/form.html:242
 msgid "How <em style=\"font-style:italic\">stimmo</em> reads a listing"
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:222
+#: src/stimmo/web/templates/form.html:246
 msgid "Geocode the address and pin its <b>OMI zone</b> via the official polygon."
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:223
+#: src/stimmo/web/templates/form.html:247
 #, python-format
 msgid ""
 "Pull the <b>€/m² band</b> for that zone × type × condition (semester "
 "%(omi_semester)s)."
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:224
+#: src/stimmo/web/templates/form.html:248
 msgid ""
 "Apply a <b>transparent multiplier</b> from a single coefficients file — "
 "floor, lift, energy, outdoor, era, orientation, amenities."
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:225
+#: src/stimmo/web/templates/form.html:249
 msgid ""
 "Compare the asking price to an <b>ask-shifted band</b> (rogito +6 %) and "
 "classify under / fair / over."
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:319
+#: src/stimmo/web/templates/form.html:343
 msgid "Locating…"
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:323
+#: src/stimmo/web/templates/form.html:347
 msgid "Address not found in Milano"
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:324
-#: src/stimmo/web/templates/form.html:339
+#: src/stimmo/web/templates/form.html:348
+#: src/stimmo/web/templates/form.html:363
 msgid "Geocoding failed"
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:335
+#: src/stimmo/web/templates/form.html:359
 #: src/stimmo/web/templates/omi_alternatives.html:15
 #: src/stimmo/web/templates/result.html:45
 msgid "Zone"
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:335
+#: src/stimmo/web/templates/form.html:359
 msgid "Outside Milano comune — no OMI zone"
 msgstr ""
 
-#: src/stimmo/web/templates/form.html:360
+#: src/stimmo/web/templates/form.html:384
 msgid "Estimating… (fetching amenities)"
 msgstr ""
 
@@ -1166,6 +1167,105 @@ msgid ""
 "condition, but not every combination has data in every zone. Picking a "
 "neighbouring bucket is a reasonable approximation — the band itself is "
 "the dominant input to the estimate."
+msgstr ""
+
+#: src/stimmo/web/templates/privacy.html:2
+msgid "privacy"
+msgstr ""
+
+#: src/stimmo/web/templates/privacy.html:10
+msgid "What stimmo does<br>with <em>your data</em>."
+msgstr ""
+
+#: src/stimmo/web/templates/privacy.html:11
+msgid ""
+"Plain and factual — not legal boilerplate. If anything here is unclear, "
+"ask."
+msgstr ""
+
+#: src/stimmo/web/templates/privacy.html:17
+msgid "No accounts, no persistent profile"
+msgstr ""
+
+#: src/stimmo/web/templates/privacy.html:19
+msgid ""
+"stimmo has no user accounts, no login, and no persistent per-visitor "
+"profile. Each form submission is processed as an independent request: the"
+" address, surface, condition and other listing details you enter are used"
+" only to compute that one estimate and are not stored against your "
+"identity."
+msgstr ""
+
+#: src/stimmo/web/templates/privacy.html:24
+msgid "Third-party lookups"
+msgstr ""
+
+#: src/stimmo/web/templates/privacy.html:26
+msgid ""
+"Producing an estimate requires two lookups against external, non-profit "
+"map data providers:"
+msgstr ""
+
+#: src/stimmo/web/templates/privacy.html:28
+msgid ""
+"the address you enter is geocoded to coordinates via OpenStreetMap's "
+"Nominatim service;"
+msgstr ""
+
+#: src/stimmo/web/templates/privacy.html:29
+msgid ""
+"nearby amenities (schools, transit, parks, and similar) are looked up via"
+" the Overpass API, which also serves OpenStreetMap data."
+msgstr ""
+
+#: src/stimmo/web/templates/privacy.html:31
+msgid ""
+"Both are called per-request with the coordinates needed to answer the "
+"query; stimmo does not otherwise share your input with third parties."
+msgstr ""
+
+#: src/stimmo/web/templates/privacy.html:36
+msgid "Share links"
+msgstr ""
+
+#: src/stimmo/web/templates/privacy.html:38
+msgid ""
+"If you use the \"share\" button on a result, the estimate payload (the "
+"listing details and computed verdict — explicitly not any personal data "
+"about you) is stored in a small, self-hosted, content-addressed SQLite "
+"database so the short link keeps working when others open it. There is "
+"nothing tying a share link back to who created it."
+msgstr ""
+
+#: src/stimmo/web/templates/privacy.html:43
+msgid "Metrics"
+msgstr ""
+
+#: src/stimmo/web/templates/privacy.html:45
+msgid ""
+"stimmo collects aggregate, anonymous Prometheus counters — request counts"
+" and latencies by route, and share-link open/render outcomes. These are "
+"operational metrics, not per-user tracking: they carry no IP address, "
+"cookie, or identifier tied to a specific visitor."
+msgstr ""
+
+#: src/stimmo/web/templates/privacy.html:46
+msgid ""
+"If a Cloudflare Web Analytics token is configured, this page also loads "
+"Cloudflare's privacy-first analytics beacon, which does not use cookies "
+"or persistent identifiers to track individuals across sites."
+msgstr ""
+
+#: src/stimmo/web/templates/privacy.html:51
+msgid "Infrastructure"
+msgstr ""
+
+#: src/stimmo/web/templates/privacy.html:53
+msgid ""
+"stimmo runs behind Cloudflare, used as a reverse proxy and CDN to serve "
+"the site reliably. Cloudflare processes standard connection metadata "
+"(like your IP address) as part of routing the request, under its own "
+"privacy policy."
 msgstr ""
 
 #: src/stimmo/web/templates/result.html:8
