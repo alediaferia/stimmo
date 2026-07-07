@@ -176,35 +176,8 @@
       </table>
     </div>
 
-    {% if history_series %}
-    {% set mids = history_series | map(attribute='eur_m2_mid') | list %}
-    {% set max_mid = mids | max %}
-    {% set min_mid = mids | min %}
-    <div class="doc">
-      <div class="doc-head">
-        <h2 class="doc-title">OMI €/m² · {% trans %}zone{% endtrans %} {{ est.omi_quote.zone_code }}</h2>
-        <span class="doc-eyebrow">{% trans %}8 semesters · mid value{% endtrans %}</span>
-      </div>
-      <div class="strip">
-        {% for hp in history_series %}
-        {% set denom = max_mid - min_mid * 0.85 %}
-        {% set h = ((hp.eur_m2_mid - min_mid * 0.85) / denom * 100) | round(1) %}
-        {% set is_cur = loop.last %}
-        <div class="col{% if is_cur %} cur{% endif %}" style="height:{{ h }}%">
-          <span class="v">{{ hp.eur_m2_mid | num }}</span>
-        </div>
-        {% endfor %}
-      </div>
-      <div class="strip-axis">
-        {% for hp in history_series %}<div>{{ hp.semester }}</div>{% endfor %}
-      </div>
-      <div style="margin-top:14px;font-family:var(--mono);font-size:11px;color:var(--ink-muted);display:flex;justify-content:space-between">
-        <span>min € {{ min_mid | num }}</span>
-        <span>{% trans %}last semester highlighted{% endtrans %}</span>
-        <span>max € {{ max_mid | num }}</span>
-      </div>
-    </div>
-    {% endif %}
+    {% set history_zone_code = est.omi_quote.zone_code %}
+    {% include "_history_strip.html" %}
 
     {% if ntn_total %}
     {% set ntn_vals = [] %}

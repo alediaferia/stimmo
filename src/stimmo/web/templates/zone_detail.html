@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+{% block title %}{{ _("%(zone_name)s (zone %(zone_code)s) — Milan OMI €/m²") % {"zone_name": zone_name | title, "zone_code": zone_code} }} — stimmo{% endblock %}
+{% block og_meta %}
+{% set _title = _("%(zone_name)s (zone %(zone_code)s) — Milan OMI €/m²") % {"zone_name": zone_name | title, "zone_code": zone_code} %}
+{% set _descr = _("Official OMI compravendita €/m² band for %(zone_name)s (zone %(zone_code)s), Milano — semester %(semester)s, with the 8-semester trend.") % {"zone_name": zone_name | title, "zone_code": zone_code, "semester": semester} %}
+<meta property="og:type" content="website">
+<meta property="og:title" content="stimmo — {{ _title }}">
+<meta name="description" content="{{ _descr }}">
+<meta property="og:description" content="{{ _descr }}">
+<meta property="og:image" content="{{ request.base_url }}{{ static_url('og-image.png').lstrip('/') }}">
+<meta property="og:url" content="{{ request.url }}">
+<meta property="og:locale" content="{{ locale }}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="stimmo — {{ _title }}">
+<meta name="twitter:description" content="{{ _descr }}">
+<meta name="twitter:image" content="{{ request.base_url }}{{ static_url('og-image.png').lstrip('/') }}">
+{% endblock %}
+{% block json_ld %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Place",
+  "name": {{ (zone_name | title) | tojson }},
+  "url": {{ canonical_url | tojson }},
+  "containedInPlace": {
+    "@type": "AdministrativeArea",
+    "name": "Milano"
+  }
+}
+</script>
+{% endblock %}
+{% block content %}
+
+<div class="pagehead">
+  <div>
+    <div class="stepper">
+      <span class="step"><a href="/{{ lang }}/zones" style="color:inherit;text-decoration:none">{% trans %}Zones{% endtrans %}</a></span>
+      <span class="sep"></span>
+      <span class="step on"><span class="num">{{ zone_code }}</span> {% trans %}Detail{% endtrans %}</span>
+    </div>
+    <h1>{{ zone_name | title }}</h1>
+    <p class="sub">{% trans %}OMI zone{% endtrans %} <b class="mono">{{ zone_code }}</b> · {% trans %}fascia{% endtrans %} {{ fascia }} · Milano</p>
+  </div>
+  <div class="meta">
+    {% trans %}OMI semester{% endtrans %}<br>
+    <b>{{ semester }}</b>
+    <div style="margin-top:8px;opacity:0.7">Compr. min – max</div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div>
+    <div class="doc">
+      <div class="doc-head">
+        <h2 class="doc-title">€/m² · {% trans %}by type &amp; condition{% endtrans %}</h2>
+        <span class="doc-eyebrow">§ {% trans %}Official OMI compravendita bands{% endtrans %}</span>
+      </div>
+      {% if quotes %}
+      <table class="t">
+        <thead>
+          <tr>
+            <th>{% trans %}Property type{% endtrans %}</th>
+            <th>{% trans %}Condition{% endtrans %}</th>
+            <th class="num">€/m² min</th>
+            <th class="num">€/m² max</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for q in quotes %}
+          <tr>
+            <td>{{ q.property_type.value }}</td>
+            <td class="mono">{{ q.condition.value }}</td>
+            <td class="num mono">{{ q.eur_m2_min | num }}</td>
+            <td class="num mono">{{ q.eur_m2_max | num }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="note">{% trans %}No bundled OMI compravendita quotations for this zone (typically a park, rail yard, or other non-residential area).{% endtrans %}</div>
+      {% endif %}
+    </div>
+
+    {% set history_zone_code = zone_code %}
+    {% include "_history_strip.html" %}
+
+    <div class="note" style="margin-top:18px">
+      <b>{% trans %}Source.{% endtrans %}</b> {% trans %}OMI quotations and zone boundaries — Agenzia delle Entrate / Comune di Milano, licensed IODL 2.0.{% endtrans %}
+    </div>
+  </div>
+
+  <div>
+    <div class="doc" style="padding:0;overflow:hidden">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--paper-rule);display:flex;align-items:baseline;justify-content:space-between">
+        <h2 class="doc-title" style="margin:0">{% trans %}Zone boundary{% endtrans %}</h2>
+        <span class="doc-eyebrow">{{ zone_code }}</span>
+      </div>
+      <div class="map-wrap" style="border:0;border-radius:0">
+        <div id="zone-detail-map" class="map"></div>
+      </div>
+      <div class="map-foot">
+        <div class="legend">
+          <span>{% trans %}lower{% endtrans %}</span>
+          <span class="bar"></span>
+          <span>{% trans %}higher{% endtrans %}</span>
+        </div>
+        <span>Milano · OMI {{ semester }}</span>
+      </div>
+    </div>
+
+    <div class="doc">
+      <div class="doc-head">
+        <h2 class="doc-title">{% trans %}Check a listing here{% endtrans %}</h2>
+        <span class="doc-eyebrow">§ {% trans %}Estimator{% endtrans %}</span>
+      </div>
+      <p style="font-size:14px;color:var(--ink-2);margin:0 0 16px">{% trans %}Have an address or a listing in this zone? Run it through the full fair-price check — OMI band, coefficients, and verdict.{% endtrans %}</p>
+      <div class="form-actions">
+        <a class="btn" href="/{{ lang }}/">
+          {% trans %}Check a listing{% endtrans %} <span class="arrow">→</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  const zoneCode = {{ zone_code | tojson }};
+  const map = L.map('zone-detail-map', { zoomControl: true, scrollWheelZoom: false, attributionControl: false })
+    .setView([45.4642, 9.19], 12);
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
+    subdomains: 'abcd', maxZoom: 19,
+  }).addTo(map);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
+    subdomains: 'abcd', maxZoom: 19, opacity: 0.85,
+  }).addTo(map);
+
+  const palette = [
+    'oklch(0.78 0.05 240)', 'oklch(0.86 0.06 200)',
+    'oklch(0.92 0.07 95)',  'oklch(0.74 0.13 60)',
+    'oklch(0.55 0.15 30)',
+  ];
+
+  function quantiles(values, n) {
+    const sorted = [...values].sort((a, b) => a - b);
+    const out = [];
+    for (let i = 1; i < n; i++) out.push(sorted[Math.floor((i / n) * sorted.length)]);
+    return out;
+  }
+  function colorFor(mid, breaks) {
+    if (mid == null) return 'oklch(0.88 0.01 82)';
+    for (let i = 0; i < breaks.length; i++) { if (mid <= breaks[i]) return palette[i]; }
+    return palette[palette.length - 1];
+  }
+  function fmtEur(n) { return n == null ? '—' : '€ ' + Math.round(n).toLocaleString('it-IT'); }
+
+  fetch('/api/zones.geojson').then(r => r.json()).then(gj => {
+    const mids = gj.features.map(f => f.properties.eur_m2_mid).filter(v => v != null);
+    const breaks = quantiles(mids, palette.length);
+    let target = null;
+
+    const layer = L.geoJSON(gj, {
+      style: (feature) => {
+        const isTarget = feature.properties.CODZONA === zoneCode;
+        return {
+          color: isTarget ? 'oklch(0.22 0.012 250)' : 'oklch(0.55 0.01 80)',
+          weight: isTarget ? 2.5 : 0.5,
+          fillColor: colorFor(feature.properties.eur_m2_mid, breaks),
+          fillOpacity: isTarget ? 0.7 : 0.25,
+        };
+      },
+      onEachFeature: (f, lyr) => {
+        const p = f.properties;
+        const range = (p.eur_m2_min && p.eur_m2_max)
+          ? fmtEur(p.eur_m2_min) + ' – ' + fmtEur(p.eur_m2_max) + ' / m²'
+          : 'no OMI quote';
+        lyr.bindPopup('<div class="zone-popup"><strong>' + p.CODZONA + ' — ' + (p.Zona_Descr || p.Name || '') + '</strong>' + range + '</div>');
+        if (p.CODZONA === zoneCode) target = lyr;
+      },
+    }).addTo(map);
+
+    if (target) {
+      map.fitBounds(target.getBounds(), { padding: [16, 16] });
+      target.bringToFront();
+    } else {
+      map.fitBounds(layer.getBounds(), { padding: [10, 10] });
+    }
+  });
+})();
+</script>
+{% endblock %}

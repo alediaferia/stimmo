@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}{% trans %}Milan OMI zones — €/m² by neighborhood{% endtrans %} — stimmo{% endblock %}
+{% block og_meta %}
+<meta property="og:type" content="website">
+<meta property="og:title" content="stimmo — {% trans %}Milan OMI zones{% endtrans %}">
+<meta name="description" content="{% trans %}Every Milano OMI microzone with its official €/m² compravendita band, semester trend, and boundary — sourced from Agenzia delle Entrate data.{% endtrans %}">
+<meta property="og:description" content="{% trans %}Every Milano OMI microzone with its official €/m² compravendita band, semester trend, and boundary — sourced from Agenzia delle Entrate data.{% endtrans %}">
+<meta property="og:image" content="{{ request.base_url }}{{ static_url('og-image.png').lstrip('/') }}">
+<meta property="og:url" content="{{ request.url }}">
+<meta property="og:locale" content="{{ locale }}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="stimmo — {% trans %}Milan OMI zones{% endtrans %}">
+<meta name="twitter:description" content="{% trans %}Every Milano OMI microzone with its official €/m² compravendita band, semester trend, and boundary — sourced from Agenzia delle Entrate data.{% endtrans %}">
+<meta name="twitter:image" content="{{ request.base_url }}{{ static_url('og-image.png').lstrip('/') }}">
+{% endblock %}
+{% block json_ld %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "name": {{ _("Milan OMI zones — €/m² by neighborhood") | tojson }},
+  "url": {{ canonical_url | tojson }},
+  "description": {{ _("Every Milano OMI microzone with its official €/m² compravendita band, semester trend, and boundary — sourced from Agenzia delle Entrate data.") | tojson }}
+}
+</script>
+{% endblock %}
+{% block content %}
+
+<div class="pagehead">
+  <div>
+    <div class="stepper">
+      <span class="step on"><span class="num">§</span> {% trans %}Zones{% endtrans %}</span>
+    </div>
+    <h1>{% trans %}Milano, <em>zone by zone</em>.{% endtrans %}</h1>
+    <p class="sub">{% trans %}Every OMI microzone in the comune with its official Compr_min – Compr_max €/m² band, grouped by fascia. Click through for the semester trend and zone boundary.{% endtrans %}</p>
+  </div>
+  <div class="meta">
+    {% trans %}OMI semester{% endtrans %}<br>
+    <b>{{ semester }}</b>
+    <div style="margin-top:8px;opacity:0.7">{{ zone_count }} {% trans %}zones{% endtrans %}</div>
+  </div>
+</div>
+
+{% for fascia, zone_list in fascia_groups %}
+<div class="doc">
+  <div class="doc-head">
+    <h2 class="doc-title">{% trans %}Fascia{% endtrans %} {{ fascia }}</h2>
+    <span class="doc-eyebrow">{{ zone_list | length }} {% trans %}zones{% endtrans %}</span>
+  </div>
+  <table class="t">
+    <thead>
+      <tr>
+        <th>{% trans %}Zone{% endtrans %}</th>
+        <th>{% trans %}Area{% endtrans %}</th>
+        <th class="num">€/m²</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for z in zone_list %}
+      <tr>
+        <td class="mono">{{ z.code }}</td>
+        <td>{{ z.descr | title }}</td>
+        <td class="num mono">
+          {% if z.eur_m2_min %}{{ z.eur_m2_min | num }} – {{ z.eur_m2_max | num }}{% else %}—{% endif %}
+        </td>
+        <td class="num"><a href="/{{ lang }}/zones/{{ z.code }}">{% trans %}Detail{% endtrans %} →</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endfor %}
+
+<div class="note" style="margin-top:18px">
+  <b>{% trans %}Source.{% endtrans %}</b> {% trans %}OMI quotations and zone boundaries — Agenzia delle Entrate / Comune di Milano, licensed IODL 2.0. Bundled with stimmo, refreshed each semester.{% endtrans %}
+</div>
+
+<div class="form-actions" style="margin-top:22px">
+  <a class="btn" href="/{{ lang }}/">
+    {% trans %}Check a listing against these bands{% endtrans %} <span class="arrow">→</span>
+  </a>
+</div>
+
+{% endblock %}

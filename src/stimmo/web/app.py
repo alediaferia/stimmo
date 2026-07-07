@@ -315,7 +315,7 @@ Sitemap: https://stimmo.it/sitemap.xml
 
 # Indexable, lang-prefixed pages. Excludes /s/<id> share pages and /og/<id>.png
 # image routes — those are per-instance, not meant for search indexing.
-_SITEMAP_PATHS: tuple[str, ...] = ("/", "/about", "/bookmarklet", "/privacy")
+_SITEMAP_PATHS: tuple[str, ...] = ("/", "/about", "/bookmarklet", "/privacy", "/zones")
 
 
 @app.api_route("/robots.txt", methods=["GET", "HEAD"])
@@ -341,6 +341,20 @@ def _sitemap_xml() -> str:
             it_loc = locs["it"]
             alt_links += f'\n    <xhtml:link rel="alternate" hreflang="x-default" href="{it_loc}"/>'
             entries.append(f"  <url>\n    <loc>{locs[lang]}</loc>\n{alt_links}\n  </url>")
+
+    # Programmatic OMI zone pages (WP-7) — one entry per zone code per lang,
+    # sourced from the same bundled data the /{lang}/zones/{code} route reads.
+    for code, _descr in zones.list_zones():
+        locs = {lang: f"{SITE_ORIGIN}/{lang}/zones/{code}" for lang in langs}
+        for lang in langs:
+            alt_links = "\n".join(
+                f'    <xhtml:link rel="alternate" hreflang="{alt_lang}" href="{alt_loc}"/>'
+                for alt_lang, alt_loc in locs.items()
+            )
+            it_loc = locs["it"]
+            alt_links += f'\n    <xhtml:link rel="alternate" hreflang="x-default" href="{it_loc}"/>'
+            entries.append(f"  <url>\n    <loc>{locs[lang]}</loc>\n{alt_links}\n  </url>")
+
     body = "\n".join(entries)
     return (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -519,6 +533,76 @@ def about(request: Request, lang: str = FPath(pattern=_LANG_RE)) -> HTMLResponse
 def privacy(request: Request, lang: str = FPath(pattern=_LANG_RE)) -> HTMLResponse:
     _set_locale(request, lang)
     return _tpl(request, "privacy.html")
+
+
+# ---------------------------------------------------------------------------
+# WP-7: programmatic OMI zone pages (docs/distribution-plan.md, Phase C).
+#
+# Display-only pages sourced entirely from bundled data (zones.list_zones(),
+# omi.zone_quotes/zone_price_index, history.series). No pricing/adjustment
+# logic here — that stays in valuation/adjustments.py, per the tuning-surface
+# invariant.
+# ---------------------------------------------------------------------------
+
+_ZONE_CODE_RE = r"^[A-Za-z0-9]{1,10}$"
+
+
+@app.get("/{lang}/zones", response_class=HTMLResponse)
+def zones_index(request: Request, lang: str = FPath(pattern=_LANG_RE)) -> HTMLResponse:
+    _set_locale(request, lang)
+    price_index = omi.zone_price_index()
+    fascia_index = omi.zone_fascia_index()
+
+    groups: dict[str, list[dict]] = {}
+    for code, descr in zones.list_zones():
+        fascia = fascia_index.get(code, code[0])
+        band = price_index.get(code)
+        groups.setdefault(fascia, []).append(
+            {
+                "code": code,
+                "descr": descr,
+                "eur_m2_min": band[0] if band else None,
+                "eur_m2_max": band[1] if band else None,
+            }
+        )
+    for group in groups.values():
+        group.sort(key=lambda z: z["code"])
+
+    return _tpl(
+        request,
+        "zones_index.html",
+        {
+            "fascia_groups": sorted(groups.items()),
+            "zone_count": sum(len(g) for g in groups.values()),
+            "semester": omi.semester(),
+        },
+    )
+
+
+@app.get("/{lang}/zones/{code}", response_class=HTMLResponse)
+def zone_detail(
+    request: Request,
+    lang: str = FPath(pattern=_LANG_RE),
+    code: str = FPath(pattern=_ZONE_CODE_RE),
+) -> HTMLResponse:
+    _set_locale(request, lang)
+    zone_names = dict(zones.list_zones())
+    if code not in zone_names:
+        raise HTTPException(status_code=404, detail="Unknown OMI zone")
+
+    fascia = omi.zone_fascia_index().get(code, code[0])
+    return _tpl(
+        request,
+        "zone_detail.html",
+        {
+            "zone_code": code,
+            "zone_name": zone_names[code],
+            "fascia": fascia,
+            "quotes": omi.zone_quotes(code),
+            "history_series": history.series(code, PropertyType.CIVILI, OmiCondition.NORMALE),
+            "semester": omi.semester(),
+        },
+    )
 
 
 @app.get("/{lang}/", response_class=HTMLResponse)
