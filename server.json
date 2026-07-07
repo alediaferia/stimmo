@@ -1,0 +1,16 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-06-18/server.schema.json",
+  "name": "io.github.alediaferia/stimmo",
+  "description": "Milan property-valuation MCP server: OMI-band price estimates, zone lookups, geocoding, and amenity scoring for Milan apartments. No ML — the pricing model is one readable coefficients file.",
+  "repository": {
+    "url": "https://github.com/alediaferia/stimmo",
+    "source": "github"
+  },
+  "version": "0.16.0",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://stimmo.it/mcp"
+    }
+  ]
+}
