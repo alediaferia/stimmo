@@ -112,11 +112,14 @@ def _translate_batch(
 def _needs_translation(msg: Message, force: bool) -> bool:
     if not msg.id or msg.id == "":
         return False
-    if msg.fuzzy:
-        return False
     if isinstance(msg.id, tuple):
         # Plural form — skip for now (stimmo has none currently)
         return False
+    if msg.fuzzy:
+        # A fuzzy entry's msgstr is a Babel near-match guess (often copied
+        # from an unrelated old msgid), not a trustworthy translation —
+        # always re-translate regardless of --force.
+        return True
     return force or not msg.string
 
 
@@ -143,8 +146,10 @@ def main() -> None:
 
     if not args.key:
         sys.exit("Error: provide --key or set OPENROUTER_API_KEY")
+    api_key: str = args.key
 
-    po_path = _LOCALE_DIR / args.locale / "LC_MESSAGES" / "messages.po"
+    locale: str = args.locale
+    po_path = _LOCALE_DIR / locale / "LC_MESSAGES" / "messages.po"
     if not po_path.exists():
         sys.exit(f"Error: {po_path} not found. Run pybabel init first.")
 
@@ -156,10 +161,10 @@ def main() -> None:
         "fr_FR": "French",
         "es_ES": "Spanish",
     }
-    target_lang = lang_names.get(args.locale, args.locale)
+    target_lang: str = lang_names.get(locale, locale)
 
     with po_path.open("rb") as fh:
-        catalog = pofile.read_po(fh, locale=args.locale)
+        catalog = pofile.read_po(fh, locale=locale)
 
     # Collect messages that need translation
     pending: list[Message] = [m for m in catalog if _needs_translation(m, args.force)]
@@ -183,7 +188,7 @@ def main() -> None:
 
         try:
             translations = _translate_batch(
-                batch, target_lang=target_lang, model=args.model, api_key=args.key
+                batch, target_lang=target_lang, model=args.model, api_key=api_key
             )
         except httpx.HTTPStatusError as exc:
             print(f"HTTP {exc.response.status_code}: {exc.response.text[:200]}", file=sys.stderr)
@@ -197,6 +202,7 @@ def main() -> None:
             key = str(msg.id)
             if translations.get(key):
                 msg.string = translations[key]
+                msg.flags.discard("fuzzy")
                 translated_count += 1
             else:
                 print(f"\n  [warn] no translation returned for: {key[:60]!r}", file=sys.stderr)
