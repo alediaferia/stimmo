@@ -84,6 +84,52 @@ def available_conditions(zone_code: str, ptype: PropertyType) -> list[OmiConditi
 
 
 @cache
+def zone_fascia_index() -> dict[str, str]:
+    """zone_code -> OMI Fascia letter (B/C/D/E), sourced from the bundled CSV.
+
+    Used to group zones on the /{lang}/zones index page. A handful of zones
+    (e.g. the "R" rural/park zones) carry no Compr_min/max rows at all and are
+    absent here — callers should fall back to the zone code's own first
+    character for those.
+    """
+    df = _df()
+    g = df.dropna(subset=["Fascia"]).groupby("Zona")["Fascia"].first()
+    return {str(z): str(f) for z, f in g.items()}
+
+
+def zone_quotes(zone_code: str) -> list[OmiQuote]:
+    """All available (property type × condition) OMI quotes for a zone.
+
+    Display-only aggregation over the bundled CSV for the zone detail page —
+    no pricing/adjustment logic, just every quoted cell for the zone sorted
+    for a stable table order. Returns an empty list for zones with no bundled
+    quotations (e.g. the "R" rural/park zones).
+    """
+    df = _df()
+    rows = df[(df["Zona"] == zone_code) & df["Compr_min"].notna()]
+    out: list[OmiQuote] = []
+    for _, r in rows.iterrows():
+        try:
+            ptype = PropertyType(r["Descr_Tipologia"])
+            cond = OmiCondition(r["Stato"])
+        except ValueError:
+            continue
+        out.append(
+            OmiQuote(
+                zone_code=zone_code,
+                property_type=ptype,
+                condition=cond,
+                eur_m2_min=float(r["Compr_min"]),
+                eur_m2_max=float(r["Compr_max"]),
+                semester=semester(),
+            )
+        )
+    ptype_order = {p: i for i, p in enumerate(PropertyType)}
+    out.sort(key=lambda q: (ptype_order[q.property_type], _CONDITION_RANK[q.condition]))
+    return out
+
+
+@cache
 def zone_price_index(
     ptype: PropertyType = PropertyType.CIVILI,
     condition: OmiCondition = OmiCondition.NORMALE,
