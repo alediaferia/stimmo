@@ -21,7 +21,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import ValidationError
 
-from stimmo.data import amenities, geocode, history, ntn, omi, zones
+from stimmo.data import amenities, geocode, history, neighborhoods, ntn, omi, zones
 from stimmo.data.importers import immobiliare
 from stimmo.i18n import (
     LANG_TO_LOCALE,
@@ -469,6 +469,39 @@ _register_seo_route(
     {"it": "/zones/{code}", "en": "/zones/{code}"},
     expand=lambda: ({"code": code} for code, _descr in zones.list_zones()),
 )
+_register_seo_route(
+    "neighborhood_detail",
+    "neighborhood_detail",
+    {
+        "it": "/milano/{slug_it}-prezzi-al-mq",
+        "en": "/milan/{slug_en}-property-prices",
+    },
+    # Staggered launch (see Neighborhood.blurb_it/blurb_en in data/neighborhoods.py):
+    # a neighborhood only enters the sitemap once BOTH language blurbs are filled in,
+    # so we never ask Google to index a page that's thin/near-duplicate in either
+    # language. The route resolves and renders regardless — see neighborhood_detail
+    # further down — so it stays reachable via the zone pages/zones index links.
+    expand=lambda: (
+        {"slug_it": n.slug_it, "slug_en": n.slug_en}
+        for n in neighborhoods.list_neighborhoods()
+        if n.blurb_it and n.blurb_en
+    ),
+)
+
+
+def neighborhood_url(n: neighborhoods.Neighborhood, lang: str) -> str:
+    """Canonical per-language URL for a neighborhood page.
+
+    Built from the same suffix templates registered above (rather than duplicating
+    "/milano/...-prezzi-al-mq" / "/milan/...-property-prices" literals in every
+    template that links to a neighborhood), so link targets can never drift from
+    the actual route / sitemap definitions.
+    """
+    suffix = _SEO_ROUTES["neighborhood_detail"].suffixes[lang]
+    return f"/{lang}{suffix.format(slug_it=n.slug_it, slug_en=n.slug_en)}"
+
+
+templates.env.globals["neighborhood_url"] = neighborhood_url
 
 # HTML-rendering endpoints that deliberately opt into _seo_urls's pre-registry
 # fallback (same suffix mirrored across every supported language) instead of a
@@ -680,6 +713,7 @@ def zones_index(request: Request, lang: str = FPath(pattern=_LANG_RE)) -> HTMLRe
                 "descr": descr,
                 "eur_m2_min": band[0] if band else None,
                 "eur_m2_max": band[1] if band else None,
+                "neighborhoods": neighborhoods.neighborhoods_for_zone(code),
             }
         )
     for group in groups.values():
@@ -719,10 +753,105 @@ def zone_detail(
             "quotes": omi.zone_quotes(code),
             "history_series": history.series(code, PropertyType.CIVILI, OmiCondition.NORMALE),
             "semester": omi.semester(),
+            "parent_neighborhoods": neighborhoods.neighborhoods_for_zone(code),
         },
         seo_route="zone_detail",
         seo_params={"code": code},
     )
+
+
+# ---------------------------------------------------------------------------
+# WP-8: neighborhood price pages — colloquial-name landing pages layered on top
+# of the OMI zone pages above via data/neighborhoods.py.
+#
+# Per-language slugs mean the it/en URLs don't share a path shape ("/milano/
+# {slug}-prezzi-al-mq" vs "/milan/{slug}-property-prices"), so this needs two
+# literal FastAPI route templates — registered on the SAME view function via two
+# stacked decorators below, so there's exactly one physical endpoint name and
+# exactly one _SEO_ROUTES entry (see test_every_html_endpoint_has_a_seo_decision
+# in tests/test_seo.py). `lang` is recovered from the matched literal prefix,
+# not a path parameter — no {lang} placeholder exists in either template.
+#
+# No pricing logic here: _neighborhood_price_band/_neighborhood_midpoint only
+# read data/omi.py's already-computed OMI bands and take min/max/mean across a
+# neighborhood's zone(s) for display — the tuning surface stays entirely in
+# valuation/adjustments.py.
+# ---------------------------------------------------------------------------
+
+_NEIGHBORHOOD_SLUG_RE = r"^[a-z0-9]+(-[a-z0-9]+)*$"
+
+
+def _neighborhood_price_band(n: neighborhoods.Neighborhood) -> tuple[float, float] | None:
+    """Min-of-mins / max-of-maxes €/m² (Abitazioni civili, condition NORMALE) across
+    a neighborhood's OMI zone(s). None if none of its zones have a bundled quote."""
+    price_index = omi.zone_price_index()
+    bands = [price_index[code] for code in n.zone_codes if code in price_index]
+    if not bands:
+        return None
+    return min(b[0] for b in bands), max(b[1] for b in bands)
+
+
+def _neighborhood_midpoint(n: neighborhoods.Neighborhood) -> float | None:
+    band = _neighborhood_price_band(n)
+    return (band[0] + band[1]) / 2 if band else None
+
+
+def _nearby_neighborhoods(n: neighborhoods.Neighborhood, count: int = 3) -> list[dict]:
+    """The `count` other curated neighborhoods whose €/m² midpoint sits closest to
+    `n`'s.
+
+    Picked by price proximity rather than zone-polygon adjacency: stimmo has no
+    neighborhood-to-neighborhood adjacency graph (only zone polygons), and "closest
+    by price" is exactly the comparison a buyer weighing this neighborhood wants —
+    "where else, at a similar level, should I also look?"
+    """
+    target = _neighborhood_midpoint(n)
+    if target is None:
+        return []
+    scored: list[tuple[float, neighborhoods.Neighborhood, float]] = []
+    for other in neighborhoods.list_neighborhoods():
+        if other is n:
+            continue
+        mid = _neighborhood_midpoint(other)
+        if mid is not None:
+            scored.append((abs(mid - target), other, mid))
+    scored.sort(key=lambda s: s[0])
+    return [{"neighborhood": other, "eur_m2_mid": mid} for _dist, other, mid in scored[:count]]
+
+
+def _render_neighborhood_detail(request: Request, lang: str, slug: str) -> HTMLResponse:
+    _set_locale(request, lang)
+    n = neighborhoods.neighborhood_for_slug(slug, lang)
+    if n is None:
+        raise HTTPException(status_code=404, detail="Unknown neighborhood")
+
+    zone_names = dict(zones.list_zones())
+    return _tpl(
+        request,
+        "neighborhood_detail.html",
+        {
+            "n": n,
+            "band": _neighborhood_price_band(n),
+            "spans_multiple_zones": len(n.zone_codes) > 1,
+            "city_avg_eur_m2": omi.citywide_average(),
+            "nearby": _nearby_neighborhoods(n),
+            "shared_zones": neighborhoods.shared_zones(n),
+            "zone_names": zone_names,
+            "blurb": n.blurb_it if lang == "it" else n.blurb_en,
+            "semester": omi.semester(),
+        },
+        seo_route="neighborhood_detail",
+        seo_params={"slug_it": n.slug_it, "slug_en": n.slug_en},
+    )
+
+
+@app.get("/it/milano/{slug}-prezzi-al-mq", response_class=HTMLResponse)
+@app.get("/en/milan/{slug}-property-prices", response_class=HTMLResponse)
+def neighborhood_detail(
+    request: Request, slug: str = FPath(pattern=_NEIGHBORHOOD_SLUG_RE)
+) -> HTMLResponse:
+    lang = "it" if request.url.path.startswith("/it/") else "en"
+    return _render_neighborhood_detail(request, lang, slug)
 
 
 @app.get("/{lang}/", response_class=HTMLResponse)

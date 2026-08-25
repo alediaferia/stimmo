@@ -3,7 +3,8 @@
 `/{lang}/zones/{code}` pages are addressed by OMI cadastral code (B15, D12, ...), but
 nobody searches "B15" — they search "Brera". This module is a curated, hand-checked
 lookup table from the neighborhood names Milanese people actually use to the OMI zone
-code(s) that cover them, intended as the foundation for future neighborhood-slug routes.
+code(s) that cover them, and is the data foundation for the neighborhood-slug pages
+registered in web/app.py ("neighborhood_detail": /{lang}/milano-or-milan/{slug}...).
 
 Pure name<->code mapping — no pricing/valuation logic belongs here (see
 `valuation/adjustments.py` for the one tuning surface). The table below is static: it
@@ -43,6 +44,14 @@ class Neighborhood:
     slug_en: str
     name: str  # display name, e.g. "Brera" — a proper noun, not translated
     zone_codes: tuple[str, ...]
+    # 150-250 words of genuine local context, filled in a separate editorial pass —
+    # not written as part of adding a neighborhood to this table. Empty by default,
+    # which is deliberate: web/app.py's "neighborhood_detail" SEO route only lists a
+    # neighborhood in the sitemap once BOTH blurb_it and blurb_en are non-empty (the
+    # route itself still resolves and renders without one, so it's reachable and
+    # internally linked — we just don't ask Google to index a thin page yet).
+    blurb_it: str = ""
+    blurb_en: str = ""
 
 
 # Ordered roughly centro -> periphery, clockwise. Kept as a tuple literal (not built
@@ -105,9 +114,47 @@ _BY_SLUG_IT: dict[str, Neighborhood] = {n.slug_it: n for n in _NEIGHBORHOODS}
 _BY_SLUG_EN: dict[str, Neighborhood] = {n.slug_en: n for n in _NEIGHBORHOODS}
 
 
+def _build_zone_index() -> dict[str, tuple[Neighborhood, ...]]:
+    index: dict[str, list[Neighborhood]] = {}
+    for n in _NEIGHBORHOODS:
+        for code in n.zone_codes:
+            index.setdefault(code, []).append(n)
+    return {code: tuple(ns) for code, ns in index.items()}
+
+
+_BY_ZONE: dict[str, tuple[Neighborhood, ...]] = _build_zone_index()
+
+
 def list_neighborhoods() -> list[Neighborhood]:
     """All curated neighborhoods, in table order."""
     return list(_NEIGHBORHOODS)
+
+
+def neighborhoods_for_zone(code: str) -> tuple[Neighborhood, ...]:
+    """Curated neighborhoods that claim OMI zone `code`, in table order.
+
+    Usually 0 or 1 neighborhood. Exactly the three zones documented in the module
+    docstring (C12, C14, C18) return 2 — that's the deliberate zone-sharing overlap,
+    not a bug. Used to link zone pages back up to the neighborhood page(s) that
+    contain them.
+    """
+    return _BY_ZONE.get(code, ())
+
+
+def shared_zones(n: Neighborhood) -> dict[str, tuple[Neighborhood, ...]]:
+    """Map each of `n`'s zone codes that's also claimed by another curated
+    neighborhood to the other neighborhood(s) sharing it (`n` itself excluded).
+
+    Computed from the table above at call time, not hardcoded — see the module
+    docstring for why C12/C14/C18 are legitimately shared today. Returns an empty
+    dict for a neighborhood with no shared zones (e.g. Brera).
+    """
+    out: dict[str, tuple[Neighborhood, ...]] = {}
+    for code in n.zone_codes:
+        others = tuple(o for o in _BY_ZONE.get(code, ()) if o is not n)
+        if others:
+            out[code] = others
+    return out
 
 
 def neighborhood_for_slug(slug: str, lang: str) -> Neighborhood | None:

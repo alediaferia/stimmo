@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}{{ _("%(name)s, Milano — €/m² price guide") % {"name": n.name} }} — stimmo{% endblock %}
+{% block og_meta %}
+{% set _title = _("%(name)s, Milano — €/m² price guide") % {"name": n.name} %}
+{% set _descr = _("Official OMI compravendita €/m² band for %(name)s, Milano — semester %(semester)s, compared to the Milano average and nearby neighborhoods.") % {"name": n.name, "semester": semester} %}
+<meta property="og:type" content="website">
+<meta property="og:title" content="stimmo — {{ _title }}">
+<meta name="description" content="{{ _descr }}">
+<meta property="og:description" content="{{ _descr }}">
+<meta property="og:image" content="{{ request.base_url }}{{ static_url('og-image.png').lstrip('/') }}">
+<meta property="og:url" content="{{ request.url }}">
+<meta property="og:locale" content="{{ locale }}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="stimmo — {{ _title }}">
+<meta name="twitter:description" content="{{ _descr }}">
+<meta name="twitter:image" content="{{ request.base_url }}{{ static_url('og-image.png').lstrip('/') }}">
+{% endblock %}
+{% block json_ld %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Place",
+  "name": {{ n.name | tojson }},
+  "url": {{ canonical_url | tojson }},
+  "containedInPlace": {
+    "@type": "AdministrativeArea",
+    "name": "Milano"
+  }
+}
+</script>
+{% endblock %}
+{% block content %}
+
+<div class="pagehead">
+  <div>
+    <div class="stepper">
+      <span class="step"><a href="/{{ lang }}/zones" style="color:inherit;text-decoration:none">{% trans %}Zones{% endtrans %}</a></span>
+      <span class="sep"></span>
+      <span class="step on"><span class="num">§</span> {{ n.name }}</span>
+    </div>
+    <h1>{{ n.name }}</h1>
+    {% if band %}
+    <p class="sub">
+      {% trans lo=band[0] | num, hi=band[1] | num %}Apartments here go for roughly <b>€ {{ lo }} – {{ hi }}</b> per m², the official Agenzia delle Entrate compravendita band.{% endtrans %}
+    </p>
+    {% else %}
+    <p class="sub">{% trans %}No bundled OMI compravendita band for this neighborhood's zone(s) yet.{% endtrans %}</p>
+    {% endif %}
+    {% if spans_multiple_zones %}
+    <p class="sub" style="margin-top:6px;font-size:13px;opacity:0.85">
+      {% trans %}This neighborhood spans more than one OMI zone — the range above is the widest span across all of them (lowest minimum to highest maximum), not a single zone's own band.{% endtrans %}
+    </p>
+    {% endif %}
+  </div>
+  <div class="meta">
+    {% trans %}OMI semester{% endtrans %}<br>
+    <b>{{ semester }}</b>
+    <div style="margin-top:8px;opacity:0.7">{{ n.zone_codes | length }} {% trans %}OMI zone(s){% endtrans %}</div>
+  </div>
+</div>
+
+{% if shared_zones %}
+<div class="doc">
+  <div class="doc-head">
+    <h2 class="doc-title">{% trans %}No OMI zone of its own{% endtrans %}</h2>
+    <span class="doc-eyebrow">§ {% trans %}Methodology{% endtrans %}</span>
+  </div>
+  <div class="note">
+    {% for code, others in shared_zones.items() %}
+    <p style="margin:{{ '0' if loop.first else '10px' }} 0 0">
+      {% trans code=code %}Zone {{ code }} has no OMI quotation of its own here — Agenzia delle Entrate publishes one official band, shared with{% endtrans %}
+      {% for o in others %}<a href="{{ neighborhood_url(o, lang) }}">{{ o.name }}</a>{% if not loop.last %}, {% endif %}{% endfor %}.
+    </p>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<div class="doc">
+  <div class="doc-head">
+    <h2 class="doc-title">{% trans name=n.name %}Where {{ name }} sits in Milano{% endtrans %}</h2>
+    <span class="doc-eyebrow">§ {% trans %}Comparison{% endtrans %}</span>
+  </div>
+  <table class="t">
+    <thead>
+      <tr>
+        <th>{% trans %}Area{% endtrans %}</th>
+        <th class="num">€/m²</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><b>{{ n.name }}</b></td>
+        <td class="num mono">{% if band %}{{ band[0] | num }} – {{ band[1] | num }}{% else %}—{% endif %}</td>
+      </tr>
+      <tr>
+        <td>{% trans %}Milano average{% endtrans %}</td>
+        <td class="num mono">{% if city_avg_eur_m2 %}{{ city_avg_eur_m2 | num }}{% else %}—{% endif %}</td>
+      </tr>
+      {% for item in nearby %}
+      <tr>
+        <td><a href="{{ neighborhood_url(item.neighborhood, lang) }}">{{ item.neighborhood.name }}</a></td>
+        <td class="num mono">{{ item.eur_m2_mid | num }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div class="note" style="margin-top:14px">
+    {% trans %}"Nearby" here means closest by €/m² level, not physical distance — stimmo doesn't have a neighborhood-adjacency map, and price proximity is the comparison that matters when you're deciding where else to look.{% endtrans %}
+  </div>
+</div>
+
+{% if blurb %}
+<div class="doc">
+  <div class="doc-head">
+    <h2 class="doc-title">{% trans name=n.name %}About {{ name }}{% endtrans %}</h2>
+    <span class="doc-eyebrow">§ {% trans %}Local context{% endtrans %}</span>
+  </div>
+  <p style="color:var(--ink-2);font-size:14.5px;line-height:1.65;margin:0">{{ blurb }}</p>
+</div>
+{% endif %}
+
+<div class="doc">
+  <div class="doc-head">
+    <h2 class="doc-title">{% trans %}Check a real listing here{% endtrans %}</h2>
+    <span class="doc-eyebrow">§ {% trans %}Estimator{% endtrans %}</span>
+  </div>
+  <p style="font-size:14px;color:var(--ink-2);margin:0 0 16px">{% trans name=n.name %}Have an address or a listing in {{ name }}? Run it through the full fair-price check — OMI band, coefficients, and verdict.{% endtrans %}</p>
+  <div class="form-actions">
+    <a class="btn" href="/{{ lang }}/">
+      {% trans %}Check a listing{% endtrans %} <span class="arrow">→</span>
+    </a>
+  </div>
+</div>
+
+<div class="doc">
+  <div class="doc-head">
+    <h2 class="doc-title">{% trans %}Official OMI zone data{% endtrans %}</h2>
+    <span class="doc-eyebrow">§ {% trans %}Source{% endtrans %}</span>
+  </div>
+  <ul style="margin:0;padding-left:20px;font-size:14px">
+    {% for code in n.zone_codes %}
+    <li><a href="/{{ lang }}/zones/{{ code }}">{{ code }} — {{ zone_names.get(code, code) | title }}</a></li>
+    {% endfor %}
+  </ul>
+  <div class="note" style="margin-top:14px">
+    <b>{% trans %}Source.{% endtrans %}</b> {% trans %}OMI quotations and zone boundaries — Agenzia delle Entrate / Comune di Milano, licensed IODL 2.0.{% endtrans %}
+  </div>
+</div>
+
+{% endblock %}

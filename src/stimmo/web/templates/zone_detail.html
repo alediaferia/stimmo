@@ -40,6 +40,12 @@
     </div>
     <h1>{{ zone_name | title }}</h1>
     <p class="sub">{% trans %}OMI zone{% endtrans %} <b class="mono">{{ zone_code }}</b> · {% trans %}fascia{% endtrans %} {{ fascia }} · Milano</p>
+    {% if parent_neighborhoods %}
+    <p class="sub" style="margin-top:6px">
+      {% trans %}Part of{% endtrans %}:
+      {% for nb in parent_neighborhoods %}<a href="{{ neighborhood_url(nb, lang) }}">{{ nb.name }}</a>{% if not loop.last %}, {% endif %}{% endfor %}
+    </p>
+    {% endif %}
   </div>
   <div class="meta">
     {% trans %}OMI semester{% endtrans %}<br>
