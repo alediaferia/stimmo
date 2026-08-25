@@ -47,7 +47,7 @@
     <p class="sub">{% trans %}No bundled OMI compravendita band for this neighborhood's zone(s) yet.{% endtrans %}</p>
     {% endif %}
     {% if spans_multiple_zones %}
-    <p class="sub" style="margin-top:6px;font-size:13px;opacity:0.85">
+    <p class="sub" data-testid="multi-zone-span-note" style="margin-top:6px;font-size:13px;opacity:0.85">
       {% trans %}This neighborhood spans more than one OMI zone — the range above is the widest span across all of them (lowest minimum to highest maximum), not a single zone's own band.{% endtrans %}
     </p>
     {% endif %}
@@ -60,7 +60,7 @@
 </div>
 
 {% if shared_zones %}
-<div class="doc">
+<div class="doc" data-testid="shared-zone-disclosure">
   <div class="doc-head">
     <h2 class="doc-title">{% trans %}No OMI zone of its own{% endtrans %}</h2>
     <span class="doc-eyebrow">§ {% trans %}Methodology{% endtrans %}</span>

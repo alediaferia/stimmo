@@ -155,12 +155,12 @@ class TestSharedZoneDisclosure:
     def test_appears_for_shared_zone_neighborhoods(self, client: TestClient, slug: str):
         n = nb_module.neighborhood_for_slug(slug, "it")
         body = client.get(_url(n, "it")).text
-        assert "No OMI zone of its own" in body
+        assert 'data-testid="shared-zone-disclosure"' in body
 
     def test_absent_for_brera(self, client: TestClient):
         n = nb_module.neighborhood_for_slug("brera", "it")
         body = client.get(_url(n, "it")).text
-        assert "No OMI zone of its own" not in body
+        assert 'data-testid="shared-zone-disclosure"' not in body
 
     def test_isola_links_to_both_zone_sharers(self, client: TestClient):
         n = nb_module.neighborhood_for_slug("isola", "it")
@@ -195,12 +195,12 @@ class TestHeadlineNumber:
         n = nb_module.neighborhood_for_slug("duomo-centro-storico", "it")
         assert len(n.zone_codes) > 1
         body = client.get(_url(n, "it")).text
-        assert "spans more than one OMI zone" in body
+        assert 'data-testid="multi-zone-span-note"' in body
 
     def test_single_zone_neighborhood_has_no_span_note(self, client: TestClient):
         n = nb_module.neighborhood_for_slug("brera", "it")
         body = client.get(_url(n, "it")).text
-        assert "spans more than one OMI zone" not in body
+        assert 'data-testid="multi-zone-span-note"' not in body
 
 
 # ---------------------------------------------------------------------------
