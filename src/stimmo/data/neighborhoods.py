@@ -31,11 +31,28 @@ Trotter) is unambiguously D36.
 Not every OMI zone has an alias here: parks, rail yards, wholesale-market zones and
 zones with no strong colloquial identity are deliberately left unaliased rather than
 forcing a name onto them.
+
+Editorial blurbs (`Neighborhood.blurb_it`/`blurb_en`) are the one thing in this module
+that ISN'T derivable from public OMI/geocoding data, and stimmo is Apache-2.0 — committing
+that prose to the public repo would grant an explicit licence to reproduce and
+redistribute it (a licensee already reuses stimmo's OMI `Zona_Descr` strings verbatim, so
+this isn't hypothetical). Blurb text therefore lives outside the repo, in a local JSON
+file loaded at call time by `_neighborhoods_with_content()` — see that function and
+`_load_blurb_content()` below. This is a deliberate, narrow exception to "data is bundled
+into the repo at commit time": bundling now happens at *deploy* (the operator drops
+`neighborhoods.json` into `STIMMO_CONTENT_DIR`) rather than at commit, for editorial prose
+specifically. The name<->code table itself, OMI quotations and zone polygons are still
+bundled and committed as usual, and no network call is involved — it's a plain local file
+read, same as every other bundled asset.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import json
+import os
+from dataclasses import dataclass, replace
+from functools import cache
+from pathlib import Path
 
 
 @dataclass(frozen=True)
@@ -45,11 +62,16 @@ class Neighborhood:
     name: str  # display name, e.g. "Brera" — a proper noun, not translated
     zone_codes: tuple[str, ...]
     # 150-250 words of genuine local context, filled in a separate editorial pass —
-    # not written as part of adding a neighborhood to this table. Empty by default,
-    # which is deliberate: web/app.py's "neighborhood_detail" SEO route only lists a
-    # neighborhood in the sitemap once BOTH blurb_it and blurb_en are non-empty (the
-    # route itself still resolves and renders without one, so it's reachable and
-    # internally linked — we just don't ask Google to index a thin page yet).
+    # NOT a literal in `_NEIGHBORHOODS` below (see module docstring: this is licensed
+    # content, kept out of the public repo). `list_neighborhoods()` /
+    # `neighborhood_for_slug()` populate these two fields at call time from the
+    # external content file; every `Neighborhood` constructed directly in
+    # `_NEIGHBORHOODS` gets the default "". Empty is also the correct state for a
+    # neighborhood whose blurb genuinely hasn't been written yet, and that's
+    # deliberate either way: web/app.py's "neighborhood_detail" SEO route only lists
+    # a neighborhood in the sitemap once BOTH blurb_it and blurb_en are non-empty
+    # (the route itself still resolves and renders without one, so it's reachable
+    # and internally linked — we just don't ask Google to index a thin page yet).
     blurb_it: str = ""
     blurb_en: str = ""
 
@@ -110,9 +132,6 @@ _NEIGHBORHOODS: tuple[Neighborhood, ...] = (
     Neighborhood("sarpi", "sarpi", "Sarpi", ("C16",)),
 )
 
-_BY_SLUG_IT: dict[str, Neighborhood] = {n.slug_it: n for n in _NEIGHBORHOODS}
-_BY_SLUG_EN: dict[str, Neighborhood] = {n.slug_en: n for n in _NEIGHBORHOODS}
-
 
 def _build_zone_index() -> dict[str, tuple[Neighborhood, ...]]:
     index: dict[str, list[Neighborhood]] = {}
@@ -122,12 +141,85 @@ def _build_zone_index() -> dict[str, tuple[Neighborhood, ...]]:
     return {code: tuple(ns) for code, ns in index.items()}
 
 
+# Zone-code index: built once from the blurb-less structural table above. Deliberately
+# NOT derived from the content-enriched table below — zone lookups (used for the zone
+# pages' "up" links) have nothing to do with editorial copy, so they stay unaffected by
+# whether STIMMO_CONTENT_DIR is set, absent, or (in the malformed case) broken.
 _BY_ZONE: dict[str, tuple[Neighborhood, ...]] = _build_zone_index()
 
 
+# ---------------------------------------------------------------------------
+# Editorial content loading
+#
+# See the module docstring for *why* blurbs live outside the repo. Mechanically:
+# `neighborhoods.json` is read from `STIMMO_CONTENT_DIR` (default: repo-local,
+# git-ignored `var/content/`, matching the `STIMMO_SHARE_DB` precedent in
+# web/app.py) and merged onto `_NEIGHBORHOODS` by `slug_en`. Expected shape:
+#
+#   {"<slug_en>": {"blurb_it": "...", "blurb_en": "..."}}
+#
+# A slug missing from the file — or the file missing entirely — yields empty
+# blurbs for that neighborhood, silently: that's the normal state for a public-repo
+# clone and for any neighborhood whose copy hasn't been written yet. A file that
+# exists but is malformed (bad JSON, or valid JSON that isn't an object) is a real
+# operator error rather than "no content yet", so it's raised instead of swallowed.
+# ---------------------------------------------------------------------------
+
+_CONTENT_FILENAME = "neighborhoods.json"
+_DEFAULT_CONTENT_DIR = Path(__file__).parent.parent.parent.parent / "var" / "content"
+
+
+def _content_path() -> Path:
+    content_dir = os.environ.get("STIMMO_CONTENT_DIR", str(_DEFAULT_CONTENT_DIR))
+    return Path(content_dir) / _CONTENT_FILENAME
+
+
+def _load_blurb_content() -> dict[str, dict[str, str]]:
+    """Read+parse the external content file. See module-level comment above."""
+    path = _content_path()
+    try:
+        raw = path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return {}
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"stimmo: malformed neighborhood content file at {path}: {exc}") from exc
+    if not isinstance(data, dict):
+        raise ValueError(f"stimmo: neighborhood content file at {path} must be a JSON object")
+    return data
+
+
+def _with_content(n: Neighborhood, content: dict[str, dict[str, str]]) -> Neighborhood:
+    entry = content.get(n.slug_en)
+    if not isinstance(entry, dict):
+        return n
+    return replace(n, blurb_it=entry.get("blurb_it", ""), blurb_en=entry.get("blurb_en", ""))
+
+
+@cache
+def _neighborhoods_with_content() -> tuple[Neighborhood, ...]:
+    """`_NEIGHBORHOODS`, each entry's blurb_it/blurb_en filled in from the external
+    content file when present.
+
+    Cached per process (not re-read on every call) both because that matches how
+    every other bundled dataset in `stimmo.data` is loaded once and reused (see e.g.
+    `data.omi._df`), and so `list_neighborhoods()` / `neighborhood_for_slug()` hand
+    back the *same* object for a given neighborhood within one load —
+    web/app.py's `_nearby_neighborhoods` compares neighborhoods with `is`, and that
+    only holds if both functions are reading off one shared, stable tuple.
+
+    Call `_neighborhoods_with_content.cache_clear()` to force a reload (e.g. after
+    changing `STIMMO_CONTENT_DIR` or the file's contents) — same pattern
+    `web.app._sitemap_xml` uses for its own env/registry-dependent cache.
+    """
+    content = _load_blurb_content()
+    return tuple(_with_content(n, content) for n in _NEIGHBORHOODS)
+
+
 def list_neighborhoods() -> list[Neighborhood]:
-    """All curated neighborhoods, in table order."""
-    return list(_NEIGHBORHOODS)
+    """All curated neighborhoods, in table order, with blurbs loaded from content."""
+    return list(_neighborhoods_with_content())
 
 
 def neighborhoods_for_zone(code: str) -> tuple[Neighborhood, ...]:
@@ -136,7 +228,8 @@ def neighborhoods_for_zone(code: str) -> tuple[Neighborhood, ...]:
     Usually 0 or 1 neighborhood. Exactly the three zones documented in the module
     docstring (C12, C14, C18) return 2 — that's the deliberate zone-sharing overlap,
     not a bug. Used to link zone pages back up to the neighborhood page(s) that
-    contain them.
+    contain them. Blurb-agnostic (see `_BY_ZONE` above) — never touches the content
+    file.
     """
     return _BY_ZONE.get(code, ())
 
@@ -147,11 +240,13 @@ def shared_zones(n: Neighborhood) -> dict[str, tuple[Neighborhood, ...]]:
 
     Computed from the table above at call time, not hardcoded — see the module
     docstring for why C12/C14/C18 are legitimately shared today. Returns an empty
-    dict for a neighborhood with no shared zones (e.g. Brera).
+    dict for a neighborhood with no shared zones (e.g. Brera). Compares by slug_en
+    rather than `is`, since `n` may come from the content-enriched table while the
+    zone index (`neighborhoods_for_zone`, blurb-agnostic) does not.
     """
     out: dict[str, tuple[Neighborhood, ...]] = {}
     for code in n.zone_codes:
-        others = tuple(o for o in _BY_ZONE.get(code, ()) if o is not n)
+        others = tuple(o for o in neighborhoods_for_zone(code) if o.slug_en != n.slug_en)
         if others:
             out[code] = others
     return out
@@ -163,10 +258,11 @@ def neighborhood_for_slug(slug: str, lang: str) -> Neighborhood | None:
     `lang` is a URL lang slug ('it' or 'en'), matching `stimmo.i18n.SUPPORTED_LANGS`.
     Returns None for an unknown slug or an unsupported lang.
     """
+    table = _neighborhoods_with_content()
     if lang == "it":
-        return _BY_SLUG_IT.get(slug)
+        return next((n for n in table if n.slug_it == slug), None)
     if lang == "en":
-        return _BY_SLUG_EN.get(slug)
+        return next((n for n in table if n.slug_en == slug), None)
     return None
 
 

@@ -22,7 +22,9 @@ src/stimmo/locale/**/*.mo
 # OMI staging directories (Forniture OMI downloads, imported then deleted)
 src/stimmo/data/assets/omi-*/
 
-# Share-link SQLite store (default local dev path; production uses STIMMO_SHARE_DB)
+# Share-link SQLite store (default local dev path; production uses STIMMO_SHARE_DB),
+# and licensed neighborhood editorial content (default local dev path; production
+# uses STIMMO_CONTENT_DIR) — see data/neighborhoods.py. Both repo-local, git-ignored.
 var/
 
 # Claude Code (and other agent CLIs) — session-scoped or personal, never share.
