@@ -20,8 +20,12 @@ reliable signal; bare names were used only as a first pass. "Isola" and "NoLo" h
 draft zone and were resolved this way from scratch.
 
 OMI zone polygons are coarser than colloquial neighborhood boundaries, so a few zone
-codes are legitimately claimed by two neighborhoods (C12: Isola + Porta Venezia; C18:
-Navigli + Tortona/Solari) — that's expected, not a bug.
+codes are legitimately claimed by two neighborhoods (C12: Isola + Porta Venezia; C14:
+Isola + Porta Nuova; C18: Navigli + Tortona/Solari) — that's expected, not a bug.
+
+Piazzale Loreto is a four-way zone junction: C12, C15, D12 and D36 all meet inside the
+piazza, so no single code "is" Loreto. NoLo proper (Via Venini, Via Padova, Parco
+Trotter) is unambiguously D36.
 
 Not every OMI zone has an alias here: parks, rail yards, wholesale-market zones and
 zones with no strong colloquial identity are deliberately left unaliased rather than
@@ -58,7 +62,12 @@ _NEIGHBORHOODS: tuple[Neighborhood, ...] = (
     Neighborhood("porta-nuova", "porta-nuova", "Porta Nuova", ("C14",)),
     Neighborhood("citylife", "citylife", "CityLife", ("C13",)),
     Neighborhood("navigli", "navigli", "Navigli", ("B21", "C18")),
-    Neighborhood("isola", "isola", "Isola", ("C12", "C15")),
+    # Isola: C12 covers the bulk (Borsieri, Confalonieri, Minniti, Pepe, Garigliano,
+    # Thaon di Revel); C14 covers the south-east edge facing the Porta Nuova towers
+    # (de Castillia, Sassetti). C15 was in an earlier draft but only matches the far
+    # northern tip at Viale Stelvio, which is past Isola proper — dropped after a
+    # 10-point boundary check.
+    Neighborhood("isola", "isola", "Isola", ("C12", "C14")),
     Neighborhood("nolo", "nolo", "NoLo", ("D36",)),
     Neighborhood("porta-romana", "porta-romana", "Porta Romana", ("B19", "B20")),
     Neighborhood("porta-venezia", "porta-venezia", "Porta Venezia", ("B18", "C12")),
