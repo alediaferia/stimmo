@@ -1296,7 +1296,7 @@ msgstr "Stima in corso… (recupero servizi)"
 #: src/stimmo/web/templates/neighborhood_detail.html:4
 #, python-format
 msgid "%(name)s, Milano — €/m² price guide"
-msgstr ""
+msgstr "%(name)s, Milano — guida ai prezzi €/m²"
 
 #: src/stimmo/web/templates/neighborhood_detail.html:5
 #, python-format
@@ -1304,6 +1304,9 @@ msgid ""
 "Official OMI compravendita €/m² band for %(name)s, Milano — semester "
 "%(semester)s, compared to the Milano average and nearby neighborhoods."
 msgstr ""
+"Fascia ufficiale OMI compravendita €/m² per %(name)s, Milano — semestre "
+"%(semester)s, confrontata con la media di Milano e dei quartieri "
+"limitrofi."
 
 #: src/stimmo/web/templates/neighborhood_detail.html:44
 #, python-format
@@ -1311,10 +1314,14 @@ msgid ""
 "Apartments here go for roughly <b>€ %(lo)s – %(hi)s</b> per m², the "
 "official Agenzia delle Entrate compravendita band."
 msgstr ""
+"Gli appartamenti qui costano indicativamente tra <b>€ %(lo)s e %(hi)s</b>"
+" al m², la fascia ufficiale Agenzia delle Entrate per la compravendita."
 
 #: src/stimmo/web/templates/neighborhood_detail.html:47
 msgid "No bundled OMI compravendita band for this neighborhood's zone(s) yet."
 msgstr ""
+"Nessuna fascia OMI compravendita ancora disponibile per la/e zona/e di "
+"questo quartiere."
 
 #: src/stimmo/web/templates/neighborhood_detail.html:51
 msgid ""
@@ -1322,14 +1329,17 @@ msgid ""
 "widest span across all of them (lowest minimum to highest maximum), not a"
 " single zone's own band."
 msgstr ""
+"Questo quartiere si estende su più zone OMI — l'intervallo sopra è la "
+"forbice più ampia tra tutte (dal minimo più basso al massimo più alto), "
+"non la fascia di una singola zona."
 
 #: src/stimmo/web/templates/neighborhood_detail.html:58
 msgid "OMI zone(s)"
-msgstr ""
+msgstr "Zona/e OMI"
 
 #: src/stimmo/web/templates/neighborhood_detail.html:65
 msgid "No OMI zone of its own"
-msgstr ""
+msgstr "Nessuna zona OMI propria"
 
 #: src/stimmo/web/templates/neighborhood_detail.html:71
 #, python-format
@@ -1337,15 +1347,17 @@ msgid ""
 "Zone %(code)s has no OMI quotation of its own here — Agenzia delle "
 "Entrate publishes one official band, shared with"
 msgstr ""
+"La zona %(code)s non ha una quotazione OMI propria qui — l'Agenzia delle "
+"Entrate pubblica un'unica fascia ufficiale, condivisa con"
 
 #: src/stimmo/web/templates/neighborhood_detail.html:81
 #, python-format
 msgid "Where %(name)s sits in Milano"
-msgstr ""
+msgstr "Dove si trova %(name)s a Milano"
 
 #: src/stimmo/web/templates/neighborhood_detail.html:82
 msgid "Comparison"
-msgstr ""
+msgstr "Confronto"
 
 #: src/stimmo/web/templates/neighborhood_detail.html:87
 #: src/stimmo/web/templates/zones_index.html:54
@@ -1354,7 +1366,7 @@ msgstr "Area"
 
 #: src/stimmo/web/templates/neighborhood_detail.html:97
 msgid "Milano average"
-msgstr ""
+msgstr "Media di Milano"
 
 #: src/stimmo/web/templates/neighborhood_detail.html:109
 msgid ""
@@ -1362,19 +1374,23 @@ msgid ""
 "stimmo doesn't have a neighborhood-adjacency map, and price proximity is "
 "the comparison that matters when you're deciding where else to look."
 msgstr ""
+"Per \"vicini\" qui si intendono i quartieri più simili per livello €/m², "
+"non per distanza fisica — stimmo non ha una mappa di adiacenza tra "
+"quartieri, e la prossimità di prezzo è il confronto che conta quando si "
+"decide dove altro cercare."
 
 #: src/stimmo/web/templates/neighborhood_detail.html:116
 #, python-format
 msgid "About %(name)s"
-msgstr ""
+msgstr "Informazioni su %(name)s"
 
 #: src/stimmo/web/templates/neighborhood_detail.html:117
 msgid "Local context"
-msgstr ""
+msgstr "Contesto locale"
 
 #: src/stimmo/web/templates/neighborhood_detail.html:125
 msgid "Check a real listing here"
-msgstr ""
+msgstr "Controlla un annuncio reale qui"
 
 #: src/stimmo/web/templates/neighborhood_detail.html:126
 #: src/stimmo/web/templates/zone_detail.html:120
@@ -1387,6 +1403,8 @@ msgid ""
 "Have an address or a listing in %(name)s? Run it through the full fair-"
 "price check — OMI band, coefficients, and verdict."
 msgstr ""
+"Hai un indirizzo o un annuncio in %(name)s? Esegui il controllo completo "
+"del prezzo equo — fascia OMI, coefficienti e verdetto."
 
 #: src/stimmo/web/templates/neighborhood_detail.html:131
 #: src/stimmo/web/templates/zone_detail.html:125
@@ -1395,11 +1413,11 @@ msgstr "Verifica un annuncio"
 
 #: src/stimmo/web/templates/neighborhood_detail.html:138
 msgid "Official OMI zone data"
-msgstr ""
+msgstr "Dati ufficiali zona OMI"
 
 #: src/stimmo/web/templates/neighborhood_detail.html:139
 msgid "Source"
-msgstr ""
+msgstr "Fonte"
 
 #: src/stimmo/web/templates/neighborhood_detail.html:147
 #: src/stimmo/web/templates/zone_detail.html:94
@@ -1960,7 +1978,7 @@ msgstr "fascia"
 
 #: src/stimmo/web/templates/zone_detail.html:45
 msgid "Part of"
-msgstr ""
+msgstr "Parte di"
 
 #: src/stimmo/web/templates/zone_detail.html:61
 msgid "by type &amp; condition"
@@ -2046,7 +2064,7 @@ msgstr "Fascia"
 
 #: src/stimmo/web/templates/zones_index.html:55
 msgid "Neighborhood"
-msgstr ""
+msgstr "Quartiere"
 
 #: src/stimmo/web/templates/zones_index.html:84
 msgid ""
