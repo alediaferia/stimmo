@@ -20,7 +20,8 @@
     "@type": "Person",
     "name": "Alessandro Diaferia",
     "url": "https://github.com/alediaferia"
-  }
+  },
+  "publisher": {"@id": {{ ((request.base_url | string) ~ '#organization') | tojson }}}
 }
 </script>
 {% endblock %}
@@ -39,6 +40,16 @@
     <b>{{ app_version }} · {{ semester }}</b><br>
     <span style="opacity:0.7">{{ zone_count }} OMI<br>{% trans %}microzones · Milano{% endtrans %}</span>
   </div>
+</div>
+
+<!-- Entity statement: a plain "what is stimmo / who's behind it" sentence, reusing
+     the same already-translated strings as the meta description and the footer note
+     below (see CLAUDE.md — never hand-write an Italian msgstr), so this reinforces
+     the brand entity for search engines without adding new i18n surface. -->
+<div class="note" style="margin-bottom:22px">
+  {{ _("Fair-price check for Milan apartment listings — OMI-anchored, no machine learning, every multiplier visible.") }}
+  <b>{% trans %}Built by{% endtrans %} <a href="https://github.com/alediaferia" target="_blank" rel="noopener">Alessandro Diaferia</a>.</b>
+  {% trans %}stimmo is open source — view the code on{% endtrans %} <a href="https://github.com/alediaferia/stimmo" target="_blank" rel="noopener">GitHub</a>.
 </div>
 
 <!-- BrandStrip -->
