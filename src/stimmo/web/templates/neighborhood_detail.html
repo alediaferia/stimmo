@@ -116,7 +116,11 @@
     <h2 class="doc-title">{% trans name=n.name %}About {{ name }}{% endtrans %}</h2>
     <span class="doc-eyebrow">§ {% trans %}Local context{% endtrans %}</span>
   </div>
-  <p style="color:var(--ink-2);font-size:14.5px;line-height:1.65;margin:0">{{ blurb }}</p>
+  {# Blurbs are authored with blank-line paragraph breaks; render them as real
+     paragraphs rather than one block, or a 200-word blurb reads as a wall of text. #}
+  {% for para in blurb.split("\n\n") if para.strip() %}
+  <p style="color:var(--ink-2);font-size:14.5px;line-height:1.65;margin:{{ '0' if loop.first else '12px 0 0' }}">{{ para.strip() }}</p>
+  {% endfor %}
 </div>
 {% endif %}
 
