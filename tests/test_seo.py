@@ -4,15 +4,57 @@ the env-gated Cloudflare analytics beacon."""
 
 from __future__ import annotations
 
-import pytest
-from fastapi.testclient import TestClient
+import re
 
-from stimmo.web.app import app
+import pytest
+from fastapi import HTTPException
+from fastapi.responses import HTMLResponse
+from fastapi.routing import APIRoute
+from fastapi.testclient import TestClient
+from starlette.requests import Request
+
+from stimmo.data import zones
+from stimmo.web import app as app_module
+from stimmo.web.app import SeoRoute, _seo_urls, _sitemap_xml, app
 
 
 @pytest.fixture()
 def client() -> TestClient:
     return TestClient(app, follow_redirects=False)
+
+
+def _fake_request(
+    path: str = "/it/fake", scheme: str = "https", host: str = "stimmo.it"
+) -> Request:
+    """A bare Starlette Request for calling _seo_urls() directly, without going
+    through a full HTTP round-trip. Registered-route lookups in _seo_urls only use
+    request.url.scheme/netloc (never .path), so `path` is irrelevant unless the
+    caller falls back to route=None."""
+    scope = {
+        "type": "http",
+        "method": "GET",
+        "path": path,
+        "raw_path": path.encode(),
+        "query_string": b"",
+        "headers": [(b"host", host.encode())],
+        "scheme": scheme,
+        "server": (host, 443 if scheme == "https" else 80),
+        "client": ("testclient", 123),
+        "app": None,
+    }
+    return Request(scope)
+
+
+@pytest.fixture()
+def seo_registry_sandbox(monkeypatch: pytest.MonkeyPatch) -> pytest.MonkeyPatch:
+    """Isolates _SEO_ROUTES mutations to a single test. Registering a throwaway
+    route via monkeypatch.setitem auto-reverts _SEO_ROUTES on teardown; clearing
+    _sitemap_xml's lru_cache on both sides of the test stops a fake route from
+    leaking into (or a stale sitemap from leaking out of) any other test, whatever
+    order pytest happens to run them in."""
+    _sitemap_xml.cache_clear()
+    yield monkeypatch
+    _sitemap_xml.cache_clear()
 
 
 # ---------------------------------------------------------------------------
@@ -206,3 +248,120 @@ class TestAnalyticsBeacon:
         body = client.get("/it/").text
         assert "cloudflareinsights.com/beacon.min.js" in body
         assert '"token": "test-token-123"' in body
+
+
+# ---------------------------------------------------------------------------
+# SEO route registry refactor: _seo_urls / _sitemap_xml now both read the single
+# _SEO_ROUTES registry (app.py). These tests cover the registry contract directly
+# — including two hypothetical routes registered only for the duration of one test
+# (see the `seo_registry_sandbox` fixture above) — plus a byte-for-byte regression
+# snapshot of the sitemap's URL set.
+# ---------------------------------------------------------------------------
+
+
+class TestSitemapRegressionSnapshot:
+    """The live sitemap has 96 URLs today: 5 static paths x 2 langs, plus every OMI
+    zone code x 2 langs. This is the regression bar for the registry refactor — the
+    exact same URL set, computed independently of _sitemap_xml's implementation."""
+
+    def test_url_set_and_count_unchanged(self, client: TestClient):
+        body = client.get("/sitemap.xml").text
+        locs = set(re.findall(r"<loc>(.*?)</loc>", body))
+
+        expected: set[str] = set()
+        for lang in ("it", "en"):
+            expected.add(f"https://stimmo.it/{lang}/")
+        for path in ("/about", "/bookmarklet", "/privacy", "/zones"):
+            for lang in ("it", "en"):
+                expected.add(f"https://stimmo.it/{lang}{path}")
+        for code, _descr in zones.list_zones():
+            for lang in ("it", "en"):
+                expected.add(f"https://stimmo.it/{lang}/zones/{code}")
+
+        assert locs == expected
+        assert len(locs) == 96
+
+
+class TestSeoRouteRegistryContract:
+    def test_single_language_route_emits_only_self_referential_alternate(
+        self, seo_registry_sandbox: pytest.MonkeyPatch
+    ):
+        route = SeoRoute(
+            key="en_only_guide",
+            endpoint="fake_guide_endpoint",
+            suffixes={"en": "/guides/only-in-english"},
+        )
+        seo_registry_sandbox.setitem(app_module._SEO_ROUTES, "en_only_guide", route)
+
+        result = _seo_urls(_fake_request(), "en", route="en_only_guide")
+
+        assert result["hreflang_alternates"] == {
+            "en": "https://stimmo.it/en/guides/only-in-english"
+        }
+        assert "it" not in result["hreflang_alternates"]
+        assert result["hreflang_x_default"] == "https://stimmo.it/en/guides/only-in-english"
+        assert result["canonical_url"] == "https://stimmo.it/en/guides/only-in-english"
+
+    def test_single_language_route_404s_under_the_missing_language(
+        self, seo_registry_sandbox: pytest.MonkeyPatch
+    ):
+        route = SeoRoute(
+            key="en_only_guide",
+            endpoint="fake_guide_endpoint",
+            suffixes={"en": "/guides/only-in-english"},
+        )
+        seo_registry_sandbox.setitem(app_module._SEO_ROUTES, "en_only_guide", route)
+
+        with pytest.raises(HTTPException) as exc_info:
+            _seo_urls(_fake_request(), "it", route="en_only_guide")
+        assert exc_info.value.status_code == 404
+
+    def test_per_language_slug_route_emits_correct_per_language_alternates(
+        self, seo_registry_sandbox: pytest.MonkeyPatch
+    ):
+        # Mirrors the neighborhood-pages case this refactor exists for:
+        # /en/milan/brera-property-prices vs /it/milano/brera-prezzi-al-mq.
+        route = SeoRoute(
+            key="neighborhood_brera",
+            endpoint="fake_neighborhood_endpoint",
+            suffixes={"it": "/milano/{slug_it}", "en": "/milan/{slug_en}"},
+        )
+        seo_registry_sandbox.setitem(app_module._SEO_ROUTES, "neighborhood_brera", route)
+        params = {"slug_it": "brera-prezzi-al-mq", "slug_en": "brera-property-prices"}
+
+        result = _seo_urls(_fake_request(), "en", route="neighborhood_brera", params=params)
+
+        assert result["hreflang_alternates"] == {
+            "it": "https://stimmo.it/it/milano/brera-prezzi-al-mq",
+            "en": "https://stimmo.it/en/milan/brera-property-prices",
+        }
+        assert result["canonical_url"] == "https://stimmo.it/en/milan/brera-property-prices"
+        # "it" exists for this route, so x-default follows it, per the registry's rule.
+        assert result["hreflang_x_default"] == "https://stimmo.it/it/milano/brera-prezzi-al-mq"
+
+    @pytest.mark.parametrize(("scheme", "host"), [("https", "stimmo.it"), ("http", "testserver")])
+    def test_canonical_is_absolute_scheme_derived_and_self_referential(
+        self, scheme: str, host: str
+    ):
+        for lang in ("it", "en"):
+            result = _seo_urls(_fake_request(scheme=scheme, host=host), lang, route="about")
+            assert result["canonical_url"] == f"{scheme}://{host}/{lang}/about"
+            assert result["hreflang_alternates"][lang] == result["canonical_url"]
+
+
+class TestEveryHtmlEndpointHasASeoDecision:
+    """Guards against a new HTML-rendering route silently inheriting _seo_urls's
+    lang-invariant fallback (the exact bug this refactor fixes). A new endpoint must
+    either register a SeoRoute (real per-language hreflang/canonical/sitemap
+    treatment) or land in _SEO_MIRRORED_ENDPOINTS (an explicit, reviewed opt-in to
+    the fallback for non-indexable pages). Landing in neither fails this test."""
+
+    def test_every_html_endpoint_has_a_seo_decision(self):
+        html_endpoints = {
+            route.endpoint.__name__
+            for route in app.routes
+            if isinstance(route, APIRoute) and route.response_class is HTMLResponse
+        }
+        registered = {r.endpoint for r in app_module._SEO_ROUTES.values()}
+        decided = registered | app_module._SEO_MIRRORED_ENDPOINTS
+        assert html_endpoints == decided

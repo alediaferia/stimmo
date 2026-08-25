@@ -6,6 +6,8 @@ import hashlib
 import json
 import os
 import re
+from collections.abc import Callable, Iterable, Mapping
+from dataclasses import dataclass
 from datetime import date
 from functools import lru_cache
 from importlib.metadata import version as _pkg_version
@@ -125,36 +127,87 @@ def _set_locale(request: Request, lang: str) -> str:
     return locale
 
 
-def _seo_urls(request: Request, lang: str) -> dict:
-    """Build canonical + per-lang hreflang alternates for the current path.
+def _seo_urls(
+    request: Request,
+    lang: str,
+    route: str | None = None,
+    params: Mapping[str, str] | None = None,
+) -> dict:
+    """Build canonical + per-lang hreflang alternates for the current response.
+
+    `route`, when given, must name an entry in `_SEO_ROUTES` — the single registry
+    that this function and `_sitemap_xml` both read (see the "Crawlability" section
+    below). Alternates are emitted only for the languages that entry actually lists,
+    using its per-language suffix (a `str.format` template, expanded with `params`
+    for parameterized routes such as zone detail's `"/zones/{code}"`). This is what
+    lets a route be single-language, or use a different URL slug per language,
+    without ever advertising an alternate link to a language that doesn't exist.
+    A registered route rendered under a `lang` it doesn't list is refused with 404
+    rather than fabricating a broken canonical.
+
+    `route=None` (the default) preserves the pre-registry behaviour: strip the
+    current `/{lang}` prefix and re-prefix the *same* suffix for every supported
+    language. That's only correct for lang-invariant paths, so every endpoint
+    relying on it is required to be listed in `_SEO_MIRRORED_ENDPOINTS` as an
+    explicit, reviewed opt-in — see `test_every_html_endpoint_has_a_seo_decision`
+    in tests/test_seo.py.
 
     Uses the request's own scheme/host (which reflects https once uvicorn is
     told to trust the cloudflared proxy headers, see server.py) so this works
     both in production and in local/test runs without hardcoding the origin.
     """
-    path = request.url.path
-    prefix = f"/{lang}"
-    suffix = path[len(prefix) :] if path.startswith(prefix) else path
-    if not suffix.startswith("/"):
-        suffix = "/" + suffix
     scheme = request.url.scheme
     host = request.url.netloc
+    fmt_params = params or {}
+
+    if route is not None:
+        entry = _SEO_ROUTES[route]  # KeyError on a typo'd key is deliberate: fail loud.
+        if lang not in entry.suffixes:
+            raise HTTPException(status_code=404)
+        suffixes = {lg: sfx.format(**fmt_params) for lg, sfx in entry.suffixes.items()}
+    else:
+        path = request.url.path
+        prefix = f"/{lang}"
+        suffix = path[len(prefix) :] if path.startswith(prefix) else path
+        if not suffix.startswith("/"):
+            suffix = "/" + suffix
+        suffixes = {lg: suffix for lg in sorted(SUPPORTED_LANGS)}
 
     def _abs(other_lang: str) -> str:
-        return f"{scheme}://{host}/{other_lang}{suffix}"
+        return f"{scheme}://{host}/{other_lang}{suffixes[other_lang]}"
+
+    alternates = {lg: _abs(lg) for lg in suffixes}
+    default_lang = "it" if "it" in alternates else next(iter(alternates))
 
     return {
         "canonical_url": _abs(lang),
-        "hreflang_it": _abs("it"),
-        "hreflang_en": _abs("en"),
+        "hreflang_alternates": alternates,
+        "hreflang_x_default": alternates[default_lang],
     }
 
 
-def _tpl(request: Request, template: str, ctx: dict | None = None) -> HTMLResponse:
-    """Render a template with locale context merged in."""
+def _tpl(
+    request: Request,
+    template: str,
+    ctx: dict | None = None,
+    *,
+    seo_route: str | None = None,
+    seo_params: Mapping[str, str] | None = None,
+) -> HTMLResponse:
+    """Render a template with locale + SEO context merged in.
+
+    Pass `seo_route` (a key in `_SEO_ROUTES`) for indexable pages, plus `seo_params`
+    for parameterized ones (e.g. `seo_params={"code": code}` for zone detail), so
+    canonical/hreflang reflect that route's real per-language suffixes. Omit both
+    only for endpoints listed in `_SEO_MIRRORED_ENDPOINTS`. See `_seo_urls`.
+    """
     locale = getattr(request.state, "locale", "it_IT")
     lang = LOCALE_TO_LANG.get(locale, "it")
-    base: dict = {"lang": lang, "locale": locale, **_seo_urls(request, lang)}
+    base: dict = {
+        "lang": lang,
+        "locale": locale,
+        **_seo_urls(request, lang, route=seo_route, params=seo_params),
+    }
     if ctx:
         base.update(ctx)
     return templates.TemplateResponse(request, template, base)
@@ -313,48 +366,84 @@ Allow: /
 Sitemap: https://stimmo.it/sitemap.xml
 """
 
-# Indexable, lang-prefixed pages. Excludes /s/<id> share pages and /og/<id>.png
-# image routes — those are per-instance, not meant for search indexing.
-_SITEMAP_PATHS: tuple[str, ...] = ("/", "/about", "/bookmarklet", "/privacy", "/zones")
-
 
 @app.api_route("/robots.txt", methods=["GET", "HEAD"])
 def robots_txt() -> Response:
     return Response(content=_ROBOTS_TXT, media_type="text/plain")
 
 
+# ---------------------------------------------------------------------------
+# SEO route registry — the single source of truth for both per-page
+# canonical/hreflang tags (_seo_urls, used by _tpl) and sitemap.xml (_sitemap_xml).
+#
+# Each entry maps lang -> path suffix (the part of the URL after "/{lang}") for
+# only the languages that route actually exists in. A route that's missing a
+# language here will never advertise an alternate link to it, and can't be
+# rendered under it either (_seo_urls 404s rather than fabricate one).
+#
+# Suffixes may be str.format templates ("/zones/{code}") for parameterized
+# routes; the handler must then pass the same param(s) via `_tpl(..., seo_params=...)`
+# so every language's suffix can be expanded consistently. `expand()` supplies
+# those params for the sitemap — one dict per instance of the route (e.g. one per
+# OMI zone code); static routes leave it at the default (a single empty dict).
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class SeoRoute:
+    key: str
+    endpoint: str  # FastAPI handler function name — see _SEO_MIRRORED_ENDPOINTS below
+    suffixes: Mapping[str, str]
+    expand: Callable[[], Iterable[Mapping[str, str]]] = lambda: ({},)
+
+
+_SEO_ROUTES: dict[str, SeoRoute] = {}
+
+
+def _register_seo_route(
+    key: str,
+    endpoint: str,
+    suffixes: Mapping[str, str],
+    *,
+    expand: Callable[[], Iterable[Mapping[str, str]]] | None = None,
+) -> SeoRoute:
+    route = SeoRoute(
+        key=key, endpoint=endpoint, suffixes=dict(suffixes), expand=expand or (lambda: ({},))
+    )
+    _SEO_ROUTES[key] = route
+    # The registry is only ever mutated by module-level calls to this function, all
+    # of which run at import time, before any request and before _sitemap_xml is
+    # ever called — so caching it is safe. This clear is a belt-and-braces guarantee
+    # of that, not a workaround: it means a *future* runtime registration can never
+    # silently serve a stale sitemap, without anyone having to remember why.
+    _sitemap_xml.cache_clear()
+    return route
+
+
+def _sitemap_url_block(route: SeoRoute, params: Mapping[str, str]) -> str:
+    langs = sorted(route.suffixes)
+    locs = {lg: f"{SITE_ORIGIN}/{lg}{route.suffixes[lg].format(**params)}" for lg in langs}
+    default_lang = "it" if "it" in locs else langs[0]
+    blocks = []
+    for lg in langs:
+        alt_links = "\n".join(
+            f'    <xhtml:link rel="alternate" hreflang="{alt_lang}" href="{alt_loc}"/>'
+            for alt_lang, alt_loc in locs.items()
+        )
+        alt_links += (
+            f'\n    <xhtml:link rel="alternate" hreflang="x-default" href="{locs[default_lang]}"/>'
+        )
+        blocks.append(f"  <url>\n    <loc>{locs[lg]}</loc>\n{alt_links}\n  </url>")
+    return "\n".join(blocks)
+
+
 @lru_cache(maxsize=1)
 def _sitemap_xml() -> str:
-    langs = sorted(SUPPORTED_LANGS)
-    entries: list[str] = []
-    for path in _SITEMAP_PATHS:
-        suffix = "" if path == "/" else path
-        locs = {
-            lang: f"{SITE_ORIGIN}/{lang}/" if path == "/" else f"{SITE_ORIGIN}/{lang}{suffix}"
-            for lang in langs
-        }
-        for lang in langs:
-            alt_links = "\n".join(
-                f'    <xhtml:link rel="alternate" hreflang="{alt_lang}" href="{alt_loc}"/>'
-                for alt_lang, alt_loc in locs.items()
-            )
-            it_loc = locs["it"]
-            alt_links += f'\n    <xhtml:link rel="alternate" hreflang="x-default" href="{it_loc}"/>'
-            entries.append(f"  <url>\n    <loc>{locs[lang]}</loc>\n{alt_links}\n  </url>")
-
-    # Programmatic OMI zone pages (WP-7) — one entry per zone code per lang,
-    # sourced from the same bundled data the /{lang}/zones/{code} route reads.
-    for code, _descr in zones.list_zones():
-        locs = {lang: f"{SITE_ORIGIN}/{lang}/zones/{code}" for lang in langs}
-        for lang in langs:
-            alt_links = "\n".join(
-                f'    <xhtml:link rel="alternate" hreflang="{alt_lang}" href="{alt_loc}"/>'
-                for alt_lang, alt_loc in locs.items()
-            )
-            it_loc = locs["it"]
-            alt_links += f'\n    <xhtml:link rel="alternate" hreflang="x-default" href="{it_loc}"/>'
-            entries.append(f"  <url>\n    <loc>{locs[lang]}</loc>\n{alt_links}\n  </url>")
-
+    entries: list[str] = [
+        _sitemap_url_block(route, params)
+        for route in _SEO_ROUTES.values()
+        for params in route.expand()
+    ]
     body = "\n".join(entries)
     return (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -363,6 +452,33 @@ def _sitemap_xml() -> str:
         f"{body}\n"
         "</urlset>\n"
     )
+
+
+# Concrete registrations. Order here is the order URLs appear in the sitemap.
+# _register_seo_route calls _sitemap_xml.cache_clear(), so this must come after
+# _sitemap_xml's def above (a plain top-level name lookup, resolved at call time —
+# see the comment inside _register_seo_route).
+_register_seo_route("form", "form", {"it": "/", "en": "/"})
+_register_seo_route("about", "about", {"it": "/about", "en": "/about"})
+_register_seo_route("bookmarklet", "bookmarklet_page", {"it": "/bookmarklet", "en": "/bookmarklet"})
+_register_seo_route("privacy", "privacy", {"it": "/privacy", "en": "/privacy"})
+_register_seo_route("zones_index", "zones_index", {"it": "/zones", "en": "/zones"})
+_register_seo_route(
+    "zone_detail",
+    "zone_detail",
+    {"it": "/zones/{code}", "en": "/zones/{code}"},
+    expand=lambda: ({"code": code} for code, _descr in zones.list_zones()),
+)
+
+# HTML-rendering endpoints that deliberately opt into _seo_urls's pre-registry
+# fallback (same suffix mirrored across every supported language) instead of a
+# registry entry — because they're not indexable content pages (import wizard,
+# estimate results, share links). Every endpoint with response_class=HTMLResponse
+# must appear either here or as a registered SeoRoute.endpoint above; see
+# test_every_html_endpoint_has_a_seo_decision in tests/test_seo.py.
+_SEO_MIRRORED_ENDPOINTS: frozenset[str] = frozenset(
+    {"import_get", "import_post", "estimate", "share_view", "share_view_short"}
+)
 
 
 @app.api_route("/sitemap.xml", methods=["GET", "HEAD"])
@@ -526,13 +642,14 @@ def about(request: Request, lang: str = FPath(pattern=_LANG_RE)) -> HTMLResponse
             "semester": omi.semester(),
             "zone_count": len(omi.available_zones()),
         },
+        seo_route="about",
     )
 
 
 @app.get("/{lang}/privacy", response_class=HTMLResponse)
 def privacy(request: Request, lang: str = FPath(pattern=_LANG_RE)) -> HTMLResponse:
     _set_locale(request, lang)
-    return _tpl(request, "privacy.html")
+    return _tpl(request, "privacy.html", seo_route="privacy")
 
 
 # ---------------------------------------------------------------------------
@@ -576,6 +693,7 @@ def zones_index(request: Request, lang: str = FPath(pattern=_LANG_RE)) -> HTMLRe
             "zone_count": sum(len(g) for g in groups.values()),
             "semester": omi.semester(),
         },
+        seo_route="zones_index",
     )
 
 
@@ -602,6 +720,8 @@ def zone_detail(
             "history_series": history.series(code, PropertyType.CIVILI, OmiCondition.NORMALE),
             "semester": omi.semester(),
         },
+        seo_route="zone_detail",
+        seo_params={"code": code},
     )
 
 
@@ -609,7 +729,7 @@ def zone_detail(
 def form(request: Request, lang: str = FPath(pattern=_LANG_RE)) -> HTMLResponse:
     _set_locale(request, lang)
     ctx = _form_context(request)
-    return _tpl(request, "form.html", ctx)
+    return _tpl(request, "form.html", ctx, seo_route="form")
 
 
 def _find_listing(node: dict | list | None, depth: int = 0) -> dict | None:
@@ -707,7 +827,9 @@ def bookmarklet_page(request: Request, lang: str = FPath(pattern=_LANG_RE)) -> H
     js_src = js_src.replace("'__STIMMO_ALERT__'", json.dumps(alert_str))
 
     bookmarklet_href = "javascript:" + re.sub(r"\s+", " ", js_src).strip()
-    return _tpl(request, "bookmarklet.html", {"bookmarklet_href": bookmarklet_href})
+    return _tpl(
+        request, "bookmarklet.html", {"bookmarklet_href": bookmarklet_href}, seo_route="bookmarklet"
+    )
 
 
 def _build_result_context(
@@ -1111,13 +1233,20 @@ application = _metrics.instrument(_dispatch)
 
 
 def _error(request: Request, errors: list[str]) -> HTMLResponse:
+    # Not routed through _tpl(): callers (import/share/estimate handlers, all in
+    # _SEO_MIRRORED_ENDPOINTS) render this for a 400 on their own path, so the
+    # route=None fallback in _seo_urls — mirror the current path across languages —
+    # is exactly the right, consistent behaviour here too.
+    locale = getattr(request.state, "locale", "it_IT")
+    lang = LOCALE_TO_LANG.get(locale, "it")
     return templates.TemplateResponse(
         request,
         "error.html",
         {
-            "lang": LOCALE_TO_LANG.get(getattr(request.state, "locale", "it_IT"), "it"),
-            "locale": getattr(request.state, "locale", "it_IT"),
+            "lang": lang,
+            "locale": locale,
             "errors": errors,
+            **_seo_urls(request, lang),
         },
         status_code=400,
     )
