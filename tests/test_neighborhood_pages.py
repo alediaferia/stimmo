@@ -9,6 +9,7 @@ pages (/{lang}/zones and /{lang}/zones/{code}).
 
 from __future__ import annotations
 
+import json
 from dataclasses import replace
 
 import pytest
@@ -25,6 +26,34 @@ LANGS = ("it", "en")
 @pytest.fixture()
 def client() -> TestClient:
     return TestClient(app, follow_redirects=False)
+
+
+@pytest.fixture()
+def content_dir(tmp_path, monkeypatch: pytest.MonkeyPatch):
+    """Points STIMMO_CONTENT_DIR at an empty tmp_path and returns a writer that
+    drops a neighborhoods.json there.
+
+    Injecting real content through the env var + loader (rather than monkeypatching
+    `list_neighborhoods` directly, as `test_gating_requires_both_language_blurbs`
+    above does) proves the loader itself works end to end, not just the gating
+    boolean downstream of it. Both `neighborhoods._neighborhoods_with_content` (the
+    loader's own cache) and `_sitemap_xml` (which calls `list_neighborhoods()`
+    while building the sitemap) are cleared on every write and on teardown, the
+    same two-cache pattern `test_seo.seo_registry_sandbox` uses for `_sitemap_xml`
+    alone — otherwise a stale sitemap or stale blurbs could leak into another test.
+    """
+
+    def _write(mapping: dict) -> None:
+        (tmp_path / "neighborhoods.json").write_text(json.dumps(mapping), encoding="utf-8")
+        nb_module._neighborhoods_with_content.cache_clear()
+        _sitemap_xml.cache_clear()
+
+    monkeypatch.setenv("STIMMO_CONTENT_DIR", str(tmp_path))
+    nb_module._neighborhoods_with_content.cache_clear()
+    _sitemap_xml.cache_clear()
+    yield _write
+    nb_module._neighborhoods_with_content.cache_clear()
+    _sitemap_xml.cache_clear()
 
 
 def _eur(n: float) -> str:
@@ -96,13 +125,58 @@ class TestCanonicalAndHreflang:
 
 
 class TestSitemapGating:
-    def test_no_neighborhood_urls_in_sitemap_yet(self, client: TestClient):
-        # None of the curated neighborhoods carry editorial copy yet (that's a
-        # separate pass) — so none should be in the sitemap, even though every
-        # page already resolves and renders.
+    def test_neighborhood_appears_in_sitemap_iff_both_blurbs_present(
+        self, client: TestClient, content_dir
+    ):
+        # The rule, not a snapshot of who currently has copy: a neighborhood enters
+        # the sitemap once (and only once) BOTH blurb_it and blurb_en are non-empty.
+        # Driven through the real content file (not a monkeypatched table), so this
+        # also proves data.neighborhoods' loader wires up correctly end to end —
+        # unlike test_gating_requires_both_language_blurbs below, which pins the
+        # gating boolean itself via a monkeypatched list_neighborhoods().
+        brera = nb_module.neighborhood_for_slug("brera", "it")
+        isola = nb_module.neighborhood_for_slug("isola", "it")
+        navigli = nb_module.neighborhood_for_slug("navigli", "it")
+
+        content_dir(
+            {
+                brera.slug_en: {
+                    "blurb_it": "Testo editoriale sufficientemente lungo per Brera.",
+                    "blurb_en": "Editorial copy long enough for Brera.",
+                },
+                isola.slug_en: {
+                    "blurb_it": "Solo italiano, manca la traduzione inglese.",
+                    "blurb_en": "",
+                },
+                navigli.slug_en: {
+                    "blurb_it": "",
+                    "blurb_en": "Missing the Italian translation.",
+                },
+                # bicocca has no entry at all — the common case for most of the
+                # table at any given time, and it must degrade the same way as a
+                # missing content file: no blurb, no sitemap entry.
+            }
+        )
+
         body = client.get("/sitemap.xml").text
-        assert "prezzi-al-mq" not in body
-        assert "property-prices" not in body
+
+        assert "brera-prezzi-al-mq" in body
+        assert "brera-property-prices" in body
+        # A neighborhood with only one language's blurb filled in must not appear
+        # under *either* language — the sitemap entry always emits both language
+        # URLs as a pair (see the neighborhood_detail registration in web/app.py),
+        # so a thin page in the language that does have copy still isn't indexed.
+        assert "isola-prezzi-al-mq" not in body
+        assert "isola-property-prices" not in body
+        assert "navigli-prezzi-al-mq" not in body
+        assert "navigli-property-prices" not in body
+        assert "bicocca-prezzi-al-mq" not in body
+        assert "bicocca-property-prices" not in body
+
+        # And the page itself actually renders the injected copy — the point of
+        # going through the real loader instead of a monkeypatched table.
+        detail_body = client.get(_url(brera, "it")).text
+        assert "Testo editoriale sufficientemente lungo per Brera." in detail_body
 
     def test_gating_requires_both_language_blurbs(self, monkeypatch: pytest.MonkeyPatch):
         with_both = replace(
