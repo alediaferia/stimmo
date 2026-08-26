@@ -22,10 +22,17 @@ src/stimmo/locale/**/*.mo
 # OMI staging directories (Forniture OMI downloads, imported then deleted)
 src/stimmo/data/assets/omi-*/
 
-# Share-link SQLite store (default local dev path; production uses STIMMO_SHARE_DB),
-# and licensed neighborhood editorial content (default local dev path; production
-# uses STIMMO_CONTENT_DIR) — see data/neighborhoods.py. Both repo-local, git-ignored.
-var/
+# Share-link SQLite store (default local dev path; production uses STIMMO_SHARE_DB)
+# and the licensed neighborhood editorial content file (data/neighborhoods.py,
+# default local dev path; the release image bakes real copy in at build time —
+# see Dockerfile + release.yml) are both repo-local and git-ignored. The one
+# exception is var/content/.gitkeep: tracked only so the directory — and the
+# Dockerfile's optional COPY of neighborhoods.json alongside it — exist for a
+# plain `docker build .` with no content present.
+var/*
+!var/content/
+var/content/*
+!var/content/.gitkeep
 
 # Claude Code (and other agent CLIs) — session-scoped or personal, never share.
 # Shared, portable config lives in .claude/settings.json and .claude/agents/ (committed).
