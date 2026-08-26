@@ -151,3 +151,21 @@ def zone_price_index(
         if z not in out:
             out[z] = (float(r["Compr_min"]), float(r["Compr_max"]))
     return out
+
+
+def citywide_average(
+    ptype: PropertyType = PropertyType.CIVILI,
+    condition: OmiCondition = OmiCondition.NORMALE,
+) -> float | None:
+    """Simple mean of each zone's €/m² midpoint, across every zone with a quote.
+
+    Display-only aggregate for the neighborhood pages' "vs. Milano average"
+    comparison — not part of the valuation tuning surface (see
+    valuation/adjustments.py for the one place multipliers live). Returns None
+    only if the bundled data has no quotes at all for ptype/condition.
+    """
+    bands = list(zone_price_index(ptype, condition).values())
+    if not bands:
+        return None
+    midpoints = [(lo + hi) / 2 for lo, hi in bands]
+    return sum(midpoints) / len(midpoints)

@@ -52,6 +52,7 @@
       <tr>
         <th>{% trans %}Zone{% endtrans %}</th>
         <th>{% trans %}Area{% endtrans %}</th>
+        <th>{% trans %}Neighborhood{% endtrans %}</th>
         <th class="num">€/m²</th>
         <th></th>
       </tr>
@@ -61,6 +62,13 @@
       <tr>
         <td class="mono">{{ z.code }}</td>
         <td>{{ z.descr | title }}</td>
+        <td>
+          {% if z.neighborhoods %}
+          {% for nb in z.neighborhoods %}<a href="{{ neighborhood_url(nb, lang) }}">{{ nb.name }}</a>{% if not loop.last %}, {% endif %}{% endfor %}
+          {% else %}
+          <span style="color:var(--ink-muted)">—</span>
+          {% endif %}
+        </td>
         <td class="num mono">
           {% if z.eur_m2_min %}{{ z.eur_m2_min | num }} – {{ z.eur_m2_max | num }}{% else %}—{% endif %}
         </td>

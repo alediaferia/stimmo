@@ -4,7 +4,9 @@ the env-gated Cloudflare analytics beacon."""
 
 from __future__ import annotations
 
+import json
 import re
+from pathlib import Path
 
 import pytest
 from fastapi import HTTPException
@@ -13,6 +15,7 @@ from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
 from starlette.requests import Request
 
+from stimmo.data import neighborhoods as nb_module
 from stimmo.data import zones
 from stimmo.web import app as app_module
 from stimmo.web.app import SeoRoute, _seo_urls, _sitemap_xml, app
@@ -259,12 +262,36 @@ class TestAnalyticsBeacon:
 # ---------------------------------------------------------------------------
 
 
-class TestSitemapRegressionSnapshot:
-    """The live sitemap has 96 URLs today: 5 static paths x 2 langs, plus every OMI
-    zone code x 2 langs. This is the regression bar for the registry refactor — the
-    exact same URL set, computed independently of _sitemap_xml's implementation."""
+@pytest.fixture()
+def empty_content_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Pins STIMMO_CONTENT_DIR at an empty tmp_path (no neighborhoods.json written)
+    so this class's URL-set snapshot is deterministic regardless of what editorial
+    content happens to be on disk locally or in prod — now that neighborhood blurbs
+    are loadable from an external file, the snapshot must not depend on whether one
+    happens to exist. Yields the tmp_path so a test can drop a file into it and
+    re-clear the caches itself; see `test_fully_blurbed_neighborhood_adds_exactly_
+    its_two_urls` below. The content-injecting counterpart (proving the *iff* rule
+    end to end) lives in test_neighborhood_pages.py's `content_dir` fixture.
+    """
+    monkeypatch.setenv("STIMMO_CONTENT_DIR", str(tmp_path))
+    nb_module._neighborhoods_with_content.cache_clear()
+    _sitemap_xml.cache_clear()
+    yield tmp_path
+    nb_module._neighborhoods_with_content.cache_clear()
+    _sitemap_xml.cache_clear()
 
-    def test_url_set_and_count_unchanged(self, client: TestClient):
+
+class TestSitemapRegressionSnapshot:
+    """The non-neighborhood sitemap surface is 96 URLs: 5 static paths x 2 langs,
+    plus every OMI zone code x 2 langs. This is the regression bar for the registry
+    refactor — the exact same URL set, computed independently of _sitemap_xml's
+    implementation, and pinned to an empty content dir so it can never drift just
+    because a neighborhood blurb was dropped into STIMMO_CONTENT_DIR somewhere. Only
+    the iff-both-blurbs rule governs whether neighborhood URLs are added on top of
+    this set — see test_url_set_and_count_unchanged (0 neighborhoods qualify here)
+    and test_fully_blurbed_neighborhood_adds_exactly_its_two_urls (exactly 1 does)."""
+
+    def test_url_set_and_count_unchanged(self, client: TestClient, empty_content_dir: Path):
         body = client.get("/sitemap.xml").text
         locs = set(re.findall(r"<loc>(.*?)</loc>", body))
 
@@ -280,6 +307,22 @@ class TestSitemapRegressionSnapshot:
 
         assert locs == expected
         assert len(locs) == 96
+
+    def test_fully_blurbed_neighborhood_adds_exactly_its_two_urls(
+        self, client: TestClient, empty_content_dir: Path
+    ):
+        n = nb_module.neighborhood_for_slug("brera", "it")
+        content = {n.slug_en: {"blurb_it": "Testo editoriale.", "blurb_en": "Editorial copy."}}
+        (empty_content_dir / "neighborhoods.json").write_text(json.dumps(content), encoding="utf-8")
+        nb_module._neighborhoods_with_content.cache_clear()
+        _sitemap_xml.cache_clear()
+
+        body = client.get("/sitemap.xml").text
+        locs = set(re.findall(r"<loc>(.*?)</loc>", body))
+
+        assert len(locs) == 98
+        assert f"https://stimmo.it/it/milano/{n.slug_it}-prezzi-al-mq" in locs
+        assert f"https://stimmo.it/en/milan/{n.slug_en}-property-prices" in locs
 
 
 class TestSeoRouteRegistryContract:
