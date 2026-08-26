@@ -243,6 +243,13 @@ _mcp_asgi_app = _build_mcp_app()
 
 @asynccontextmanager
 async def _lifespan(_app):
+    # Force the neighborhood content file to load now rather than lazily on first
+    # request. A missing file degrades silently (empty blurbs — the normal public-repo
+    # state); a malformed one raises ValueError (see neighborhoods._load_blurb_content).
+    # Doing this at startup means a malformed STIMMO_CONTENT_DIR/neighborhoods.json
+    # aborts the deploy instead of quietly 500-ing the sitemap and every neighborhood
+    # page while the process still passes its health check.
+    neighborhoods.list_neighborhoods()
     async with _get_mcp_sm().run():
         yield
 

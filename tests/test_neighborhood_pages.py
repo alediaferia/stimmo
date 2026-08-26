@@ -321,3 +321,37 @@ class TestZonesIndexOutLinks:
         assert idx != -1
         window = body[idx : idx + 600]
         assert 'href="/en/milan/brera-property-prices"' in window
+
+
+# ---------------------------------------------------------------------------
+# Startup validation: a malformed content file must abort the deploy, not 500
+# every neighborhood page + the sitemap while the process looks healthy.
+# ---------------------------------------------------------------------------
+class TestStartupValidation:
+    def test_malformed_content_file_fails_app_startup(
+        self, tmp_path, monkeypatch: pytest.MonkeyPatch
+    ):
+        """web/app.py's `_lifespan` forces the content file to load before the app
+        accepts traffic. Entering TestClient as a context manager (`with
+        TestClient(app):`) is what actually drives FastAPI/Starlette's lifespan
+        startup — constructing it bare does not — so this is the one way to
+        exercise "does the app fail to start", as opposed to "does the first
+        request fail" (the old, per-request-lazy behavior this replaces).
+        """
+        (tmp_path / "neighborhoods.json").write_text("{not valid json", encoding="utf-8")
+        monkeypatch.setenv("STIMMO_CONTENT_DIR", str(tmp_path))
+        nb_module._neighborhoods_with_content.cache_clear()
+        # NOTE: the MCP session manager wired into `_lifespan` (see web/app.py) is a
+        # module-level singleton whose `.run()` may only be entered once per process
+        # (mcp.server.streamable_http_manager.StreamableHTTPSessionManager raises
+        # RuntimeError on a second call) — so this suite gets exactly one test that
+        # drives FastAPI/Starlette lifespan startup via `with TestClient(app):`.
+        # Absent-file-starts-up-cleanly is already covered without the lifespan by
+        # the plain `client` fixture used throughout this file and by test_seo.py's
+        # empty_content_dir fixture.
+        try:
+            with pytest.raises(ValueError, match="malformed neighborhood content file"):
+                with TestClient(app):
+                    pass
+        finally:
+            nb_module._neighborhoods_with_content.cache_clear()
