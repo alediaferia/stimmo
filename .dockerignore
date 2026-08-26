@@ -10,3 +10,7 @@ __pycache__
 .claude
 scripts
 deploy
+
+# CI-only checkout of the private content repo (release.yml); nothing COPYs it,
+# but no reason to send its nested .git and prose over as build context either.
+stimmo-content

@@ -36,6 +36,39 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Editorial neighborhood blurbs live in the separate private repo
+      # alediaferia/stimmo-content (see src/stimmo/data/neighborhoods.py for why:
+      # stimmo is Apache-2.0, and that prose isn't licensed for redistribution).
+      # Checked out into its own path, after the main checkout above - checkout's
+      # default clean: true would otherwise delete this directory if the order
+      # were reversed.
+      - name: Check out private editorial content
+        uses: actions/checkout@v4
+        with:
+          repository: alediaferia/stimmo-content
+          token: ${{ secrets.CONTENT_REPO_TOKEN }}
+          path: stimmo-content
+          fetch-depth: 1
+          # Only this step needs the token; don't leave it in .git/config on the
+          # runner afterwards.
+          persist-credentials: false
+
+      # Mirrors the two failure modes _load_blurb_content() raises on (invalid
+      # JSON; valid JSON that isn't an object), so a malformed content commit
+      # fails the build here - before an image even exists - rather than
+      # surfacing later as a startup crash. jq ships preinstalled on
+      # ubuntu-latest.
+      - name: Validate neighborhood content JSON
+        run: jq -e 'type == "object"' stimmo-content/content/neighborhoods.json > /dev/null
+
+      # Land the real content at the path the Dockerfile's optional COPY looks
+      # for. var/content/neighborhoods.json is never committed (see .gitignore -
+      # it's licensed content); this write only ever touches the working copy in
+      # the build context (context: . below - not the default git context, which
+      # sends only tracked files and would silently drop this).
+      - name: Stage neighborhood content for the image build
+        run: cp stimmo-content/content/neighborhoods.json var/content/neighborhoods.json
+
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
@@ -55,6 +88,10 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
+          # Must stay the filesystem context (not the default git context, which
+          # only sends tracked files) - the staged neighborhoods.json above is an
+          # untracked working-copy overwrite and would silently vanish from the
+          # image otherwise.
           context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
