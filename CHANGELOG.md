@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 First public release. Milan-only OMI fair-price estimator with FastAPI + Jinja
 front end, OSM amenity counting via Overpass, and Nominatim geocoding.
 
+## v0.18.0 (2026-08-26)
+
+### Feat
+
+- **web**: add JSON-LD structured data for brand SERP disambiguation
+- **data**: externalize neighborhood blurbs from repository
+- **web**: add neighborhood price pages (WP-8)
+- **data**: add colloquial neighborhood alias layer
+
+### Fix
+
+- **web**: validate neighborhood content at startup
+- **web**: render neighborhood blurbs as multiple paragraphs
+- **data**: swap Isola zone C15 for C14
+
+### Refactor
+
+- **web**: derive SEO URLs from route registry
+
 ## v0.17.0 (2026-07-07)
 
 ### Feat
