@@ -29,6 +29,47 @@
   <link rel="alternate" hreflang="x-default" href="{{ hreflang_x_default }}">
   {% block json_ld %}{% endblock %}
 
+  {# Organization node: emitted unconditionally (outside the overridable json_ld
+     block above) so every page — including those that override json_ld with their
+     own page-type markup — still carries a stable, disambiguating entity for
+     Google to anchor the brand-name SERP on. Derived from request.base_url rather
+     than a hardcoded origin, matching the rest of the SEO plumbing (see _seo_urls
+     in web/app.py) so it works unchanged in prod, staging, and tests. #}
+  {% set _org_id = (request.base_url | string) ~ '#organization' %}
+  {% set _org_url = request.base_url | string %}
+  {% set _org_logo_url = (request.base_url | string) ~ static_url('favicon-64.png').lstrip('/') %}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "@id": {{ _org_id | tojson }},
+    "name": "stimmo",
+    "url": {{ _org_url | tojson }},
+    "description": {{ _("Fair-price check for Milan apartment listings — OMI-anchored, no machine learning, every multiplier visible.") | tojson }},
+    "logo": {
+      "@type": "ImageObject",
+      "url": {{ _org_logo_url | tojson }}
+    },
+    "sameAs": [
+      "https://github.com/alediaferia/stimmo"
+    ]
+  }
+  </script>
+
+  {% if request.url.path == ('/' ~ (lang | default('it')) ~ '/') %}
+  {# WebSite node: home page only. No potentialAction/SearchAction — stimmo has
+     no site-search endpoint, so we don't fabricate one. #}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "stimmo",
+    "url": {{ _org_url | tojson }},
+    "publisher": {"@id": {{ _org_id | tojson }}}
+  }
+  </script>
+  {% endif %}
+
   <link rel="icon" type="image/svg+xml" href="{{ static_url('stimmo-favicon.svg') }}">
   <link rel="icon" type="image/png" sizes="64x64" href="{{ static_url('favicon-64.png') }}">
   <link rel="preload" as="font" type="font/woff2" crossorigin href="{{ static_url('fonts/inter-tight-400.woff2') }}">
