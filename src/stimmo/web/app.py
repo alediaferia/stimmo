@@ -17,6 +17,7 @@ from urllib.parse import urlparse
 from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi import Path as FPath
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import ValidationError
@@ -265,6 +266,40 @@ async def _lifespan(_app):
 
 
 app = FastAPI(title="stimmo — Milan fair-price estimator", lifespan=_lifespan)
+
+
+class _HeadableAPIRoute(APIRoute):
+    """APIRoute that auto-adds HEAD wherever GET is registered.
+
+    Starlette's plain `Route` does this itself; FastAPI's `APIRoute` does not
+    (verified against fastapi 0.139 / starlette 1.3 — `_populate_api_route_state`
+    just uppercases whatever `methods` it's given). Every `@app.get(...)` in this
+    module was therefore GET-only, and a HEAD request would path-match but
+    method-miss it (`Route.matches` -> `Match.PARTIAL`). Starlette's router keeps
+    scanning on a partial match, and the catch-all `bare_path_redirect` below is
+    registered for GET *and* HEAD — so it method-matches (`Match.FULL`) and wins,
+    even though it's declared after every real route. For a path that already
+    carries a lang prefix, `bare_path_redirect` deliberately 404s (see its
+    docstring), which is exactly the bug: `HEAD /it/zones` -> 404 while
+    `GET /it/zones` -> 200.
+
+    Adding HEAD here (matching Starlette's own convention) makes the intended
+    route full-match first, so `scope["endpoint"]` — and therefore the `route`
+    label in web/metrics.py — is the real endpoint, not `bare_path_redirect`, for
+    HEAD requests too. Set as `app.router.route_class` right below, before any
+    route is registered, so every `@app.get`/`@app.api_route` call in this module
+    picks it up (FastAPI reads `router.route_class` at each `add_api_route` call,
+    not at router-construction time).
+    """
+
+    def __init__(self, path: str, endpoint, *, methods=None, **kwargs):
+        method_set = {m.upper() for m in methods} if methods else {"GET"}
+        if "GET" in method_set:
+            method_set.add("HEAD")
+        super().__init__(path, endpoint, methods=method_set, **kwargs)
+
+
+app.router.route_class = _HeadableAPIRoute
 
 STATIC_DIR = Path(__file__).parent / "static"
 

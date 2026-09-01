@@ -10,6 +10,7 @@ pages (/{lang}/zones and /{lang}/zones/{code}).
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import replace
 
 import pytest
@@ -90,6 +91,15 @@ class TestRendering:
         )
         r = client.get(path)
         assert r.status_code == 404
+
+    def test_exactly_one_meta_description(self, client: TestClient):
+        # Regression guard for the base.html bug found while implementing R1 (see
+        # test_seo.py's test_exactly_one_meta_description_per_page): this template
+        # sets its own og_meta-block description (_descr), which used to render
+        # *alongside* base.html's site-wide default rather than instead of it.
+        n = nb_module.neighborhood_for_slug("brera", "it")
+        body = client.get(_url(n, "it")).text
+        assert len(re.findall(r'<meta name="description"', body)) == 1
 
 
 # ---------------------------------------------------------------------------
