@@ -53,3 +53,7 @@ docs/plans/
 
 # Deployment runbook — personal ops docs, not relevant to contributors
 deploy/
+
+# Agent definition symlinked in from a private sibling repo — the target is not part
+# of this project and must not be committed here.
+.claude/agents/stimmo-seo-manager.md
