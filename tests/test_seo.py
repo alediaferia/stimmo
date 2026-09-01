@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 import re
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -16,9 +17,16 @@ from fastapi.testclient import TestClient
 from starlette.requests import Request
 
 from stimmo.data import neighborhoods as nb_module
-from stimmo.data import zones
+from stimmo.data import omi, zones
 from stimmo.web import app as app_module
-from stimmo.web.app import SeoRoute, _seo_urls, _sitemap_xml, app
+from stimmo.web.app import (
+    SeoRoute,
+    _release_date,
+    _semester_start_date,
+    _seo_urls,
+    _sitemap_xml,
+    app,
+)
 
 
 @pytest.fixture()
@@ -123,6 +131,76 @@ class TestSitemapXml:
         assert r.status_code == 200
 
 
+class TestSitemapLastmod:
+    """R2: every URL's <lastmod> must derive from whatever actually determines that
+    URL's content (CHANGELOG.md's release date for static template pages, the
+    bundled OMI semester for the OMI-band pages, the content file's per-neighborhood
+    `updated` date otherwise) — never build/deploy time, and never a fabricated
+    date when the real one is unknown. See SeoRoute.lastmod and the three supplier
+    functions in web/app.py."""
+
+    def _lastmod_after(self, body: str, loc: str) -> str | None:
+        i = body.find(f"<loc>{loc}</loc>")
+        assert i != -1, f"{loc} not found in sitemap"
+        m = re.match(r"\s*<lastmod>([^<]+)</lastmod>", body[i + len(f"<loc>{loc}</loc>") :])
+        return m.group(1) if m else None
+
+    def test_static_page_lastmod_is_the_release_date(self, client: TestClient):
+        expected = _release_date()
+        assert expected is not None, "CHANGELOG.md must have at least one version heading"
+        body = client.get("/sitemap.xml").text
+        assert self._lastmod_after(body, "https://stimmo.it/it/about") == expected.isoformat()
+        assert self._lastmod_after(body, "https://stimmo.it/en/privacy") == expected.isoformat()
+
+    def test_zone_pages_lastmod_is_the_omi_semester_start(self, client: TestClient):
+        expected = _semester_start_date(omi.semester())
+        assert expected is not None
+        body = client.get("/sitemap.xml").text
+        assert self._lastmod_after(body, "https://stimmo.it/it/zones") == expected.isoformat()
+        code, _descr = zones.list_zones()[0]
+        loc = f"https://stimmo.it/it/zones/{code}"
+        assert self._lastmod_after(body, loc) == expected.isoformat()
+
+    def test_every_emitted_lastmod_is_a_valid_iso_date(self, client: TestClient):
+        body = client.get("/sitemap.xml").text
+        found = re.findall(r"<lastmod>([^<]+)</lastmod>", body)
+        assert found  # sanity: static + zone pages always emit one
+        for raw in found:
+            date.fromisoformat(raw)  # raises ValueError if malformed
+
+    def test_neighborhood_without_updated_field_omits_lastmod(
+        self, client: TestClient, empty_content_dir: Path
+    ):
+        n = nb_module.neighborhood_for_slug("brera", "it")
+        content = {n.slug_en: {"blurb_it": "Testo editoriale.", "blurb_en": "Editorial copy."}}
+        (empty_content_dir / "neighborhoods.json").write_text(json.dumps(content), encoding="utf-8")
+        nb_module._neighborhoods_with_content.cache_clear()
+        _sitemap_xml.cache_clear()
+
+        body = client.get("/sitemap.xml").text
+        loc = f"https://stimmo.it/it/milano/{n.slug_it}-prezzi-al-mq"
+        assert self._lastmod_after(body, loc) is None
+
+    def test_neighborhood_with_updated_field_emits_it_as_lastmod(
+        self, client: TestClient, empty_content_dir: Path
+    ):
+        n = nb_module.neighborhood_for_slug("brera", "it")
+        content = {
+            n.slug_en: {
+                "blurb_it": "Testo editoriale.",
+                "blurb_en": "Editorial copy.",
+                "updated": "2026-08-26",
+            }
+        }
+        (empty_content_dir / "neighborhoods.json").write_text(json.dumps(content), encoding="utf-8")
+        nb_module._neighborhoods_with_content.cache_clear()
+        _sitemap_xml.cache_clear()
+
+        body = client.get("/sitemap.xml").text
+        loc = f"https://stimmo.it/it/milano/{n.slug_it}-prezzi-al-mq"
+        assert self._lastmod_after(body, loc) == "2026-08-26"
+
+
 # ---------------------------------------------------------------------------
 # WP-3: permanent redirects + HEAD support
 # ---------------------------------------------------------------------------
@@ -176,6 +254,48 @@ class TestHeadSupport:
         r = client.head("/somewhere")
         assert r.status_code == 301
 
+    # Regression coverage for the bug this class didn't catch before: every
+    # `@app.get("/{lang}/...")` route was GET-only, so a HEAD request path-matched
+    # but method-missed it (Starlette Match.PARTIAL) and fell through to the
+    # catch-all `bare_path_redirect` (registered GET+HEAD), which 404s a
+    # lang-prefixed path on purpose. Fixed by `_HeadableAPIRoute` in web/app.py,
+    # set as `app.router.route_class` so every GET route gains HEAD automatically.
+    @pytest.mark.parametrize("path", ["/it/", "/en/", "/it/zones", "/en/zones", "/it/about"])
+    def test_head_lang_prefixed_route_is_200_not_404(self, client: TestClient, path: str):
+        r = client.head(path)
+        assert r.status_code == 200
+
+    def test_head_zone_detail_is_200(self, client: TestClient):
+        code, _descr = zones.list_zones()[0]
+        r = client.head(f"/it/zones/{code}")
+        assert r.status_code == 200
+
+    def test_head_content_length_matches_get_and_body_is_empty(self, client: TestClient):
+        get_resp = client.get("/it/zones")
+        head_resp = client.head("/it/zones")
+        assert head_resp.status_code == 200
+        assert head_resp.headers["content-length"] == get_resp.headers["content-length"]
+        assert head_resp.content == b""
+
+    def test_head_lang_prefixed_route_labels_metrics_by_real_endpoint(self):
+        # Goes through `application` (app_module.application), not the bare FastAPI
+        # `app` — metrics are recorded by `_metrics.instrument`, which wraps
+        # `_dispatch`, not `app` itself, so the module-level `client` fixture
+        # (bound directly to `app`) wouldn't exercise the middleware at all.
+        #
+        # The bug this guards: before the fix, scope["endpoint"] for a HEAD request
+        # against /it/zones was bare_path_redirect (the catch-all that won the
+        # partial-match race), not zones_index — so this counter sample would not
+        # exist under the "zones_index" route label at all.
+        from stimmo.web.metrics import REQUESTS
+
+        metrics_client = TestClient(app_module.application, follow_redirects=False)
+        before = REQUESTS.labels(method="HEAD", route="zones_index", status="200")._value.get()
+        r = metrics_client.head("/it/zones")
+        assert r.status_code == 200
+        after = REQUESTS.labels(method="HEAD", route="zones_index", status="200")._value.get()
+        assert after == before + 1
+
 
 # ---------------------------------------------------------------------------
 # WP-3: canonical / hreflang / JSON-LD in rendered pages
@@ -212,6 +332,32 @@ class TestHeadTags:
         body = client.get(f"/{lang}/about").text
         assert "application/ld+json" in body
         assert '"@type": "WebApplication"' in body
+
+    # Found while implementing R1 (2026-08-30 SEO review): base.html emitted a
+    # site-wide default <meta name="description"> *outside* the overridable
+    # og_meta block, so every page that overrode og_meta with its own description
+    # (zones_index, zone_detail, neighborhood_detail) rendered *two* competing
+    # <meta name="description"> tags — the generic one first, in DOM order, which
+    # is what a crawler that only reads the first tag would actually index. Fixed
+    # by moving the default description inside the og_meta block itself, matching
+    # how og:description/twitter:description already worked. Guards every page
+    # type that renders a head (form, about, privacy, bookmarklet, zones index/
+    # detail, neighborhood detail) so this can't regress silently on either side —
+    # zero tags would be as wrong as two.
+    @pytest.mark.parametrize(
+        "path",
+        [
+            "/it/",
+            "/it/about",
+            "/it/privacy",
+            "/it/bookmarklet",
+            "/it/zones",
+            "/it/zones/B12",
+        ],
+    )
+    def test_exactly_one_meta_description_per_page(self, client: TestClient, path: str):
+        body = client.get(path).text
+        assert len(re.findall(r'<meta name="description"', body)) == 1
 
 
 # ---------------------------------------------------------------------------

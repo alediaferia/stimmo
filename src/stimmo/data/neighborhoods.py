@@ -74,6 +74,17 @@ class Neighborhood:
     # and internally linked — we just don't ask Google to index a thin page yet).
     blurb_it: str = ""
     blurb_en: str = ""
+    # ISO date (YYYY-MM-DD) the blurb prose was last edited, as recorded by whoever
+    # wrote/updated it in the external content file's "updated" key — same
+    # call-time-populated, content-file-only story as blurb_it/blurb_en above (every
+    # `Neighborhood` in `_NEIGHBORHOODS` gets the default ""). Empty means "unknown"
+    # and is the correct state for a neighborhood with no blurb yet, or for a
+    # neighborhood.json predating this field. web/app.py's sitemap <lastmod> for
+    # neighborhood_detail reads this and, deliberately, emits no <lastmod> element
+    # at all when it's empty — a missing date is a smaller lie to Google than a
+    # fabricated one (build time, file mtime, etc.), so "unknown" must stay a real,
+    # visibly different state from "known", not silently fall back to something else.
+    updated: str = ""
 
 
 # Ordered roughly centro -> periphery, clockwise. Kept as a tuple literal (not built
@@ -156,7 +167,11 @@ _BY_ZONE: dict[str, tuple[Neighborhood, ...]] = _build_zone_index()
 # git-ignored `var/content/`, matching the `STIMMO_SHARE_DB` precedent in
 # web/app.py) and merged onto `_NEIGHBORHOODS` by `slug_en`. Expected shape:
 #
-#   {"<slug_en>": {"blurb_it": "...", "blurb_en": "..."}}
+#   {"<slug_en>": {"blurb_it": "...", "blurb_en": "...", "updated": "YYYY-MM-DD"}}
+#
+# "updated" is optional (defaults to "" via Neighborhood.updated) — it powers the
+# neighborhood_detail <lastmod> in web/app.py's sitemap and is otherwise unused, so
+# an entry without it just means that page's sitemap URL carries no <lastmod>.
 #
 # A slug missing from the file — or the file missing entirely — yields empty
 # blurbs for that neighborhood, silently: that's the normal state for a public-repo
@@ -194,7 +209,12 @@ def _with_content(n: Neighborhood, content: dict[str, dict[str, str]]) -> Neighb
     entry = content.get(n.slug_en)
     if not isinstance(entry, dict):
         return n
-    return replace(n, blurb_it=entry.get("blurb_it", ""), blurb_en=entry.get("blurb_en", ""))
+    return replace(
+        n,
+        blurb_it=entry.get("blurb_it", ""),
+        blurb_en=entry.get("blurb_en", ""),
+        updated=entry.get("updated", ""),
+    )
 
 
 @cache

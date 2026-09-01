@@ -6,6 +6,8 @@ the sitemap growing to include zone URLs, and the 404 path for unknown codes.
 
 from __future__ import annotations
 
+import re
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -40,6 +42,45 @@ class TestZonesIndex:
         assert 'hreflang="it"' in body
         assert 'hreflang="en"' in body
         assert 'hreflang="x-default"' in body
+
+    # R1 (2026-08-30 SEO review, §4): /it/zones was titled for low-volume long-tail
+    # queries ("zone omi milano", "fasce omi milano") while sitting at position 17.2
+    # for "omi milano" — 35 impressions, a third of the whole topical bucket, 0%
+    # CTR. Retargeted the msgid so its Italian translation carries "omi milano" (the
+    # head term) — asserted here against the *rendered, translated* page, per the
+    # report's own acceptance bar: "the acceptance test is the rendered Italian
+    # <title>, not the pybabel run completing." Never assert this against the .po
+    # msgstr directly — a passing pybabel compile proves nothing about what a
+    # crawler actually sees.
+    def test_it_title_targets_omi_milano_head_term(self, client: TestClient):
+        body = client.get("/it/zones").text
+        title = re.search(r"<title>(.*?)</title>", body, re.S).group(1)
+        assert "omi milano" in title.lower()
+
+    def test_it_h1_targets_omi_milano_head_term(self, client: TestClient):
+        body = client.get("/it/zones").text
+        h1 = re.search(r"<h1>(.*?)</h1>", body, re.S).group(1)
+        assert "omi milano" in re.sub(r"<[^>]+>", "", h1).lower()
+
+    def test_it_meta_description_targets_omi_milano_head_term(self, client: TestClient):
+        body = client.get("/it/zones").text
+        descs = re.findall(r'<meta name="description" content="(.*?)">', body)
+        assert len(descs) == 1
+        assert "omi milano" in descs[0].lower()
+
+    def test_it_json_ld_name_targets_omi_milano_head_term(self, client: TestClient):
+        body = client.get("/it/zones").text
+        m = re.search(r'"@type": "CollectionPage".*?"name": "(.*?)"', body, re.S)
+        assert m is not None
+        assert "omi milano" in m.group(1).lower()
+
+    # Stays explicitly OMI-technical (per the report's constraint) rather than
+    # drifting toward the neighbourhood hub pages' colloquial "prezzi al mq"
+    # vocabulary, which targets a deliberately different query family.
+    def test_it_title_does_not_use_hub_page_vocabulary(self, client: TestClient):
+        body = client.get("/it/zones").text
+        title = re.search(r"<title>(.*?)</title>", body, re.S).group(1)
+        assert "prezzi al mq" not in title.lower()
 
 
 class TestZoneDetail:
