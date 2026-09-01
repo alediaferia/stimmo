@@ -109,14 +109,24 @@ def _fmt_num(n: float) -> str:
     return format_decimal(round(n), format="#,##0", locale=_current_locale.get())
 
 
-def _semester_months_old(semester: str) -> int:
+def _semester_start_date(semester: str) -> date | None:
+    """First calendar day of an OMI semester string ("2025-2" -> 2025-07-01, "2025-1" ->
+    2025-01-01). Shared by _semester_months_old (freshness banner) and _omi_lastmod
+    (sitemap <lastmod> for the OMI-band pages) — both need the same parse, just a
+    different use of the result."""
     try:
         year_str, half_str = semester.split("-")
-        sem_start = date(int(year_str), 1 if half_str == "1" else 7, 1)
-        today = date.today()
-        return max(0, (today.year - sem_start.year) * 12 + (today.month - sem_start.month))
+        return date(int(year_str), 1 if half_str == "1" else 7, 1)
     except (ValueError, AttributeError):
+        return None
+
+
+def _semester_months_old(semester: str) -> int:
+    sem_start = _semester_start_date(semester)
+    if sem_start is None:
         return 0
+    today = date.today()
+    return max(0, (today.year - sem_start.year) * 12 + (today.month - sem_start.month))
 
 
 def _set_locale(request: Request, lang: str) -> str:
@@ -402,6 +412,13 @@ class SeoRoute:
     endpoint: str  # FastAPI handler function name — see _SEO_MIRRORED_ENDPOINTS below
     suffixes: Mapping[str, str]
     expand: Callable[[], Iterable[Mapping[str, str]]] = lambda: ({},)
+    # Derives <lastmod> from whatever actually determines this URL's content — never
+    # from build/deploy time, which would bump every URL together on every release
+    # regardless of what changed (see the three concrete suppliers below). Returns
+    # None to omit <lastmod> for that URL entirely: a missing date is a smaller lie
+    # to a crawler than a wrong-but-stable one, so "we don't know" must stay a real,
+    # distinguishable outcome rather than falling back to some other guess.
+    lastmod: Callable[[Mapping[str, str]], date | None] | None = None
 
 
 _SEO_ROUTES: dict[str, SeoRoute] = {}
@@ -413,9 +430,14 @@ def _register_seo_route(
     suffixes: Mapping[str, str],
     *,
     expand: Callable[[], Iterable[Mapping[str, str]]] | None = None,
+    lastmod: Callable[[Mapping[str, str]], date | None] | None = None,
 ) -> SeoRoute:
     route = SeoRoute(
-        key=key, endpoint=endpoint, suffixes=dict(suffixes), expand=expand or (lambda: ({},))
+        key=key,
+        endpoint=endpoint,
+        suffixes=dict(suffixes),
+        expand=expand or (lambda: ({},)),
+        lastmod=lastmod,
     )
     _SEO_ROUTES[key] = route
     # The registry is only ever mutated by module-level calls to this function, all
@@ -427,10 +449,81 @@ def _register_seo_route(
     return route
 
 
+# ---------------------------------------------------------------------------
+# <lastmod> suppliers — one per "what determines this URL's content" story.
+# Each is real, versioned, already-bundled data; none is build/deploy time or a
+# file mtime (git doesn't preserve those, and the Dockerfile's COPY stamps build
+# time onto them regardless — both would produce a stable-looking but false date).
+# ---------------------------------------------------------------------------
+
+
+@lru_cache(maxsize=1)
+def _release_date() -> date | None:
+    """Date of the most recent version heading in CHANGELOG.md
+    ("## vX.Y.Z (YYYY-MM-DD)"). CHANGELOG.md is a committed, bundled file — this is
+    the same kind of real, stable data as app_version's _pkg_version() lookup just
+    above, not a proxy for "when was this specific page last touched". Returns None
+    if the file is missing or its heading format ever changes underneath this regex.
+    """
+    changelog = Path(__file__).parent.parent.parent.parent / "CHANGELOG.md"
+    try:
+        text = changelog.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return None
+    m = re.search(r"^## v\d+\.\d+\.\d+ \((\d{4}-\d{2}-\d{2})\)", text, re.MULTILINE)
+    if not m:
+        return None
+    try:
+        return date.fromisoformat(m.group(1))
+    except ValueError:
+        return None
+
+
+def _release_lastmod(_params: Mapping[str, str]) -> date | None:
+    """SeoRoute.lastmod for pages that are hand-written template markup with no
+    finer-grained per-page timestamp of their own (form, about, bookmarklet,
+    privacy) — the release date is the best real signal available for them.
+    Ignores params; every route using this shares one process-wide release date.
+    """
+    return _release_date()
+
+
+def _omi_lastmod(_params: Mapping[str, str]) -> date | None:
+    """Start-of-semester date for the OMI vintage currently bundled
+    (data.omi.semester(), e.g. "2025-2" -> 2025-07-01). Used for zones_index and
+    zone_detail: their entire content is exactly this semester's €/m² band, so
+    refreshing OMI (scripts/refresh_omi.py) is the one real event that changes what
+    these pages say — and is therefore the one honest answer to "when did this
+    page's content last change". Same param shape (ignores zone code) for both
+    routes since every zone shares one bundled vintage.
+    """
+    return _semester_start_date(omi.semester())
+
+
+def _neighborhood_lastmod(params: Mapping[str, str]) -> date | None:
+    """The neighborhood's own `updated` date from the external content file (see
+    data/neighborhoods.py's Neighborhood.updated), parsed from the params the
+    sitemap already expands neighborhood_detail with (slug_en). Omits <lastmod>
+    (returns None) when the content file predates this field or a neighborhood's
+    entry doesn't carry one — this is the common case today (see CHANGELOG/report:
+    only the first batch has it), and is exactly the "don't know, don't guess" case
+    SeoRoute.lastmod exists to allow.
+    """
+    n = neighborhoods.neighborhood_for_slug(params["slug_en"], "en")
+    if n is None or not n.updated:
+        return None
+    try:
+        return date.fromisoformat(n.updated)
+    except ValueError:
+        return None
+
+
 def _sitemap_url_block(route: SeoRoute, params: Mapping[str, str]) -> str:
     langs = sorted(route.suffixes)
     locs = {lg: f"{SITE_ORIGIN}/{lg}{route.suffixes[lg].format(**params)}" for lg in langs}
     default_lang = "it" if "it" in locs else langs[0]
+    lastmod = route.lastmod(params) if route.lastmod else None
+    lastmod_tag = f"\n    <lastmod>{lastmod.isoformat()}</lastmod>" if lastmod else ""
     blocks = []
     for lg in langs:
         alt_links = "\n".join(
@@ -440,7 +533,7 @@ def _sitemap_url_block(route: SeoRoute, params: Mapping[str, str]) -> str:
         alt_links += (
             f'\n    <xhtml:link rel="alternate" hreflang="x-default" href="{locs[default_lang]}"/>'
         )
-        blocks.append(f"  <url>\n    <loc>{locs[lg]}</loc>\n{alt_links}\n  </url>")
+        blocks.append(f"  <url>\n    <loc>{locs[lg]}</loc>{lastmod_tag}\n{alt_links}\n  </url>")
     return "\n".join(blocks)
 
 
@@ -465,16 +558,26 @@ def _sitemap_xml() -> str:
 # _register_seo_route calls _sitemap_xml.cache_clear(), so this must come after
 # _sitemap_xml's def above (a plain top-level name lookup, resolved at call time —
 # see the comment inside _register_seo_route).
-_register_seo_route("form", "form", {"it": "/", "en": "/"})
-_register_seo_route("about", "about", {"it": "/about", "en": "/about"})
-_register_seo_route("bookmarklet", "bookmarklet_page", {"it": "/bookmarklet", "en": "/bookmarklet"})
-_register_seo_route("privacy", "privacy", {"it": "/privacy", "en": "/privacy"})
-_register_seo_route("zones_index", "zones_index", {"it": "/zones", "en": "/zones"})
+_register_seo_route("form", "form", {"it": "/", "en": "/"}, lastmod=_release_lastmod)
+_register_seo_route("about", "about", {"it": "/about", "en": "/about"}, lastmod=_release_lastmod)
+_register_seo_route(
+    "bookmarklet",
+    "bookmarklet_page",
+    {"it": "/bookmarklet", "en": "/bookmarklet"},
+    lastmod=_release_lastmod,
+)
+_register_seo_route(
+    "privacy", "privacy", {"it": "/privacy", "en": "/privacy"}, lastmod=_release_lastmod
+)
+_register_seo_route(
+    "zones_index", "zones_index", {"it": "/zones", "en": "/zones"}, lastmod=_omi_lastmod
+)
 _register_seo_route(
     "zone_detail",
     "zone_detail",
     {"it": "/zones/{code}", "en": "/zones/{code}"},
     expand=lambda: ({"code": code} for code, _descr in zones.list_zones()),
+    lastmod=_omi_lastmod,
 )
 _register_seo_route(
     "neighborhood_detail",
@@ -488,6 +591,7 @@ _register_seo_route(
     # so we never ask Google to index a page that's thin/near-duplicate in either
     # language. The route resolves and renders regardless — see neighborhood_detail
     # further down — so it stays reachable via the zone pages/zones index links.
+    lastmod=_neighborhood_lastmod,
     expand=lambda: (
         {"slug_it": n.slug_it, "slug_en": n.slug_en}
         for n in neighborhoods.list_neighborhoods()
