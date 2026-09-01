@@ -17,6 +17,15 @@ WORKDIR /app
 COPY --from=builder /app/.venv /app/.venv
 COPY --from=builder /app/src /app/src
 
+# web/app.py's _release_date() reads this to date the static pages' sitemap <lastmod>,
+# resolving it as /app/CHANGELOG.md. It is deliberately copied here rather than added to
+# the builder's dependency-manifest COPY above: this file changes on every release, and
+# putting it there would invalidate the cached `uv sync` layer on each one. _release_date
+# returns None when the file is absent and the sitemap then omits <lastmod> for those
+# URLs rather than inventing a date — which is exactly how its absence was noticed, in
+# v0.19.0, where 8 of 112 URLs shipped without one.
+COPY CHANGELOG.md ./
+
 RUN useradd -r -s /bin/false stimmo
 
 # Editorial neighborhood blurbs (src/stimmo/data/neighborhoods.py) are baked into
