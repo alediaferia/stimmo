@@ -40,10 +40,23 @@ Common types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`. The `commit-ms
 
 ```sh
 uv run cz bump          # bumps version, updates CHANGELOG.md, creates git tag
-git push --follow-tags  # triggers the release workflow (build → deploy → GitHub Release)
+git push origin main    # push the bump commit
+git push origin vX.Y.Z  # push the tag — triggers the release workflow (build → deploy → GitHub Release)
 ```
 
 `cz bump` infers the semver increment from commits since the last tag (`feat` → minor, `fix` → patch, `BREAKING CHANGE` → major).
+
+**Push the tag by name — `git push --follow-tags` will not do it.** `cz bump` creates a
+*lightweight* tag (`annotated_tag` is not enabled in `[tool.commitizen]`), and `--follow-tags`
+pushes annotated tags only. It silently pushes the commit and skips the tag, so the release
+workflow — which triggers on `v[0-9]+.[0-9]+.[0-9]+` tag pushes — never fires, and the failure
+looks like nothing happening at all. This bit v0.19.0.
+
+Verify the tag actually landed before assuming a release is running:
+
+```sh
+git ls-remote --tags origin | grep vX.Y.Z
+```
 
 ## Before pushing
 
