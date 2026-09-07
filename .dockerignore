@@ -14,3 +14,8 @@ deploy
 # CI-only checkout of the private content repo (release.yml); nothing COPYs it,
 # but no reason to send its nested .git and prose over as build context either.
 stimmo-content
+
+# CI-only checkout of the private overlay repo (release.yml), used only to
+# patch the working tree before the build; the checkout itself is never an
+# image input and its nested .git shouldn't be sent as build context.
+private-overlay
