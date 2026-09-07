@@ -110,6 +110,66 @@
   </div>
 </div>
 
+{% if surface_band_rows %}
+<div class="doc" data-testid="room-count-bands">
+  <div class="doc-head">
+    <h2 class="doc-title">{% trans name=n.name %}What a <em>bilocale</em>, <em>trilocale</em> or <em>quadrilocale</em> costs in {{ name }}{% endtrans %}</h2>
+    <span class="doc-eyebrow">§ {% trans %}Room count{% endtrans %}</span>
+  </div>
+  <p style="font-size:14px;color:var(--ink-2);margin:0 0 14px">
+    {% trans %}Milan listings are often described by room count rather than raw surface — a <em>bilocale</em> (one bedroom plus a living room, typically 45–60 m²), a <em>trilocale</em> (two bedrooms, typically 65–90 m²), or a <em>quadrilocale</em> (three bedrooms, typically 95–130 m²).{% endtrans %}
+  </p>
+  <table class="t">
+    <thead>
+      <tr>
+        <th>{% trans %}Type{% endtrans %}</th>
+        <th class="num">m²</th>
+        <th class="num">€</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in surface_band_rows %}
+      <tr>
+        <td>
+          <i>{{ row.term }}</i>
+          {% if row.optional %}<span class="note" style="display:block;font-size:12px;opacity:0.75">{% trans %}optional — thin demand at this size{% endtrans %}</span>{% endif %}
+        </td>
+        <td class="num mono">{{ row.surface_min | num }} – {{ row.surface_max | num }}</td>
+        <td class="num mono">{{ row.price_range[0] | num }} – {{ row.price_range[1] | num }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div class="note" style="margin-top:14px">
+    {% trans %}These surface ranges are stimmo's own presentational convention for common Milan room-count terms, not an official OMI or Agenzia delle Entrate classification.{% endtrans %}
+  </div>
+  {% if ntn_size_distribution %}
+  <div style="margin-top:22px" data-testid="ntn-size-distribution">
+    <h3 style="font-size:14px;margin:0 0 8px">{% trans %}For comparison: Milan-wide transaction sizes{% endtrans %}</h3>
+    <p style="font-size:13px;color:var(--ink-2);margin:0 0 10px">
+      {% trans name=n.name, quarter=ntn_latest_quarter %}This is Agenzia delle Entrate's official surface-class breakdown for Milano as a whole ({{ quarter }}), not specific to {{ name }} — shown as independent corroboration, not a substitute for the row above.{% endtrans %}
+    </p>
+    <table class="t">
+      <thead>
+        <tr>
+          <th>{% trans %}Surface class (m²){% endtrans %}</th>
+          <th class="num">{% trans %}Share of Milan sales{% endtrans %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for label, pct in ntn_size_distribution %}
+        <tr>
+          <td class="mono">{{ label }}</td>
+          <td class="num mono">{{ pct | share_pct }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
 {% if blurb %}
 <div class="doc">
   <div class="doc-head">

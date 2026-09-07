@@ -79,3 +79,25 @@ def latest_quarter() -> str | None:
     if df.empty:
         return None
     return _label_to_human(df.sort_values("quarter").iloc[-1]["quarter"])
+
+
+def latest_bucket_distribution() -> tuple[str, list[tuple[str, float]]]:
+    """Percentage share of each surface bucket (`SIZE_BUCKETS` order) for the
+    most recent quarter in `milano_ntn_by_size.csv`, plus that quarter's human
+    label.
+
+    Milano capoluogo-level, like the rest of this module — a caller must
+    present this as citywide corroboration, never as a per-neighborhood count
+    (docs/street-pages-plan.md §12.1: the hub type-section's second, separate
+    table).
+    """
+    df = _by_size()
+    if df.empty:
+        return "", []
+    latest_q = df.sort_values("quarter")["quarter"].iloc[-1]
+    rows = df[df["quarter"] == latest_q].set_index("bucket")["ntn"]
+    total = rows.sum()
+    if total <= 0:
+        return _label_to_human(latest_q), []
+    dist = [(label, float(rows.get(label, 0.0)) / total * 100) for label, _lo, _hi in SIZE_BUCKETS]
+    return _label_to_human(latest_q), dist

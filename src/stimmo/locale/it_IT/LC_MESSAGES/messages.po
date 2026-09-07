@@ -113,83 +113,83 @@ msgstr "Est / ovest / misto"
 msgid "North / north-east"
 msgstr "Nord / nord-est"
 
-#: src/stimmo/web/app.py:1038
+#: src/stimmo/web/app.py:1065
 msgid "Invalid import request"
 msgstr "Richiesta di importazione non valida"
 
-#: src/stimmo/web/app.py:1044
+#: src/stimmo/web/app.py:1071
 msgid "Payload too large"
 msgstr "Carico utile troppo grande"
 
-#: src/stimmo/web/app.py:1047
+#: src/stimmo/web/app.py:1074
 msgid "Malformed import payload"
 msgstr "Carico utile di importazione malformato"
 
-#: src/stimmo/web/app.py:1063
+#: src/stimmo/web/app.py:1090
 msgid "Missing source or HTML content"
 msgstr "Mancano fonte o contenuto HTML"
 
-#: src/stimmo/web/app.py:1066
+#: src/stimmo/web/app.py:1093
 msgid "Pasted HTML too large"
 msgstr "HTML incollato troppo grande"
 
-#: src/stimmo/web/app.py:1074
+#: src/stimmo/web/app.py:1101
 msgid "Could not find listing data in pasted HTML"
 msgstr "Impossibile trovare i dati dell'annuncio nell'HTML incollato"
 
-#: src/stimmo/web/app.py:1079
+#: src/stimmo/web/app.py:1106
 msgid "Could not parse listing data"
 msgstr "Impossibile analizzare i dati dell'annuncio"
 
-#: src/stimmo/web/app.py:1083
+#: src/stimmo/web/app.py:1110
 msgid "Could not locate listing fields in pasted data"
 msgstr "Impossibile individuare i campi dell'annuncio nei dati incollati"
 
-#: src/stimmo/web/app.py:1095
+#: src/stimmo/web/app.py:1122
 msgid "Bookmarklet not available"
 msgstr "Bookmarklet non disponibile"
 
-#: src/stimmo/web/app.py:1099
+#: src/stimmo/web/app.py:1126
 msgid "stimmo: could not find listing data on this page"
 msgstr "stimmo: impossibile trovare i dati dell'annuncio in questa pagina"
 
-#: src/stimmo/web/app.py:1153
+#: src/stimmo/web/app.py:1180
 msgid "OMI low"
 msgstr "OMI basso"
 
-#: src/stimmo/web/app.py:1154
+#: src/stimmo/web/app.py:1181
 msgid "Ask low"
 msgstr "Prezzo richiesto basso"
 
-#: src/stimmo/web/app.py:1155
+#: src/stimmo/web/app.py:1182
 msgid "Ask mid"
 msgstr "Prezzo richiesto medio"
 
-#: src/stimmo/web/app.py:1156
+#: src/stimmo/web/app.py:1183
 msgid "OMI high"
 msgstr "OMI alto"
 
-#: src/stimmo/web/app.py:1157
+#: src/stimmo/web/app.py:1184
 msgid "Ask high"
 msgstr "Prezzo richiesto alto"
 
-#: src/stimmo/web/app.py:1247
+#: src/stimmo/web/app.py:1274
 #, python-format
 msgid "Geocoding failed: %(e)s"
 msgstr "Geocodifica fallita: %(e)s"
 
-#: src/stimmo/web/app.py:1251 src/stimmo/web/app.py:1337
-#: src/stimmo/web/app.py:1382
+#: src/stimmo/web/app.py:1278 src/stimmo/web/app.py:1364
+#: src/stimmo/web/app.py:1409
 msgid "Address is outside the Milano comune — no OMI zone."
 msgstr "L'indirizzo è fuori dal comune di Milano — nessuna zona OMI."
 
-#: src/stimmo/web/app.py:1290 src/stimmo/web/app.py:1344
-#: src/stimmo/web/app.py:1389
+#: src/stimmo/web/app.py:1317 src/stimmo/web/app.py:1371
+#: src/stimmo/web/app.py:1416
 #, python-format
 msgid "OMI lookup failed: %(e)s"
 msgstr "Ricerca OMI fallita: %(e)s"
 
-#: src/stimmo/web/app.py:1332 src/stimmo/web/app.py:1375
+#: src/stimmo/web/app.py:1359 src/stimmo/web/app.py:1402
 msgid "Invalid or expired share link."
 msgstr "Link di condivisione non valido o scaduto."
 
@@ -1385,23 +1385,91 @@ msgstr ""
 
 #: src/stimmo/web/templates/neighborhood_detail.html:116
 #, python-format
+msgid ""
+"What a <em>bilocale</em>, <em>trilocale</em> or <em>quadrilocale</em> "
+"costs in %(name)s"
+msgstr ""
+"Quanto costa un <em>bilocale</em>, <em>trilocale</em> o "
+"<em>quadrilocale</em> a %(name)s"
+
+#: src/stimmo/web/templates/neighborhood_detail.html:117
+msgid "Room count"
+msgstr "Numero di vani"
+
+#: src/stimmo/web/templates/neighborhood_detail.html:120
+msgid ""
+"Milan listings are often described by room count rather than raw surface "
+"— a <em>bilocale</em> (one bedroom plus a living room, typically 45–60 "
+"m²), a <em>trilocale</em> (two bedrooms, typically 65–90 m²), or a "
+"<em>quadrilocale</em> (three bedrooms, typically 95–130 m²)."
+msgstr ""
+"Gli annunci milanesi vengono spesso descritti per numero di vani "
+"piuttosto che per superficie lorda — un <em>bilocale</em> (una camera da "
+"letto più un soggiorno, tipicamente 45–60 m²), un <em>trilocale</em> (due"
+" camere da letto, tipicamente 65–90 m²), o un <em>quadrilocale</em> (tre "
+"camere da letto, tipicamente 95–130 m²)."
+
+#: src/stimmo/web/templates/neighborhood_detail.html:125
+msgid "Type"
+msgstr "Tipologia"
+
+#: src/stimmo/web/templates/neighborhood_detail.html:135
+msgid "optional — thin demand at this size"
+msgstr "opzionale — domanda scarsa per questa metratura"
+
+#: src/stimmo/web/templates/neighborhood_detail.html:144
+msgid ""
+"These surface ranges are stimmo's own presentational convention for "
+"common Milan room-count terms, not an official OMI or Agenzia delle "
+"Entrate classification."
+msgstr ""
+"Queste fasce di superficie sono una convenzione espositiva di stimmo per "
+"i comuni termini milanesi di numero di vani, non una classificazione "
+"ufficiale OMI o dell'Agenzia delle Entrate."
+
+#: src/stimmo/web/templates/neighborhood_detail.html:148
+msgid "For comparison: Milan-wide transaction sizes"
+msgstr "Per confronto: metrature delle transazioni a livello milanese"
+
+#: src/stimmo/web/templates/neighborhood_detail.html:150
+#, python-format
+msgid ""
+"This is Agenzia delle Entrate's official surface-class breakdown for "
+"Milano as a whole (%(quarter)s), not specific to %(name)s — shown as "
+"independent corroboration, not a substitute for the row above."
+msgstr ""
+"Questa è la ripartizione ufficiale delle classi di superficie "
+"dell'Agenzia delle Entrate per Milano nel suo complesso (%(quarter)s), "
+"non specifica per %(name)s — mostrata come riscontro indipendente, non "
+"come sostituto della riga precedente."
+
+#: src/stimmo/web/templates/neighborhood_detail.html:155
+msgid "Surface class (m²)"
+msgstr "Classe di superficie (m²)"
+
+#: src/stimmo/web/templates/neighborhood_detail.html:156
+msgid "Share of Milan sales"
+msgstr "Quota delle vendite milanesi"
+
+#: src/stimmo/web/templates/neighborhood_detail.html:176
+#, python-format
 msgid "About %(name)s"
 msgstr "Informazioni su %(name)s"
 
-#: src/stimmo/web/templates/neighborhood_detail.html:117
+#: src/stimmo/web/templates/neighborhood_detail.html:177
 msgid "Local context"
 msgstr "Contesto locale"
 
-#: src/stimmo/web/templates/neighborhood_detail.html:129
+#: src/stimmo/web/templates/neighborhood_detail.html:189
 msgid "Check a real listing here"
 msgstr "Controlla un annuncio reale qui"
 
-#: src/stimmo/web/templates/neighborhood_detail.html:130
+#: src/stimmo/web/templates/neighborhood_detail.html:190
 #: src/stimmo/web/templates/zone_detail.html:120
 msgid "Estimator"
 msgstr "Stimatore"
 
-#: src/stimmo/web/templates/neighborhood_detail.html:132
+#: src/stimmo/web/templates/neighborhood_detail.html:192
 #, python-format
 msgid ""
 "Have an address or a listing in %(name)s? Run it through the full fair-"
@@ -1410,26 +1478,26 @@ msgstr ""
 "Hai un indirizzo o un annuncio in %(name)s? Esegui il controllo completo "
 "del prezzo equo — fascia OMI, coefficienti e verdetto."
 
-#: src/stimmo/web/templates/neighborhood_detail.html:135
+#: src/stimmo/web/templates/neighborhood_detail.html:195
 #: src/stimmo/web/templates/zone_detail.html:125
 msgid "Check a listing"
 msgstr "Verifica un annuncio"
 
-#: src/stimmo/web/templates/neighborhood_detail.html:142
+#: src/stimmo/web/templates/neighborhood_detail.html:202
 msgid "Official OMI zone data"
 msgstr "Dati ufficiali zona OMI"
 
-#: src/stimmo/web/templates/neighborhood_detail.html:143
+#: src/stimmo/web/templates/neighborhood_detail.html:203
 msgid "Source"
 msgstr "Fonte"
 
-#: src/stimmo/web/templates/neighborhood_detail.html:151
+#: src/stimmo/web/templates/neighborhood_detail.html:211
 #: src/stimmo/web/templates/zone_detail.html:94
 #: src/stimmo/web/templates/zones_index.html:84
 msgid "Source."
 msgstr "Fonte."
 
-#: src/stimmo/web/templates/neighborhood_detail.html:151
+#: src/stimmo/web/templates/neighborhood_detail.html:211
 #: src/stimmo/web/templates/zone_detail.html:94
 msgid ""
 "OMI quotations and zone boundaries — Agenzia delle Entrate / Comune di "
@@ -2082,27 +2150,4 @@ msgstr ""
 #: src/stimmo/web/templates/zones_index.html:89
 msgid "Check a listing against these bands"
 msgstr "Verifica un annuncio rispetto a queste fasce"
-
-#~ msgid "1 = monolocale · 2 = bilocale · 3 = trilocale … (optional)"
-#~ msgstr "1 = monolocale · 2 = bilocale · 3 = trilocale … (facoltativo)"
-
-#~ msgid ""
-#~ "1 = monolocale · 2 = bilocale "
-#~ "· 3 = trilocale … (optional) — "
-#~ "cramped-layout penalty for 3+ locali:"
-#~ " −2 % if &lt;22 m²/locale, −4 %"
-#~ " if &lt;18 m²/locale"
-#~ msgstr ""
-
-#~ msgid "Amenity query failed: %(e)s; using zero score"
-#~ msgstr "Query servizi fallita: %(e)s; punteggio zero utilizzato"
-
-#~ msgid "No data leaves your browser until submit"
-#~ msgstr "Nessun dato lascia il tuo browser fino all'invio"
-
-#~ msgid "estimate"
-#~ msgstr "stima"
-
-#~ msgid "Milan OMI zones"
-#~ msgstr "Zone OMI di Milano"
 

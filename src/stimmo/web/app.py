@@ -62,6 +62,7 @@ from stimmo.web import labels as _labels
 from stimmo.web import metrics as _metrics
 from stimmo.web import ogimage as _ogimage
 from stimmo.web import share as _share
+from stimmo.web import surface_bands as _surface_bands
 from stimmo.web.share_store import SqliteShareStore
 
 TEMPLATES_DIR = Path(__file__).parent / "templates"
@@ -942,6 +943,23 @@ def _neighborhood_midpoint(n: neighborhoods.Neighborhood) -> float | None:
     return (band[0] + band[1]) / 2 if band else None
 
 
+def _surface_band_rows(band: tuple[float, float]) -> list[dict]:
+    """One row per room-count term (docs/street-pages-plan.md §12.1) for the hub
+    type-section, pairing `surface_bands.ROOM_COUNT_SURFACE_BANDS` with the
+    price range it implies against this neighborhood's OMI band. Pure display
+    glue — no valuation logic, no `adjustments.py` involved."""
+    return [
+        {
+            "term": row.term,
+            "surface_min": row.surface_min,
+            "surface_max": row.surface_max,
+            "optional": row.optional,
+            "price_range": _surface_bands.price_range_for_row(row, band),
+        }
+        for row in _surface_bands.ROOM_COUNT_SURFACE_BANDS
+    ]
+
+
 def _nearby_neighborhoods(n: neighborhoods.Neighborhood, count: int = 3) -> list[dict]:
     """The `count` other curated neighborhoods whose €/m² midpoint sits closest to
     `n`'s.
@@ -972,12 +990,14 @@ def _render_neighborhood_detail(request: Request, lang: str, slug: str) -> HTMLR
         raise HTTPException(status_code=404, detail="Unknown neighborhood")
 
     zone_names = dict(zones.list_zones())
+    band = _neighborhood_price_band(n)
+    ntn_quarter, ntn_distribution = ntn.latest_bucket_distribution()
     return _tpl(
         request,
         "neighborhood_detail.html",
         {
             "n": n,
-            "band": _neighborhood_price_band(n),
+            "band": band,
             "spans_multiple_zones": len(n.zone_codes) > 1,
             "city_avg_eur_m2": omi.citywide_average(),
             "nearby": _nearby_neighborhoods(n),
@@ -985,6 +1005,13 @@ def _render_neighborhood_detail(request: Request, lang: str, slug: str) -> HTMLR
             "zone_names": zone_names,
             "blurb": n.blurb_it if lang == "it" else n.blurb_en,
             "semester": omi.semester(),
+            # Room-count section: "quanto costa un bilocale /
+            # trilocale / quadrilocale" section. Absent entirely (None, not an
+            # empty list) when this neighborhood has no bundled OMI band — the
+            # section renders only where there is a real band.
+            "surface_band_rows": _surface_band_rows(band) if band else None,
+            "ntn_size_distribution": ntn_distribution if band else None,
+            "ntn_latest_quarter": ntn_quarter,
         },
         seo_route="neighborhood_detail",
         seo_params={"slug_it": n.slug_it, "slug_en": n.slug_en},
