@@ -650,6 +650,18 @@ def neighborhood_url(n: neighborhoods.Neighborhood, lang: str) -> str:
 
 templates.env.globals["neighborhood_url"] = neighborhood_url
 
+
+def _fmt_share_pct(pct: float) -> str:
+    """Locale-formatted percentage with one decimal, no sign prefix. Unlike
+    `fmt_pct` (adjustment deltas, always signed), a share of a whole is never
+    negative and a "+64.1%" reading would be wrong."""
+    from babel.numbers import format_decimal
+
+    return format_decimal(pct, format="0.0", locale=_current_locale.get()) + "%"
+
+
+templates.env.filters["share_pct"] = _fmt_share_pct
+
 # HTML-rendering endpoints that deliberately opt into _seo_urls's pre-registry
 # fallback (same suffix mirrored across every supported language) instead of a
 # registry entry — because they're not indexable content pages (import wizard,
@@ -944,7 +956,7 @@ def _neighborhood_midpoint(n: neighborhoods.Neighborhood) -> float | None:
 
 
 def _surface_band_rows(band: tuple[float, float]) -> list[dict]:
-    """One row per room-count term (docs/street-pages-plan.md §12.1) for the hub
+    """One row per room-count term for the hub
     type-section, pairing `surface_bands.ROOM_COUNT_SURFACE_BANDS` with the
     price range it implies against this neighborhood's OMI band. Pure display
     glue — no valuation logic, no `adjustments.py` involved."""

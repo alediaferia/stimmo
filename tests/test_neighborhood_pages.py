@@ -368,7 +368,7 @@ class TestStartupValidation:
 
 
 # ---------------------------------------------------------------------------
-# Wave 3 (docs/street-pages-plan.md §12): "quanto costa un bilocale / trilocale
+# Room-count section: "quanto costa un bilocale / trilocale
 # / quadrilocale" hub type-section. No new URLs — this is purely a new section
 # on the existing neighborhood_detail template, gated on the same OMI band the
 # rest of the page already requires.
@@ -420,7 +420,7 @@ class TestRoomCountSection:
 
 
 def test_surface_bands_module_does_not_import_adjustments():
-    # Wave 3 hard rule (docs/street-pages-plan.md §12.2): the room-count surface
+    # Hard rule: the room-count surface
     # mapping is presentation glue, not a valuation coefficient — it must never
     # import valuation/adjustments.py, the single tuning surface for the engine.
     # AST-based (not a substring check) so the module's own docstring is free to

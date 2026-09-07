@@ -1,7 +1,7 @@
 """Presentation-layer mapping of Milan room-count terms to surface ranges.
 
 Backs the "quanto costa un bilocale / trilocale / quadrilocale" section on
-`neighborhood_detail.html` (docs/street-pages-plan.md §12). This is deliberately
+`neighborhood_detail.html`. This is deliberately
 **not** `valuation/adjustments.py`, which is the single tuning surface for the
 valuation engine and holds coefficients only — this module multiplies no
 `Estimate`, produces no `AdjustmentBreakdown`, and enters no valuation pipeline.
@@ -28,7 +28,8 @@ class RoomCountRow(NamedTuple):
     optional: bool  # thin-demand row (monolocale) — shown but flagged as such
 
 
-# Order matches the table in docs/street-pages-plan.md §12.1.
+# One documented convention, stated on the page itself — see the note rendered
+# above the table in neighborhood_detail.html.
 ROOM_COUNT_SURFACE_BANDS: list[RoomCountRow] = [
     RoomCountRow(term="monolocale", surface_min=30, surface_max=45, optional=True),
     RoomCountRow(term="bilocale", surface_min=45, surface_max=60, optional=False),

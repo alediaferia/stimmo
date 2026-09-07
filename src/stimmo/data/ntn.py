@@ -88,7 +88,7 @@ def latest_bucket_distribution() -> tuple[str, list[tuple[str, float]]]:
 
     Milano capoluogo-level, like the rest of this module — a caller must
     present this as citywide corroboration, never as a per-neighborhood count
-    (docs/street-pages-plan.md §12.1: the hub type-section's second, separate
+    (the hub type-section's second, separate
     table).
     """
     df = _by_size()
