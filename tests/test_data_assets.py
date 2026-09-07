@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from stimmo.data import history, ntn, omi, zones
 from stimmo.models import OmiCondition, PropertyType
 
@@ -69,6 +71,15 @@ def test_ntn_bucket_for_known_surface():
     label, points = ntn.by_bucket_quarters(80.0, last_n=4)
     assert label == "50 -| 85"
     assert len(points) <= 4
+
+
+def test_ntn_latest_bucket_distribution_sums_to_one_hundred():
+    quarter, dist = ntn.latest_bucket_distribution()
+    assert quarter
+    labels = [label for label, _pct in dist]
+    assert labels == [label for label, _lo, _hi in ntn.SIZE_BUCKETS]
+    assert all(pct >= 0 for _label, pct in dist)
+    assert sum(pct for _label, pct in dist) == pytest.approx(100.0)
 
 
 def test_zone_fascia_index_matches_zone_code_prefix():

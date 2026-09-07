@@ -365,3 +365,77 @@ class TestStartupValidation:
                     pass
         finally:
             nb_module._neighborhoods_with_content.cache_clear()
+
+
+# ---------------------------------------------------------------------------
+# Wave 3 (docs/street-pages-plan.md §12): "quanto costa un bilocale / trilocale
+# / quadrilocale" hub type-section. No new URLs — this is purely a new section
+# on the existing neighborhood_detail template, gated on the same OMI band the
+# rest of the page already requires.
+# ---------------------------------------------------------------------------
+class TestRoomCountSection:
+    def test_renders_on_a_neighborhood_with_a_band(self, client: TestClient):
+        n = nb_module.neighborhood_for_slug("brera", "it")
+        body = client.get(_url(n, "it")).text
+        assert 'data-testid="room-count-bands"' in body
+        assert "bilocale" in body
+        assert "trilocale" in body
+        assert "quadrilocale" in body
+
+    def test_absent_on_a_neighborhood_without_a_band(self, client: TestClient):
+        # Chiaravalle's only zone (R2) has a polygon but no bundled Compr_min/max
+        # rows (see test_zone_quotes_empty_for_zone_with_no_bundled_data in
+        # test_data_assets.py), so _neighborhood_price_band(n) is None for it —
+        # a real curated case, not a monkeypatched stand-in.
+        n = nb_module.neighborhood_for_slug("chiaravalle", "it")
+        from stimmo.web.app import _neighborhood_price_band
+
+        assert _neighborhood_price_band(n) is None
+        body = client.get(_url(n, "it")).text
+        assert 'data-testid="room-count-bands"' not in body
+        assert 'data-testid="ntn-size-distribution"' not in body
+
+    def test_ntn_distribution_table_present_alongside_the_room_count_table(
+        self, client: TestClient
+    ):
+        n = nb_module.neighborhood_for_slug("brera", "it")
+        body = client.get(_url(n, "it")).text
+        assert 'data-testid="ntn-size-distribution"' in body
+        # The two tables must stay visibly distinct objects (§12.1) — the
+        # NTN bucket labels (data/ntn.py:SIZE_BUCKETS), not the room-count
+        # terms, identify the corroboration table.
+        assert "50 -| 85" in body
+
+    def test_price_range_matches_surface_bands_times_omi_band(self, client: TestClient):
+        from stimmo.web import surface_bands
+        from stimmo.web.app import _neighborhood_price_band
+
+        n = nb_module.neighborhood_for_slug("brera", "it")
+        band = _neighborhood_price_band(n)
+        bilocale = next(r for r in surface_bands.ROOM_COUNT_SURFACE_BANDS if r.term == "bilocale")
+        lo, hi = surface_bands.price_range_for_row(bilocale, band)
+        body = client.get(_url(n, "it")).text
+        assert _eur(lo) in body
+        assert _eur(hi) in body
+
+
+def test_surface_bands_module_does_not_import_adjustments():
+    # Wave 3 hard rule (docs/street-pages-plan.md §12.2): the room-count surface
+    # mapping is presentation glue, not a valuation coefficient — it must never
+    # import valuation/adjustments.py, the single tuning surface for the engine.
+    # AST-based (not a substring check) so the module's own docstring is free to
+    # *talk about* adjustments.py without tripping this test.
+    import ast
+    import inspect
+
+    from stimmo.web import surface_bands
+
+    tree = ast.parse(inspect.getsource(surface_bands))
+    imported_modules: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            imported_modules.update(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            imported_modules.add(node.module)
+            imported_modules.update(f"{node.module}.{alias.name}" for alias in node.names)
+    assert not any("adjustments" in m for m in imported_modules)
