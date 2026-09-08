@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 First public release. Milan-only OMI fair-price estimator with FastAPI + Jinja
 front end, OSM amenity counting via Overpass, and Nominatim geocoding.
 
+## v0.21.0 (2026-09-08)
+
+### Feat
+
+- **web**: add room count price section
+
+### Fix
+
+- **scripts**: guard refresh_omi against semester downgrade
+
+### Refactor
+
+- **web**: give the room-count section its own share filter
+
 ## v0.20.0 (2026-09-06)
 
 ## v0.19.1 (2026-09-01)
