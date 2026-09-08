@@ -128,6 +128,37 @@ jobs:
             exit 1
           fi
 
+      # The `test` job above ran against the public tree. When an overlay is
+      # applied, the tree that becomes the image is NOT the tree that was
+      # tested, so test it here too - a release should not ship code nothing
+      # ran. Skipped entirely when no overlay applied, since then the two trees
+      # are identical and `test` already covered it.
+      #
+      # Output is captured, not printed, for the same reason as the apply step:
+      # this repository's run logs are public, and pytest names the files and
+      # tests it runs. Only a pass/fail line is surfaced.
+      - name: Set up uv for the post-overlay test run
+        if: env.OVERLAY_ENABLED == 'true'
+        uses: astral-sh/setup-uv@v8.1.0
+
+      - name: Test the overlaid tree
+        if: env.OVERLAY_ENABLED == 'true'
+        run: |
+          set -euo pipefail
+          {
+            uv sync --all-groups
+            # .mo files are gitignored, so a fresh checkout has none and the
+            # locale tests fail for reasons unrelated to the code under test.
+            uv run pybabel compile -d src/stimmo/locale
+            uv run pytest -q
+          } > "$RUNNER_TEMP/overlay-test.log" 2>&1 && rc=0 || rc=$?
+          if [ "$rc" -eq 0 ]; then
+            echo "Overlaid tree passed its test suite."
+          else
+            echo "::error::The overlaid tree failed its test suite, so this release was not built. Diagnose in the overlay's own repository, which runs the same suite - no detail is printed here to avoid disclosing private content in this public repo's run log."
+            exit 1
+          fi
+
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
