@@ -88,6 +88,52 @@ Adding or changing UI strings: edit the template, run `pybabel extract` + `pybab
 
 **Translation invariant — never hand-write `msgstr` values.** All Italian translations must be produced by `scripts/translate_po.py`. Writing Italian text directly into `.po` files bypasses the approved translation pipeline and must not happen, even for short or "obvious" strings.
 
+### SEO surface and the neighbourhood pages
+
+stimmo publishes an indexable page family beyond the valuation form: OMI zone pages
+(`/{lang}/zones`, `/{lang}/zones/{code}`) and **neighbourhood price pages**
+(`/it/milano/<slug>-prezzi-al-mq`, `/en/milan/<slug>-property-prices`). The neighbourhood pages
+translate colloquial Milan neighbourhood names — which do not appear anywhere in OMI's own
+`Zona_Descr` strings — into the zone codes the engine understands.
+
+- **`data/neighborhoods.py` is the alias layer.** A curated neighbourhood ↔ zone-code table. It
+  makes no network calls at import or call time. OMI polygons are coarser than colloquial
+  neighbourhoods, so several zones are **shared** by two neighbourhoods (C12 Isola + Porta Venezia,
+  C14 Isola + Porta Nuova, C18 Navigli + Tortona/Solari). The page discloses the sharing in prose;
+  do not try to resolve it with a redirect or a canonical, both of which need a single target.
+  `neighborhoods_for_zone()` / `_BY_ZONE` deliberately read the **blurb-less** structural table so
+  broken content can never break a zone page.
+
+- **`_SEO_ROUTES` / `_register_seo_route()` in `web/app.py` is the single registry** of indexable
+  routes. Path suffixes are **not** language-invariant — `/it/milano/brera-prezzi-al-mq` and
+  `/en/milan/brera-property-prices` are the same page — so per-language slugs, hreflang alternates,
+  canonicals and the sitemap all derive from this registry. A new HTML endpoint must make an
+  explicit SEO decision here; a test enforces it.
+
+- **Editorial prose lives outside this repo.** Neighbourhood blurbs are in the private
+  `alediaferia/stimmo-content` repo, not here, for licensing reasons (this repo is Apache-2.0 and
+  competitors already copy OMI strings verbatim). `var/content/neighborhoods.json` is git-ignored
+  with a deliberate `.gitkeep` carve-out; a fresh clone renders the pages **without** blurbs, which
+  is the intended state, not a bug.
+  - Loaded by `data/neighborhoods.py` from `$STIMMO_CONTENT_DIR` (default: repo-local
+    `var/content/`, which inside the image resolves to `/app/var/content/` — hence no env var in
+    production). The loader is `functools.cache`d per process: **restart the server** after editing
+    the JSON.
+  - The release workflow checks `stimmo-content` out on the runner (token `CONTENT_REPO_TOKEN`),
+    validates the JSON, and bakes it into the image. Consequence: **a blurb-only change still needs
+    a stimmo release** — an otherwise-empty version bump.
+
+- **Sitemap gating is partial, not a kill switch.** A neighbourhood enters the sitemap **iff both**
+  `blurb_it` and `blurb_en` are non-empty — but the route still **resolves and renders**, and the
+  page stays linked from the zone pages. A gated slug is therefore crawlable and can be indexed
+  anyway; this is deliberate (see the comment on the `neighborhood_detail` registration), and it is
+  why a "staggered launch" measured through this gate does not produce a clean experiment.
+  `chiaravalle` is gated today: zone R2 has no OMI quotations, so its price band renders empty.
+
+SEO strategy, Search Console tooling and competitive research live in the private
+`stimmo-growth` repo — deliberately not here. Keep strategy, keyword research and traffic data out
+of this repository.
+
 ### Observability
 
 `web/metrics.py` wraps the top-level ASGI dispatcher with a Prometheus middleware. Collectors:
