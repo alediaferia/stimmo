@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from stimmo.data import history, ntn, omi, zones
 from stimmo.models import OmiCondition, PropertyType
 
@@ -69,3 +71,35 @@ def test_ntn_bucket_for_known_surface():
     label, points = ntn.by_bucket_quarters(80.0, last_n=4)
     assert label == "50 -| 85"
     assert len(points) <= 4
+
+
+def test_ntn_latest_bucket_distribution_sums_to_one_hundred():
+    quarter, dist = ntn.latest_bucket_distribution()
+    assert quarter
+    labels = [label for label, _pct in dist]
+    assert labels == [label for label, _lo, _hi in ntn.SIZE_BUCKETS]
+    assert all(pct >= 0 for _label, pct in dist)
+    assert sum(pct for _label, pct in dist) == pytest.approx(100.0)
+
+
+def test_zone_fascia_index_matches_zone_code_prefix():
+    # Every zone with bundled Fascia data uses its own first character as the
+    # fascia letter (B12 -> B, D10 -> D, ...) — WP-7's zones index groups by
+    # this, with a code[0] fallback for zones absent from the CSV (e.g. R2).
+    idx = omi.zone_fascia_index()
+    assert idx, "no fascia data found"
+    for code, fascia in idx.items():
+        assert code.startswith(fascia)
+
+
+def test_zone_quotes_returns_sorted_property_condition_combos():
+    quotes = omi.zone_quotes("D10")
+    assert quotes
+    for q in quotes:
+        assert q.zone_code == "D10"
+        assert q.eur_m2_max >= q.eur_m2_min
+
+
+def test_zone_quotes_empty_for_zone_with_no_bundled_data():
+    # R2 is a "rural"/park OMI zone with a polygon but no Compr_min/max rows.
+    assert omi.zone_quotes("R2") == []
