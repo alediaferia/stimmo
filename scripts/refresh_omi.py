@@ -4,11 +4,31 @@ Discovers the latest "Quotazioni Immobiliari OMI: Compravendita" + "Zone e Perim
 datasets via the CKAN API and rewrites the bundled CSV / GeoJSON in place.
 
 Run: `uv run python scripts/refresh_omi.py`
+
+Provenance of the currently bundled assets (established 2026-09-06)
+-------------------------------------------------------------------
+The bundled 2025-2 vintage did **not** come from this script — it came from
+`scripts/import_omi_agenziaentrate.py`, fed by a manual Agenzia Entrate download.
+
+Evidence: `refresh_valori()` rebuilds `milano_omi_history.csv` from `candidates[:8]`,
+which is always a *contiguous* run of the newest CKAN semesters. The bundled history
+holds 2021-2, 2022-1, 2022-2, 2023-1, 2023-2, 2024-1, 2024-2, 2025-2 — a gap at 2025-1.
+Only `import_omi_agenziaentrate.update_history()` can produce that shape: it appends one
+semester onto the existing file and then trims to the last 8. So a CKAN run laid down
+2021-1…2024-2 (8 contiguous), the Agenzia Entrate import added 2025-2, and the trim
+dropped 2021-1 — leaving exactly the eight semesters bundled today.
+
+Consequence: CKAN lags Agenzia Entrate. As of 2026-09-06 the newest CKAN compravendita
+package is 2024-2, two semesters behind the bundled 2025-2, so an unguarded run of this
+script would silently *downgrade* the bundled data. Hence the check in `refresh_valori()`;
+when it fires, the fix is almost always to use the Agenzia Entrate importer instead.
 """
 
 from __future__ import annotations
 
+import argparse
 import io
+import json
 import re
 import sys
 import zipfile
@@ -70,7 +90,45 @@ def _fetch_semester(pkg: dict) -> pd.DataFrame:
     return pd.read_csv(io.BytesIO(raw), sep=";", dtype=str)
 
 
-def refresh_valori() -> str:
+def _bundled_semester(assets_dir: Path | None = None) -> tuple[int, int] | None:
+    """Semester recorded in the bundled manifest, or None if absent/unreadable.
+
+    Read straight off disk rather than through `stimmo.data.omi.semester()`: that one is
+    `@cache`d and resolves via `importlib.resources`, which would couple this script to the
+    installed runtime package for no gain.
+    """
+    assets_dir = assets_dir if assets_dir is not None else ASSETS
+    manifest = assets_dir / "manifest.json"
+    try:
+        raw = json.loads(manifest.read_text())
+    except (OSError, ValueError):
+        return None
+    value = raw.get("semester") if isinstance(raw, dict) else None
+    return _semester_key(value) if isinstance(value, str) else None
+
+
+def _guard_downgrade(
+    candidate: tuple[int, int],
+    bundled: tuple[int, int] | None,
+    allow_downgrade: bool = False,
+) -> None:
+    """Refuse to overwrite bundled assets with an older semester.
+
+    An equal semester passes (re-running repairs a corrupted asset) and so does a missing or
+    unparseable manifest (nothing to downgrade from on a bootstrap).
+    """
+    if bundled is None or allow_downgrade or candidate >= bundled:
+        return
+    raise SystemExit(
+        f"Refusing to downgrade bundled OMI data: newest CKAN semester is "
+        f"{candidate[0]}-{candidate[1]}, but the bundled manifest.json says "
+        f"{bundled[0]}-{bundled[1]}. CKAN lags Agenzia Entrate — the newer vintage most "
+        f"likely came from scripts/import_omi_agenziaentrate.py; use that importer instead. "
+        f"Pass --allow-downgrade to overwrite anyway (deliberate rollback)."
+    )
+
+
+def refresh_valori(allow_downgrade: bool = False) -> str:
     pkgs = _ckan_search("quotazioni immobiliari OMI compravendita")
     candidates = [
         p for p in pkgs if "compravendita-semestre" in p["name"] and _semester_key(p["name"])
@@ -81,6 +139,7 @@ def refresh_valori() -> str:
 
     latest = candidates[0]
     latest_sem = _semester_key(latest["name"])
+    _guard_downgrade(latest_sem, _bundled_semester(), allow_downgrade=allow_downgrade)
     print(f"  valori: {latest['title']} (semester {latest_sem})")
     df = _fetch_semester(latest)
     out = ASSETS / "milano_omi_valori.csv"
@@ -210,10 +269,19 @@ def refresh_ntn() -> None:
         print(f"    → {out} ({out.stat().st_size:,} bytes, {len(df)} rows)")
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument(
+        "--allow-downgrade",
+        action="store_true",
+        help="overwrite bundled assets even when CKAN's newest semester is older "
+        "than the bundled one (deliberate rollback)",
+    )
+    args = parser.parse_args(argv)
+
     ASSETS.mkdir(parents=True, exist_ok=True)
     print("Refreshing bundled OMI assets …")
-    sem = refresh_valori()
+    sem = refresh_valori(allow_downgrade=args.allow_downgrade)
     refresh_zones()
     refresh_ntn()
     print()
