@@ -84,6 +84,52 @@ def available_conditions(zone_code: str, ptype: PropertyType) -> list[OmiConditi
 
 
 @cache
+def zone_fascia_index() -> dict[str, str]:
+    """zone_code -> OMI Fascia letter (B/C/D/E), sourced from the bundled CSV.
+
+    Used to group zones on the /{lang}/zones index page. A handful of zones
+    (e.g. the "R" rural/park zones) carry no Compr_min/max rows at all and are
+    absent here — callers should fall back to the zone code's own first
+    character for those.
+    """
+    df = _df()
+    g = df.dropna(subset=["Fascia"]).groupby("Zona")["Fascia"].first()
+    return {str(z): str(f) for z, f in g.items()}
+
+
+def zone_quotes(zone_code: str) -> list[OmiQuote]:
+    """All available (property type × condition) OMI quotes for a zone.
+
+    Display-only aggregation over the bundled CSV for the zone detail page —
+    no pricing/adjustment logic, just every quoted cell for the zone sorted
+    for a stable table order. Returns an empty list for zones with no bundled
+    quotations (e.g. the "R" rural/park zones).
+    """
+    df = _df()
+    rows = df[(df["Zona"] == zone_code) & df["Compr_min"].notna()]
+    out: list[OmiQuote] = []
+    for _, r in rows.iterrows():
+        try:
+            ptype = PropertyType(r["Descr_Tipologia"])
+            cond = OmiCondition(r["Stato"])
+        except ValueError:
+            continue
+        out.append(
+            OmiQuote(
+                zone_code=zone_code,
+                property_type=ptype,
+                condition=cond,
+                eur_m2_min=float(r["Compr_min"]),
+                eur_m2_max=float(r["Compr_max"]),
+                semester=semester(),
+            )
+        )
+    ptype_order = {p: i for i, p in enumerate(PropertyType)}
+    out.sort(key=lambda q: (ptype_order[q.property_type], _CONDITION_RANK[q.condition]))
+    return out
+
+
+@cache
 def zone_price_index(
     ptype: PropertyType = PropertyType.CIVILI,
     condition: OmiCondition = OmiCondition.NORMALE,
@@ -105,3 +151,21 @@ def zone_price_index(
         if z not in out:
             out[z] = (float(r["Compr_min"]), float(r["Compr_max"]))
     return out
+
+
+def citywide_average(
+    ptype: PropertyType = PropertyType.CIVILI,
+    condition: OmiCondition = OmiCondition.NORMALE,
+) -> float | None:
+    """Simple mean of each zone's €/m² midpoint, across every zone with a quote.
+
+    Display-only aggregate for the neighborhood pages' "vs. Milano average"
+    comparison — not part of the valuation tuning surface (see
+    valuation/adjustments.py for the one place multipliers live). Returns None
+    only if the bundled data has no quotes at all for ptype/condition.
+    """
+    bands = list(zone_price_index(ptype, condition).values())
+    if not bands:
+        return None
+    midpoints = [(lo + hi) / 2 for lo, hi in bands]
+    return sum(midpoints) / len(midpoints)

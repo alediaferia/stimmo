@@ -6,6 +6,8 @@ import hashlib
 import json
 import os
 import re
+from collections.abc import Callable, Iterable, Mapping
+from dataclasses import dataclass
 from datetime import date
 from functools import lru_cache
 from importlib.metadata import version as _pkg_version
@@ -15,11 +17,12 @@ from urllib.parse import urlparse
 from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi import Path as FPath
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import ValidationError
 
-from stimmo.data import amenities, geocode, history, ntn, omi, zones
+from stimmo.data import amenities, geocode, history, neighborhoods, ntn, omi, zones
 from stimmo.data.importers import immobiliare
 from stimmo.i18n import (
     LANG_TO_LOCALE,
@@ -59,6 +62,7 @@ from stimmo.web import labels as _labels
 from stimmo.web import metrics as _metrics
 from stimmo.web import ogimage as _ogimage
 from stimmo.web import share as _share
+from stimmo.web import surface_bands as _surface_bands
 from stimmo.web.share_store import SqliteShareStore
 
 TEMPLATES_DIR = Path(__file__).parent / "templates"
@@ -107,14 +111,24 @@ def _fmt_num(n: float) -> str:
     return format_decimal(round(n), format="#,##0", locale=_current_locale.get())
 
 
-def _semester_months_old(semester: str) -> int:
+def _semester_start_date(semester: str) -> date | None:
+    """First calendar day of an OMI semester string ("2025-2" -> 2025-07-01, "2025-1" ->
+    2025-01-01). Shared by _semester_months_old (freshness banner) and _omi_lastmod
+    (sitemap <lastmod> for the OMI-band pages) — both need the same parse, just a
+    different use of the result."""
     try:
         year_str, half_str = semester.split("-")
-        sem_start = date(int(year_str), 1 if half_str == "1" else 7, 1)
-        today = date.today()
-        return max(0, (today.year - sem_start.year) * 12 + (today.month - sem_start.month))
+        return date(int(year_str), 1 if half_str == "1" else 7, 1)
     except (ValueError, AttributeError):
+        return None
+
+
+def _semester_months_old(semester: str) -> int:
+    sem_start = _semester_start_date(semester)
+    if sem_start is None:
         return 0
+    today = date.today()
+    return max(0, (today.year - sem_start.year) * 12 + (today.month - sem_start.month))
 
 
 def _set_locale(request: Request, lang: str) -> str:
@@ -125,36 +139,87 @@ def _set_locale(request: Request, lang: str) -> str:
     return locale
 
 
-def _seo_urls(request: Request, lang: str) -> dict:
-    """Build canonical + per-lang hreflang alternates for the current path.
+def _seo_urls(
+    request: Request,
+    lang: str,
+    route: str | None = None,
+    params: Mapping[str, str] | None = None,
+) -> dict:
+    """Build canonical + per-lang hreflang alternates for the current response.
+
+    `route`, when given, must name an entry in `_SEO_ROUTES` — the single registry
+    that this function and `_sitemap_xml` both read (see the "Crawlability" section
+    below). Alternates are emitted only for the languages that entry actually lists,
+    using its per-language suffix (a `str.format` template, expanded with `params`
+    for parameterized routes such as zone detail's `"/zones/{code}"`). This is what
+    lets a route be single-language, or use a different URL slug per language,
+    without ever advertising an alternate link to a language that doesn't exist.
+    A registered route rendered under a `lang` it doesn't list is refused with 404
+    rather than fabricating a broken canonical.
+
+    `route=None` (the default) preserves the pre-registry behaviour: strip the
+    current `/{lang}` prefix and re-prefix the *same* suffix for every supported
+    language. That's only correct for lang-invariant paths, so every endpoint
+    relying on it is required to be listed in `_SEO_MIRRORED_ENDPOINTS` as an
+    explicit, reviewed opt-in — see `test_every_html_endpoint_has_a_seo_decision`
+    in tests/test_seo.py.
 
     Uses the request's own scheme/host (which reflects https once uvicorn is
     told to trust the cloudflared proxy headers, see server.py) so this works
     both in production and in local/test runs without hardcoding the origin.
     """
-    path = request.url.path
-    prefix = f"/{lang}"
-    suffix = path[len(prefix) :] if path.startswith(prefix) else path
-    if not suffix.startswith("/"):
-        suffix = "/" + suffix
     scheme = request.url.scheme
     host = request.url.netloc
+    fmt_params = params or {}
+
+    if route is not None:
+        entry = _SEO_ROUTES[route]  # KeyError on a typo'd key is deliberate: fail loud.
+        if lang not in entry.suffixes:
+            raise HTTPException(status_code=404)
+        suffixes = {lg: sfx.format(**fmt_params) for lg, sfx in entry.suffixes.items()}
+    else:
+        path = request.url.path
+        prefix = f"/{lang}"
+        suffix = path[len(prefix) :] if path.startswith(prefix) else path
+        if not suffix.startswith("/"):
+            suffix = "/" + suffix
+        suffixes = {lg: suffix for lg in sorted(SUPPORTED_LANGS)}
 
     def _abs(other_lang: str) -> str:
-        return f"{scheme}://{host}/{other_lang}{suffix}"
+        return f"{scheme}://{host}/{other_lang}{suffixes[other_lang]}"
+
+    alternates = {lg: _abs(lg) for lg in suffixes}
+    default_lang = "it" if "it" in alternates else next(iter(alternates))
 
     return {
         "canonical_url": _abs(lang),
-        "hreflang_it": _abs("it"),
-        "hreflang_en": _abs("en"),
+        "hreflang_alternates": alternates,
+        "hreflang_x_default": alternates[default_lang],
     }
 
 
-def _tpl(request: Request, template: str, ctx: dict | None = None) -> HTMLResponse:
-    """Render a template with locale context merged in."""
+def _tpl(
+    request: Request,
+    template: str,
+    ctx: dict | None = None,
+    *,
+    seo_route: str | None = None,
+    seo_params: Mapping[str, str] | None = None,
+) -> HTMLResponse:
+    """Render a template with locale + SEO context merged in.
+
+    Pass `seo_route` (a key in `_SEO_ROUTES`) for indexable pages, plus `seo_params`
+    for parameterized ones (e.g. `seo_params={"code": code}` for zone detail), so
+    canonical/hreflang reflect that route's real per-language suffixes. Omit both
+    only for endpoints listed in `_SEO_MIRRORED_ENDPOINTS`. See `_seo_urls`.
+    """
     locale = getattr(request.state, "locale", "it_IT")
     lang = LOCALE_TO_LANG.get(locale, "it")
-    base: dict = {"lang": lang, "locale": locale, **_seo_urls(request, lang)}
+    base: dict = {
+        "lang": lang,
+        "locale": locale,
+        **_seo_urls(request, lang, route=seo_route, params=seo_params),
+    }
     if ctx:
         base.update(ctx)
     return templates.TemplateResponse(request, template, base)
@@ -190,11 +255,52 @@ _mcp_asgi_app = _build_mcp_app()
 
 @asynccontextmanager
 async def _lifespan(_app):
+    # Force the neighborhood content file to load now rather than lazily on first
+    # request. A missing file degrades silently (empty blurbs — the normal public-repo
+    # state); a malformed one raises ValueError (see neighborhoods._load_blurb_content).
+    # Doing this at startup means a malformed STIMMO_CONTENT_DIR/neighborhoods.json
+    # aborts the deploy instead of quietly 500-ing the sitemap and every neighborhood
+    # page while the process still passes its health check.
+    neighborhoods.list_neighborhoods()
     async with _get_mcp_sm().run():
         yield
 
 
 app = FastAPI(title="stimmo — Milan fair-price estimator", lifespan=_lifespan)
+
+
+class _HeadableAPIRoute(APIRoute):
+    """APIRoute that auto-adds HEAD wherever GET is registered.
+
+    Starlette's plain `Route` does this itself; FastAPI's `APIRoute` does not
+    (verified against fastapi 0.139 / starlette 1.3 — `_populate_api_route_state`
+    just uppercases whatever `methods` it's given). Every `@app.get(...)` in this
+    module was therefore GET-only, and a HEAD request would path-match but
+    method-miss it (`Route.matches` -> `Match.PARTIAL`). Starlette's router keeps
+    scanning on a partial match, and the catch-all `bare_path_redirect` below is
+    registered for GET *and* HEAD — so it method-matches (`Match.FULL`) and wins,
+    even though it's declared after every real route. For a path that already
+    carries a lang prefix, `bare_path_redirect` deliberately 404s (see its
+    docstring), which is exactly the bug: `HEAD /it/zones` -> 404 while
+    `GET /it/zones` -> 200.
+
+    Adding HEAD here (matching Starlette's own convention) makes the intended
+    route full-match first, so `scope["endpoint"]` — and therefore the `route`
+    label in web/metrics.py — is the real endpoint, not `bare_path_redirect`, for
+    HEAD requests too. Set as `app.router.route_class` right below, before any
+    route is registered, so every `@app.get`/`@app.api_route` call in this module
+    picks it up (FastAPI reads `router.route_class` at each `add_api_route` call,
+    not at router-construction time).
+    """
+
+    def __init__(self, path: str, endpoint, *, methods=None, **kwargs):
+        method_set = {m.upper() for m in methods} if methods else {"GET"}
+        if "GET" in method_set:
+            method_set.add("HEAD")
+        super().__init__(path, endpoint, methods=method_set, **kwargs)
+
+
+app.router.route_class = _HeadableAPIRoute
 
 STATIC_DIR = Path(__file__).parent / "static"
 
@@ -313,34 +419,167 @@ Allow: /
 Sitemap: https://stimmo.it/sitemap.xml
 """
 
-# Indexable, lang-prefixed pages. Excludes /s/<id> share pages and /og/<id>.png
-# image routes — those are per-instance, not meant for search indexing.
-_SITEMAP_PATHS: tuple[str, ...] = ("/", "/about", "/bookmarklet", "/privacy")
-
 
 @app.api_route("/robots.txt", methods=["GET", "HEAD"])
 def robots_txt() -> Response:
     return Response(content=_ROBOTS_TXT, media_type="text/plain")
 
 
+# ---------------------------------------------------------------------------
+# SEO route registry — the single source of truth for both per-page
+# canonical/hreflang tags (_seo_urls, used by _tpl) and sitemap.xml (_sitemap_xml).
+#
+# Each entry maps lang -> path suffix (the part of the URL after "/{lang}") for
+# only the languages that route actually exists in. A route that's missing a
+# language here will never advertise an alternate link to it, and can't be
+# rendered under it either (_seo_urls 404s rather than fabricate one).
+#
+# Suffixes may be str.format templates ("/zones/{code}") for parameterized
+# routes; the handler must then pass the same param(s) via `_tpl(..., seo_params=...)`
+# so every language's suffix can be expanded consistently. `expand()` supplies
+# those params for the sitemap — one dict per instance of the route (e.g. one per
+# OMI zone code); static routes leave it at the default (a single empty dict).
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class SeoRoute:
+    key: str
+    endpoint: str  # FastAPI handler function name — see _SEO_MIRRORED_ENDPOINTS below
+    suffixes: Mapping[str, str]
+    expand: Callable[[], Iterable[Mapping[str, str]]] = lambda: ({},)
+    # Derives <lastmod> from whatever actually determines this URL's content — never
+    # from build/deploy time, which would bump every URL together on every release
+    # regardless of what changed (see the three concrete suppliers below). Returns
+    # None to omit <lastmod> for that URL entirely: a missing date is a smaller lie
+    # to a crawler than a wrong-but-stable one, so "we don't know" must stay a real,
+    # distinguishable outcome rather than falling back to some other guess.
+    lastmod: Callable[[Mapping[str, str]], date | None] | None = None
+
+
+_SEO_ROUTES: dict[str, SeoRoute] = {}
+
+
+def _register_seo_route(
+    key: str,
+    endpoint: str,
+    suffixes: Mapping[str, str],
+    *,
+    expand: Callable[[], Iterable[Mapping[str, str]]] | None = None,
+    lastmod: Callable[[Mapping[str, str]], date | None] | None = None,
+) -> SeoRoute:
+    route = SeoRoute(
+        key=key,
+        endpoint=endpoint,
+        suffixes=dict(suffixes),
+        expand=expand or (lambda: ({},)),
+        lastmod=lastmod,
+    )
+    _SEO_ROUTES[key] = route
+    # The registry is only ever mutated by module-level calls to this function, all
+    # of which run at import time, before any request and before _sitemap_xml is
+    # ever called — so caching it is safe. This clear is a belt-and-braces guarantee
+    # of that, not a workaround: it means a *future* runtime registration can never
+    # silently serve a stale sitemap, without anyone having to remember why.
+    _sitemap_xml.cache_clear()
+    return route
+
+
+# ---------------------------------------------------------------------------
+# <lastmod> suppliers — one per "what determines this URL's content" story.
+# Each is real, versioned, already-bundled data; none is build/deploy time or a
+# file mtime (git doesn't preserve those, and the Dockerfile's COPY stamps build
+# time onto them regardless — both would produce a stable-looking but false date).
+# ---------------------------------------------------------------------------
+
+
+@lru_cache(maxsize=1)
+def _release_date() -> date | None:
+    """Date of the most recent version heading in CHANGELOG.md
+    ("## vX.Y.Z (YYYY-MM-DD)"). CHANGELOG.md is a committed, bundled file — this is
+    the same kind of real, stable data as app_version's _pkg_version() lookup just
+    above, not a proxy for "when was this specific page last touched". Returns None
+    if the file is missing or its heading format ever changes underneath this regex.
+    """
+    changelog = Path(__file__).parent.parent.parent.parent / "CHANGELOG.md"
+    try:
+        text = changelog.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return None
+    m = re.search(r"^## v\d+\.\d+\.\d+ \((\d{4}-\d{2}-\d{2})\)", text, re.MULTILINE)
+    if not m:
+        return None
+    try:
+        return date.fromisoformat(m.group(1))
+    except ValueError:
+        return None
+
+
+def _release_lastmod(_params: Mapping[str, str]) -> date | None:
+    """SeoRoute.lastmod for pages that are hand-written template markup with no
+    finer-grained per-page timestamp of their own (form, about, bookmarklet,
+    privacy) — the release date is the best real signal available for them.
+    Ignores params; every route using this shares one process-wide release date.
+    """
+    return _release_date()
+
+
+def _omi_lastmod(_params: Mapping[str, str]) -> date | None:
+    """Start-of-semester date for the OMI vintage currently bundled
+    (data.omi.semester(), e.g. "2025-2" -> 2025-07-01). Used for zones_index and
+    zone_detail: their entire content is exactly this semester's €/m² band, so
+    refreshing OMI (scripts/refresh_omi.py) is the one real event that changes what
+    these pages say — and is therefore the one honest answer to "when did this
+    page's content last change". Same param shape (ignores zone code) for both
+    routes since every zone shares one bundled vintage.
+    """
+    return _semester_start_date(omi.semester())
+
+
+def _neighborhood_lastmod(params: Mapping[str, str]) -> date | None:
+    """The neighborhood's own `updated` date from the external content file (see
+    data/neighborhoods.py's Neighborhood.updated), parsed from the params the
+    sitemap already expands neighborhood_detail with (slug_en). Omits <lastmod>
+    (returns None) when the content file predates this field or a neighborhood's
+    entry doesn't carry one — this is the common case today (see CHANGELOG/report:
+    only the first batch has it), and is exactly the "don't know, don't guess" case
+    SeoRoute.lastmod exists to allow.
+    """
+    n = neighborhoods.neighborhood_for_slug(params["slug_en"], "en")
+    if n is None or not n.updated:
+        return None
+    try:
+        return date.fromisoformat(n.updated)
+    except ValueError:
+        return None
+
+
+def _sitemap_url_block(route: SeoRoute, params: Mapping[str, str]) -> str:
+    langs = sorted(route.suffixes)
+    locs = {lg: f"{SITE_ORIGIN}/{lg}{route.suffixes[lg].format(**params)}" for lg in langs}
+    default_lang = "it" if "it" in locs else langs[0]
+    lastmod = route.lastmod(params) if route.lastmod else None
+    lastmod_tag = f"\n    <lastmod>{lastmod.isoformat()}</lastmod>" if lastmod else ""
+    blocks = []
+    for lg in langs:
+        alt_links = "\n".join(
+            f'    <xhtml:link rel="alternate" hreflang="{alt_lang}" href="{alt_loc}"/>'
+            for alt_lang, alt_loc in locs.items()
+        )
+        alt_links += (
+            f'\n    <xhtml:link rel="alternate" hreflang="x-default" href="{locs[default_lang]}"/>'
+        )
+        blocks.append(f"  <url>\n    <loc>{locs[lg]}</loc>{lastmod_tag}\n{alt_links}\n  </url>")
+    return "\n".join(blocks)
+
+
 @lru_cache(maxsize=1)
 def _sitemap_xml() -> str:
-    langs = sorted(SUPPORTED_LANGS)
-    entries: list[str] = []
-    for path in _SITEMAP_PATHS:
-        suffix = "" if path == "/" else path
-        locs = {
-            lang: f"{SITE_ORIGIN}/{lang}/" if path == "/" else f"{SITE_ORIGIN}/{lang}{suffix}"
-            for lang in langs
-        }
-        for lang in langs:
-            alt_links = "\n".join(
-                f'    <xhtml:link rel="alternate" hreflang="{alt_lang}" href="{alt_loc}"/>'
-                for alt_lang, alt_loc in locs.items()
-            )
-            it_loc = locs["it"]
-            alt_links += f'\n    <xhtml:link rel="alternate" hreflang="x-default" href="{it_loc}"/>'
-            entries.append(f"  <url>\n    <loc>{locs[lang]}</loc>\n{alt_links}\n  </url>")
+    entries: list[str] = [
+        _sitemap_url_block(route, params)
+        for route in _SEO_ROUTES.values()
+        for params in route.expand()
+    ]
     body = "\n".join(entries)
     return (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -349,6 +588,89 @@ def _sitemap_xml() -> str:
         f"{body}\n"
         "</urlset>\n"
     )
+
+
+# Concrete registrations. Order here is the order URLs appear in the sitemap.
+# _register_seo_route calls _sitemap_xml.cache_clear(), so this must come after
+# _sitemap_xml's def above (a plain top-level name lookup, resolved at call time —
+# see the comment inside _register_seo_route).
+_register_seo_route("form", "form", {"it": "/", "en": "/"}, lastmod=_release_lastmod)
+_register_seo_route("about", "about", {"it": "/about", "en": "/about"}, lastmod=_release_lastmod)
+_register_seo_route(
+    "bookmarklet",
+    "bookmarklet_page",
+    {"it": "/bookmarklet", "en": "/bookmarklet"},
+    lastmod=_release_lastmod,
+)
+_register_seo_route(
+    "privacy", "privacy", {"it": "/privacy", "en": "/privacy"}, lastmod=_release_lastmod
+)
+_register_seo_route(
+    "zones_index", "zones_index", {"it": "/zones", "en": "/zones"}, lastmod=_omi_lastmod
+)
+_register_seo_route(
+    "zone_detail",
+    "zone_detail",
+    {"it": "/zones/{code}", "en": "/zones/{code}"},
+    expand=lambda: ({"code": code} for code, _descr in zones.list_zones()),
+    lastmod=_omi_lastmod,
+)
+_register_seo_route(
+    "neighborhood_detail",
+    "neighborhood_detail",
+    {
+        "it": "/milano/{slug_it}-prezzi-al-mq",
+        "en": "/milan/{slug_en}-property-prices",
+    },
+    # Staggered launch (see Neighborhood.blurb_it/blurb_en in data/neighborhoods.py):
+    # a neighborhood only enters the sitemap once BOTH language blurbs are filled in,
+    # so we never ask Google to index a page that's thin/near-duplicate in either
+    # language. The route resolves and renders regardless — see neighborhood_detail
+    # further down — so it stays reachable via the zone pages/zones index links.
+    lastmod=_neighborhood_lastmod,
+    expand=lambda: (
+        {"slug_it": n.slug_it, "slug_en": n.slug_en}
+        for n in neighborhoods.list_neighborhoods()
+        if n.blurb_it and n.blurb_en
+    ),
+)
+
+
+def neighborhood_url(n: neighborhoods.Neighborhood, lang: str) -> str:
+    """Canonical per-language URL for a neighborhood page.
+
+    Built from the same suffix templates registered above (rather than duplicating
+    "/milano/...-prezzi-al-mq" / "/milan/...-property-prices" literals in every
+    template that links to a neighborhood), so link targets can never drift from
+    the actual route / sitemap definitions.
+    """
+    suffix = _SEO_ROUTES["neighborhood_detail"].suffixes[lang]
+    return f"/{lang}{suffix.format(slug_it=n.slug_it, slug_en=n.slug_en)}"
+
+
+templates.env.globals["neighborhood_url"] = neighborhood_url
+
+
+def _fmt_share_pct(pct: float) -> str:
+    """Locale-formatted percentage with one decimal, no sign prefix. Unlike
+    `fmt_pct` (adjustment deltas, always signed), a share of a whole is never
+    negative and a "+64.1%" reading would be wrong."""
+    from babel.numbers import format_decimal
+
+    return format_decimal(pct, format="0.0", locale=_current_locale.get()) + "%"
+
+
+templates.env.filters["share_pct"] = _fmt_share_pct
+
+# HTML-rendering endpoints that deliberately opt into _seo_urls's pre-registry
+# fallback (same suffix mirrored across every supported language) instead of a
+# registry entry — because they're not indexable content pages (import wizard,
+# estimate results, share links). Every endpoint with response_class=HTMLResponse
+# must appear either here or as a registered SeoRoute.endpoint above; see
+# test_every_html_endpoint_has_a_seo_decision in tests/test_seo.py.
+_SEO_MIRRORED_ENDPOINTS: frozenset[str] = frozenset(
+    {"import_get", "import_post", "estimate", "share_view", "share_view_short"}
+)
 
 
 @app.api_route("/sitemap.xml", methods=["GET", "HEAD"])
@@ -512,20 +834,216 @@ def about(request: Request, lang: str = FPath(pattern=_LANG_RE)) -> HTMLResponse
             "semester": omi.semester(),
             "zone_count": len(omi.available_zones()),
         },
+        seo_route="about",
     )
 
 
 @app.get("/{lang}/privacy", response_class=HTMLResponse)
 def privacy(request: Request, lang: str = FPath(pattern=_LANG_RE)) -> HTMLResponse:
     _set_locale(request, lang)
-    return _tpl(request, "privacy.html")
+    return _tpl(request, "privacy.html", seo_route="privacy")
+
+
+# ---------------------------------------------------------------------------
+# WP-7: programmatic OMI zone pages (docs/distribution-plan.md, Phase C).
+#
+# Display-only pages sourced entirely from bundled data (zones.list_zones(),
+# omi.zone_quotes/zone_price_index, history.series). No pricing/adjustment
+# logic here — that stays in valuation/adjustments.py, per the tuning-surface
+# invariant.
+# ---------------------------------------------------------------------------
+
+_ZONE_CODE_RE = r"^[A-Za-z0-9]{1,10}$"
+
+
+@app.get("/{lang}/zones", response_class=HTMLResponse)
+def zones_index(request: Request, lang: str = FPath(pattern=_LANG_RE)) -> HTMLResponse:
+    _set_locale(request, lang)
+    price_index = omi.zone_price_index()
+    fascia_index = omi.zone_fascia_index()
+
+    groups: dict[str, list[dict]] = {}
+    for code, descr in zones.list_zones():
+        fascia = fascia_index.get(code, code[0])
+        band = price_index.get(code)
+        groups.setdefault(fascia, []).append(
+            {
+                "code": code,
+                "descr": descr,
+                "eur_m2_min": band[0] if band else None,
+                "eur_m2_max": band[1] if band else None,
+                "neighborhoods": neighborhoods.neighborhoods_for_zone(code),
+            }
+        )
+    for group in groups.values():
+        group.sort(key=lambda z: z["code"])
+
+    return _tpl(
+        request,
+        "zones_index.html",
+        {
+            "fascia_groups": sorted(groups.items()),
+            "zone_count": sum(len(g) for g in groups.values()),
+            "semester": omi.semester(),
+        },
+        seo_route="zones_index",
+    )
+
+
+@app.get("/{lang}/zones/{code}", response_class=HTMLResponse)
+def zone_detail(
+    request: Request,
+    lang: str = FPath(pattern=_LANG_RE),
+    code: str = FPath(pattern=_ZONE_CODE_RE),
+) -> HTMLResponse:
+    _set_locale(request, lang)
+    zone_names = dict(zones.list_zones())
+    if code not in zone_names:
+        raise HTTPException(status_code=404, detail="Unknown OMI zone")
+
+    fascia = omi.zone_fascia_index().get(code, code[0])
+    return _tpl(
+        request,
+        "zone_detail.html",
+        {
+            "zone_code": code,
+            "zone_name": zone_names[code],
+            "fascia": fascia,
+            "quotes": omi.zone_quotes(code),
+            "history_series": history.series(code, PropertyType.CIVILI, OmiCondition.NORMALE),
+            "semester": omi.semester(),
+            "parent_neighborhoods": neighborhoods.neighborhoods_for_zone(code),
+        },
+        seo_route="zone_detail",
+        seo_params={"code": code},
+    )
+
+
+# ---------------------------------------------------------------------------
+# WP-8: neighborhood price pages — colloquial-name landing pages layered on top
+# of the OMI zone pages above via data/neighborhoods.py.
+#
+# Per-language slugs mean the it/en URLs don't share a path shape ("/milano/
+# {slug}-prezzi-al-mq" vs "/milan/{slug}-property-prices"), so this needs two
+# literal FastAPI route templates — registered on the SAME view function via two
+# stacked decorators below, so there's exactly one physical endpoint name and
+# exactly one _SEO_ROUTES entry (see test_every_html_endpoint_has_a_seo_decision
+# in tests/test_seo.py). `lang` is recovered from the matched literal prefix,
+# not a path parameter — no {lang} placeholder exists in either template.
+#
+# No pricing logic here: _neighborhood_price_band/_neighborhood_midpoint only
+# read data/omi.py's already-computed OMI bands and take min/max/mean across a
+# neighborhood's zone(s) for display — the tuning surface stays entirely in
+# valuation/adjustments.py.
+# ---------------------------------------------------------------------------
+
+_NEIGHBORHOOD_SLUG_RE = r"^[a-z0-9]+(-[a-z0-9]+)*$"
+
+
+def _neighborhood_price_band(n: neighborhoods.Neighborhood) -> tuple[float, float] | None:
+    """Min-of-mins / max-of-maxes €/m² (Abitazioni civili, condition NORMALE) across
+    a neighborhood's OMI zone(s). None if none of its zones have a bundled quote."""
+    price_index = omi.zone_price_index()
+    bands = [price_index[code] for code in n.zone_codes if code in price_index]
+    if not bands:
+        return None
+    return min(b[0] for b in bands), max(b[1] for b in bands)
+
+
+def _neighborhood_midpoint(n: neighborhoods.Neighborhood) -> float | None:
+    band = _neighborhood_price_band(n)
+    return (band[0] + band[1]) / 2 if band else None
+
+
+def _surface_band_rows(band: tuple[float, float]) -> list[dict]:
+    """One row per room-count term for the hub
+    type-section, pairing `surface_bands.ROOM_COUNT_SURFACE_BANDS` with the
+    price range it implies against this neighborhood's OMI band. Pure display
+    glue — no valuation logic, no `adjustments.py` involved."""
+    return [
+        {
+            "term": row.term,
+            "surface_min": row.surface_min,
+            "surface_max": row.surface_max,
+            "optional": row.optional,
+            "price_range": _surface_bands.price_range_for_row(row, band),
+        }
+        for row in _surface_bands.ROOM_COUNT_SURFACE_BANDS
+    ]
+
+
+def _nearby_neighborhoods(n: neighborhoods.Neighborhood, count: int = 3) -> list[dict]:
+    """The `count` other curated neighborhoods whose €/m² midpoint sits closest to
+    `n`'s.
+
+    Picked by price proximity rather than zone-polygon adjacency: stimmo has no
+    neighborhood-to-neighborhood adjacency graph (only zone polygons), and "closest
+    by price" is exactly the comparison a buyer weighing this neighborhood wants —
+    "where else, at a similar level, should I also look?"
+    """
+    target = _neighborhood_midpoint(n)
+    if target is None:
+        return []
+    scored: list[tuple[float, neighborhoods.Neighborhood, float]] = []
+    for other in neighborhoods.list_neighborhoods():
+        if other is n:
+            continue
+        mid = _neighborhood_midpoint(other)
+        if mid is not None:
+            scored.append((abs(mid - target), other, mid))
+    scored.sort(key=lambda s: s[0])
+    return [{"neighborhood": other, "eur_m2_mid": mid} for _dist, other, mid in scored[:count]]
+
+
+def _render_neighborhood_detail(request: Request, lang: str, slug: str) -> HTMLResponse:
+    _set_locale(request, lang)
+    n = neighborhoods.neighborhood_for_slug(slug, lang)
+    if n is None:
+        raise HTTPException(status_code=404, detail="Unknown neighborhood")
+
+    zone_names = dict(zones.list_zones())
+    band = _neighborhood_price_band(n)
+    ntn_quarter, ntn_distribution = ntn.latest_bucket_distribution()
+    return _tpl(
+        request,
+        "neighborhood_detail.html",
+        {
+            "n": n,
+            "band": band,
+            "spans_multiple_zones": len(n.zone_codes) > 1,
+            "city_avg_eur_m2": omi.citywide_average(),
+            "nearby": _nearby_neighborhoods(n),
+            "shared_zones": neighborhoods.shared_zones(n),
+            "zone_names": zone_names,
+            "blurb": n.blurb_it if lang == "it" else n.blurb_en,
+            "semester": omi.semester(),
+            # Room-count section: "quanto costa un bilocale /
+            # trilocale / quadrilocale" section. Absent entirely (None, not an
+            # empty list) when this neighborhood has no bundled OMI band — the
+            # section renders only where there is a real band.
+            "surface_band_rows": _surface_band_rows(band) if band else None,
+            "ntn_size_distribution": ntn_distribution if band else None,
+            "ntn_latest_quarter": ntn_quarter,
+        },
+        seo_route="neighborhood_detail",
+        seo_params={"slug_it": n.slug_it, "slug_en": n.slug_en},
+    )
+
+
+@app.get("/it/milano/{slug}-prezzi-al-mq", response_class=HTMLResponse)
+@app.get("/en/milan/{slug}-property-prices", response_class=HTMLResponse)
+def neighborhood_detail(
+    request: Request, slug: str = FPath(pattern=_NEIGHBORHOOD_SLUG_RE)
+) -> HTMLResponse:
+    lang = "it" if request.url.path.startswith("/it/") else "en"
+    return _render_neighborhood_detail(request, lang, slug)
 
 
 @app.get("/{lang}/", response_class=HTMLResponse)
 def form(request: Request, lang: str = FPath(pattern=_LANG_RE)) -> HTMLResponse:
     _set_locale(request, lang)
     ctx = _form_context(request)
-    return _tpl(request, "form.html", ctx)
+    return _tpl(request, "form.html", ctx, seo_route="form")
 
 
 def _find_listing(node: dict | list | None, depth: int = 0) -> dict | None:
@@ -623,7 +1141,9 @@ def bookmarklet_page(request: Request, lang: str = FPath(pattern=_LANG_RE)) -> H
     js_src = js_src.replace("'__STIMMO_ALERT__'", json.dumps(alert_str))
 
     bookmarklet_href = "javascript:" + re.sub(r"\s+", " ", js_src).strip()
-    return _tpl(request, "bookmarklet.html", {"bookmarklet_href": bookmarklet_href})
+    return _tpl(
+        request, "bookmarklet.html", {"bookmarklet_href": bookmarklet_href}, seo_route="bookmarklet"
+    )
 
 
 def _build_result_context(
@@ -1027,13 +1547,20 @@ application = _metrics.instrument(_dispatch)
 
 
 def _error(request: Request, errors: list[str]) -> HTMLResponse:
+    # Not routed through _tpl(): callers (import/share/estimate handlers, all in
+    # _SEO_MIRRORED_ENDPOINTS) render this for a 400 on their own path, so the
+    # route=None fallback in _seo_urls — mirror the current path across languages —
+    # is exactly the right, consistent behaviour here too.
+    locale = getattr(request.state, "locale", "it_IT")
+    lang = LOCALE_TO_LANG.get(locale, "it")
     return templates.TemplateResponse(
         request,
         "error.html",
         {
-            "lang": LOCALE_TO_LANG.get(getattr(request.state, "locale", "it_IT"), "it"),
-            "locale": getattr(request.state, "locale", "it_IT"),
+            "lang": lang,
+            "locale": locale,
             "errors": errors,
+            **_seo_urls(request, lang),
         },
         status_code=400,
     )
