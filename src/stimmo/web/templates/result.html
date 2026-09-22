@@ -3,6 +3,7 @@
 
 {% block og_meta %}
 {% if share_url %}
+<meta name="description" content="{{ p.surface_m2 }} m² · {{ p.asking_price_eur | eur }} · {% trans %}adjusted{% endtrans %} {{ est.adjusted_eur_m2_mid | num }} €/m²">
 <meta property="og:type" content="article">
 <meta property="og:title" content="stimmo · {{ est.verdict | upper }} · {{ p.address.split(',')[0] }}">
 <meta property="og:description" content="{{ p.surface_m2 }} m² · {{ p.asking_price_eur | eur }} · {% trans %}adjusted{% endtrans %} {{ est.adjusted_eur_m2_mid | num }} €/m²">
@@ -14,6 +15,7 @@
 <meta name="twitter:description" content="{{ p.surface_m2 }} m² · {{ p.asking_price_eur | eur }} · {% trans %}adjusted{% endtrans %} {{ est.adjusted_eur_m2_mid | num }} €/m²">
 <meta name="twitter:image" content="{{ og_image_url }}">
 {% else %}
+<meta name="description" content="{% trans %}Fair-price check for Milan apartment listings — OMI-anchored, no machine learning, every multiplier visible.{% endtrans %}">
 <meta property="og:type" content="website">
 <meta property="og:title" content="stimmo — {% trans %}Milan fair-price check{% endtrans %}">
 <meta property="og:description" content="{% trans %}Fair-price check for Milan apartment listings — OMI-anchored, no machine learning, every multiplier visible.{% endtrans %}">
@@ -176,35 +178,8 @@
       </table>
     </div>
 
-    {% if history_series %}
-    {% set mids = history_series | map(attribute='eur_m2_mid') | list %}
-    {% set max_mid = mids | max %}
-    {% set min_mid = mids | min %}
-    <div class="doc">
-      <div class="doc-head">
-        <h2 class="doc-title">OMI €/m² · {% trans %}zone{% endtrans %} {{ est.omi_quote.zone_code }}</h2>
-        <span class="doc-eyebrow">{% trans %}8 semesters · mid value{% endtrans %}</span>
-      </div>
-      <div class="strip">
-        {% for hp in history_series %}
-        {% set denom = max_mid - min_mid * 0.85 %}
-        {% set h = ((hp.eur_m2_mid - min_mid * 0.85) / denom * 100) | round(1) %}
-        {% set is_cur = loop.last %}
-        <div class="col{% if is_cur %} cur{% endif %}" style="height:{{ h }}%">
-          <span class="v">{{ hp.eur_m2_mid | num }}</span>
-        </div>
-        {% endfor %}
-      </div>
-      <div class="strip-axis">
-        {% for hp in history_series %}<div>{{ hp.semester }}</div>{% endfor %}
-      </div>
-      <div style="margin-top:14px;font-family:var(--mono);font-size:11px;color:var(--ink-muted);display:flex;justify-content:space-between">
-        <span>min € {{ min_mid | num }}</span>
-        <span>{% trans %}last semester highlighted{% endtrans %}</span>
-        <span>max € {{ max_mid | num }}</span>
-      </div>
-    </div>
-    {% endif %}
+    {% set history_zone_code = est.omi_quote.zone_code %}
+    {% include "_history_strip.html" %}
 
     {% if ntn_total %}
     {% set ntn_vals = [] %}
