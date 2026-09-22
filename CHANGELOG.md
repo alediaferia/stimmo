@@ -9,6 +9,71 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 First public release. Milan-only OMI fair-price estimator with FastAPI + Jinja
 front end, OSM amenity counting via Overpass, and Nominatim geocoding.
 
+## v0.21.0 (2026-09-08)
+
+### Feat
+
+- **web**: add room count price section
+
+### Fix
+
+- **scripts**: guard refresh_omi against semester downgrade
+
+### Refactor
+
+- **web**: give the room-count section its own share filter
+
+## v0.20.0 (2026-09-06)
+
+## v0.19.1 (2026-09-01)
+
+### Fix
+
+- **docker**: ship CHANGELOG.md in the runtime image
+
+## v0.19.0 (2026-09-01)
+
+### Feat
+
+- **web**: add <lastmod> to sitemap URLs
+- **web**: retarget /it/zones for OMI Milano query
+
+### Fix
+
+- **web**: add HEAD method support to FastAPI routes
+
+## v0.18.0 (2026-08-26)
+
+### Feat
+
+- **web**: add JSON-LD structured data for brand SERP disambiguation
+- **data**: externalize neighborhood blurbs from repository
+- **web**: add neighborhood price pages (WP-8)
+- **data**: add colloquial neighborhood alias layer
+
+### Fix
+
+- **web**: validate neighborhood content at startup
+- **web**: render neighborhood blurbs as multiple paragraphs
+- **data**: swap Isola zone C15 for C14
+
+### Refactor
+
+- **web**: derive SEO URLs from route registry
+
+## v0.17.0 (2026-07-07)
+
+### Feat
+
+- add MCP registry server.json descriptor
+- **web**: add zone index and detail pages (WP-7)
+- **data**: add zone display aggregations for zone pages
+
+### Fix
+
+- **i18n**: fix fuzzy flag handling in translation pipeline
+- **ci**: fail deploy job on GHCR auth/pull errors
+
 ## v0.16.0 (2026-07-06)
 
 ### Feat
