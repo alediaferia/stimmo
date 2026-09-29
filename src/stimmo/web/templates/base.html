@@ -22,6 +22,10 @@
   <meta name="twitter:image" content="{{ request.base_url }}{{ static_url('og-image.png').lstrip('/') }}">
   {% endblock %}
 
+  {% if noindex %}
+  <meta name="robots" content="noindex, follow">
+  {% endif %}
+
   <link rel="canonical" href="{{ canonical_url }}">
   {% for alt_lang, alt_url in hreflang_alternates.items() %}
   <link rel="alternate" hreflang="{{ alt_lang }}" href="{{ alt_url }}">

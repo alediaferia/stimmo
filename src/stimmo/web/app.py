@@ -626,7 +626,13 @@ _register_seo_route(
     # a neighborhood only enters the sitemap once BOTH language blurbs are filled in,
     # so we never ask Google to index a page that's thin/near-duplicate in either
     # language. The route resolves and renders regardless — see neighborhood_detail
-    # further down — so it stays reachable via the zone pages/zones index links.
+    # further down — so it stays reachable via the zone pages/zones index links, and
+    # a gated slug (this same both-blurbs condition, checked again at render time)
+    # is served with `<meta name="robots" content="noindex, follow">` so it can be
+    # crawled and its links followed without being indexed as a thin/near-duplicate
+    # page — reconciling the sitemap gate with the index gate (2026-09-23 SEO
+    # review, R3; chiaravalle is the one slug this affects today, since zone R2
+    # has no OMI quotations and its price band is empty).
     lastmod=_neighborhood_lastmod,
     expand=lambda: (
         {"slug_it": n.slug_it, "slug_en": n.slug_en}
@@ -1024,6 +1030,12 @@ def _render_neighborhood_detail(request: Request, lang: str, slug: str) -> HTMLR
             "surface_band_rows": _surface_band_rows(band) if band else None,
             "ntn_size_distribution": ntn_distribution if band else None,
             "ntn_latest_quarter": ntn_quarter,
+            # Same both-blurbs condition the sitemap gate uses (see the
+            # neighborhood_detail registration above) — a slug failing it is
+            # served noindex,follow by base.html so it stays crawlable and
+            # linked without being indexed as a thin/near-duplicate page.
+            # 2026-09-23 SEO review, R3.
+            "noindex": not (n.blurb_it and n.blurb_en),
         },
         seo_route="neighborhood_detail",
         seo_params={"slug_it": n.slug_it, "slug_en": n.slug_en},

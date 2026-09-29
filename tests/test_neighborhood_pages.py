@@ -228,6 +228,68 @@ class TestSitemapGating:
 
 
 # ---------------------------------------------------------------------------
+# R3 (2026-09-23 SEO review): noindex on gated (sitemap-excluded) slugs
+#
+# A neighborhood failing the sitemap's both-blurbs condition still resolves and
+# renders (reachable via zone-page/zones-index links), but must now carry
+# `<meta name="robots" content="noindex, follow">` so the sitemap gate and the
+# index gate agree — a page excluded from the sitemap for being thin shouldn't
+# still be eligible for indexing. This exercises the logic generically (any
+# neighborhood missing a blurb), not tied to chiaravalle, the one slug this
+# affects in production today.
+# ---------------------------------------------------------------------------
+
+
+class TestNoindexGating:
+    def test_gated_slug_is_noindex_follow(self, client: TestClient, content_dir):
+        brera = nb_module.neighborhood_for_slug("brera", "it")
+        content_dir(
+            {
+                brera.slug_en: {
+                    "blurb_it": "Testo editoriale sufficientemente lungo per Brera.",
+                    "blurb_en": "",  # missing english blurb -> fails the sitemap condition
+                }
+            }
+        )
+        body = client.get(_url(brera, "it")).text
+        assert '<meta name="robots" content="noindex, follow">' in body
+
+    def test_slug_with_no_content_entry_at_all_is_noindex_follow(
+        self, client: TestClient, content_dir
+    ):
+        # bicocca gets no entry written at all -- the common no-blurbs-yet case,
+        # which must degrade the same way as a partially-blurbed slug.
+        content_dir({})
+        bicocca = nb_module.neighborhood_for_slug("bicocca", "it")
+        body = client.get(_url(bicocca, "it")).text
+        assert '<meta name="robots" content="noindex, follow">' in body
+
+    def test_fully_blurbed_slug_is_not_noindex(self, client: TestClient, content_dir):
+        brera = nb_module.neighborhood_for_slug("brera", "it")
+        content_dir(
+            {
+                brera.slug_en: {
+                    "blurb_it": "Testo editoriale sufficientemente lungo per Brera.",
+                    "blurb_en": "Editorial copy long enough for Brera.",
+                }
+            }
+        )
+        body = client.get(_url(brera, "it")).text
+        assert "noindex" not in body
+
+    def test_gated_slug_still_returns_200_and_stays_linked_from_zones_index(
+        self, client: TestClient, content_dir
+    ):
+        brera = nb_module.neighborhood_for_slug("brera", "it")
+        content_dir({})  # no blurbs at all -> gated
+        detail = client.get(_url(brera, "it"))
+        assert detail.status_code == 200
+
+        zones_index_body = client.get("/it/zones").text
+        assert f'href="{_url(brera, "it")}"' in zones_index_body
+
+
+# ---------------------------------------------------------------------------
 # Shared-zone methodological disclosure
 # ---------------------------------------------------------------------------
 
