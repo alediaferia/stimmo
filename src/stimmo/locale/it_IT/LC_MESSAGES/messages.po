@@ -6,6 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  stimmo\n"
 "Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-30 09:38+0200\n"
 "PO-Revision-Date: 2026-05-05 08:34+0200\n"
 "Last-Translator: Alessandro Diaferia\n"
 "Language: it_IT\n"
@@ -113,83 +114,83 @@ msgstr "Est / ovest / misto"
 msgid "North / north-east"
 msgstr "Nord / nord-est"
 
-#: src/stimmo/web/app.py:1065
+#: src/stimmo/web/app.py:1116
 msgid "Invalid import request"
 msgstr "Richiesta di importazione non valida"
 
-#: src/stimmo/web/app.py:1071
+#: src/stimmo/web/app.py:1122
 msgid "Payload too large"
 msgstr "Carico utile troppo grande"
 
-#: src/stimmo/web/app.py:1074
+#: src/stimmo/web/app.py:1125
 msgid "Malformed import payload"
 msgstr "Carico utile di importazione malformato"
 
-#: src/stimmo/web/app.py:1090
+#: src/stimmo/web/app.py:1141
 msgid "Missing source or HTML content"
 msgstr "Mancano fonte o contenuto HTML"
 
-#: src/stimmo/web/app.py:1093
+#: src/stimmo/web/app.py:1144
 msgid "Pasted HTML too large"
 msgstr "HTML incollato troppo grande"
 
-#: src/stimmo/web/app.py:1101
+#: src/stimmo/web/app.py:1152
 msgid "Could not find listing data in pasted HTML"
 msgstr "Impossibile trovare i dati dell'annuncio nell'HTML incollato"
 
-#: src/stimmo/web/app.py:1106
+#: src/stimmo/web/app.py:1157
 msgid "Could not parse listing data"
 msgstr "Impossibile analizzare i dati dell'annuncio"
 
-#: src/stimmo/web/app.py:1110
+#: src/stimmo/web/app.py:1161
 msgid "Could not locate listing fields in pasted data"
 msgstr "Impossibile individuare i campi dell'annuncio nei dati incollati"
 
-#: src/stimmo/web/app.py:1122
+#: src/stimmo/web/app.py:1173
 msgid "Bookmarklet not available"
 msgstr "Bookmarklet non disponibile"
 
-#: src/stimmo/web/app.py:1126
+#: src/stimmo/web/app.py:1177
 msgid "stimmo: could not find listing data on this page"
 msgstr "stimmo: impossibile trovare i dati dell'annuncio in questa pagina"
 
-#: src/stimmo/web/app.py:1180
+#: src/stimmo/web/app.py:1231
 msgid "OMI low"
 msgstr "OMI basso"
 
-#: src/stimmo/web/app.py:1181
+#: src/stimmo/web/app.py:1232
 msgid "Ask low"
 msgstr "Prezzo richiesto basso"
 
-#: src/stimmo/web/app.py:1182
+#: src/stimmo/web/app.py:1233
 msgid "Ask mid"
 msgstr "Prezzo richiesto medio"
 
-#: src/stimmo/web/app.py:1183
+#: src/stimmo/web/app.py:1234
 msgid "OMI high"
 msgstr "OMI alto"
 
-#: src/stimmo/web/app.py:1184
+#: src/stimmo/web/app.py:1235
 msgid "Ask high"
 msgstr "Prezzo richiesto alto"
 
-#: src/stimmo/web/app.py:1274
+#: src/stimmo/web/app.py:1325
 #, python-format
 msgid "Geocoding failed: %(e)s"
 msgstr "Geocodifica fallita: %(e)s"
 
-#: src/stimmo/web/app.py:1278 src/stimmo/web/app.py:1364
-#: src/stimmo/web/app.py:1409
+#: src/stimmo/web/app.py:1329 src/stimmo/web/app.py:1415
+#: src/stimmo/web/app.py:1460
 msgid "Address is outside the Milano comune — no OMI zone."
 msgstr "L'indirizzo è fuori dal comune di Milano — nessuna zona OMI."
 
-#: src/stimmo/web/app.py:1317 src/stimmo/web/app.py:1371
-#: src/stimmo/web/app.py:1416
+#: src/stimmo/web/app.py:1368 src/stimmo/web/app.py:1422
+#: src/stimmo/web/app.py:1467
 #, python-format
 msgid "OMI lookup failed: %(e)s"
 msgstr "Ricerca OMI fallita: %(e)s"
 
-#: src/stimmo/web/app.py:1359 src/stimmo/web/app.py:1402
+#: src/stimmo/web/app.py:1410 src/stimmo/web/app.py:1453
 msgid "Invalid or expired share link."
 msgstr "Link di condivisione non valido o scaduto."
 
@@ -319,7 +320,7 @@ msgstr "circa"
 #: src/stimmo/web/templates/about.html:10
 #: src/stimmo/web/templates/about.html:50 src/stimmo/web/templates/base.html:11
 #: src/stimmo/web/templates/base.html:14 src/stimmo/web/templates/base.html:21
-#: src/stimmo/web/templates/base.html:48 src/stimmo/web/templates/form.html:10
+#: src/stimmo/web/templates/base.html:52 src/stimmo/web/templates/form.html:10
 #: src/stimmo/web/templates/result.html:18
 #: src/stimmo/web/templates/result.html:21
 #: src/stimmo/web/templates/result.html:27
@@ -331,7 +332,7 @@ msgstr ""
 " all'OMI, nessun machine learning, ogni moltiplicatore visibile."
 
 #: src/stimmo/web/templates/about.html:33
-#: src/stimmo/web/templates/base.html:1036
+#: src/stimmo/web/templates/base.html:1040
 msgid "About"
 msgstr "Informazioni"
 
@@ -787,36 +788,36 @@ msgstr "Apri un issue su GitHub"
 msgid "Milan fair-price check"
 msgstr "Controllo prezzo equo"
 
-#: src/stimmo/web/templates/base.html:1030
+#: src/stimmo/web/templates/base.html:1034
 msgid "Fair-price check"
 msgstr "Controllo del prezzo equo"
 
-#: src/stimmo/web/templates/base.html:1034
+#: src/stimmo/web/templates/base.html:1038
 msgid "Estimate"
 msgstr "Stima"
 
-#: src/stimmo/web/templates/base.html:1035
+#: src/stimmo/web/templates/base.html:1039
 msgid "Bookmarklet"
 msgstr "Bookmarklet"
 
-#: src/stimmo/web/templates/base.html:1047
+#: src/stimmo/web/templates/base.html:1051
 msgid "By"
 msgstr "Da"
 
-#: src/stimmo/web/templates/base.html:1051
+#: src/stimmo/web/templates/base.html:1055
 #: src/stimmo/web/templates/neighborhood_detail.html:37
 #: src/stimmo/web/templates/zone_detail.html:37
-#: src/stimmo/web/templates/zones_index.html:32
+#: src/stimmo/web/templates/zones_index.html:35
 msgid "Zones"
 msgstr "Zone"
 
-#: src/stimmo/web/templates/base.html:1052
+#: src/stimmo/web/templates/base.html:1056
 #: src/stimmo/web/templates/bookmarklet.html:22
 #: src/stimmo/web/templates/privacy.html:8
 msgid "Privacy"
 msgstr "Privacy"
 
-#: src/stimmo/web/templates/base.html:1053
+#: src/stimmo/web/templates/base.html:1057
 msgid "Requests &amp; feedback"
 msgstr "Richieste &amp; feedback"
 
@@ -1095,7 +1096,7 @@ msgstr ""
 #: src/stimmo/web/templates/form.html:40
 #: src/stimmo/web/templates/neighborhood_detail.html:56
 #: src/stimmo/web/templates/zone_detail.html:51
-#: src/stimmo/web/templates/zones_index.html:38
+#: src/stimmo/web/templates/zones_index.html:41
 msgid "OMI semester"
 msgstr "Semestre OMI"
 
@@ -1284,7 +1285,7 @@ msgstr "Geocodifica fallita"
 #: src/stimmo/web/templates/form.html:359
 #: src/stimmo/web/templates/omi_alternatives.html:15
 #: src/stimmo/web/templates/result.html:47
-#: src/stimmo/web/templates/zones_index.html:53
+#: src/stimmo/web/templates/zones_index.html:73
 msgid "Zone"
 msgstr "Zona"
 
@@ -1364,7 +1365,7 @@ msgid "Comparison"
 msgstr "Confronto"
 
 #: src/stimmo/web/templates/neighborhood_detail.html:87
-#: src/stimmo/web/templates/zones_index.html:54
+#: src/stimmo/web/templates/zones_index.html:74
 msgid "Area"
 msgstr "Area"
 
@@ -1493,7 +1494,8 @@ msgstr "Fonte"
 
 #: src/stimmo/web/templates/neighborhood_detail.html:211
 #: src/stimmo/web/templates/zone_detail.html:94
-#: src/stimmo/web/templates/zones_index.html:84
+#: src/stimmo/web/templates/zones_index.html:56
+#: src/stimmo/web/templates/zones_index.html:104
 msgid "Source."
 msgstr "Fonte."
 
@@ -2037,7 +2039,7 @@ msgstr ""
 "ultimi 8 semestri."
 
 #: src/stimmo/web/templates/zone_detail.html:39
-#: src/stimmo/web/templates/zones_index.html:75
+#: src/stimmo/web/templates/zones_index.html:95
 msgid "Detail"
 msgstr "Dettaglio"
 
@@ -2090,33 +2092,26 @@ msgstr ""
 "Hai un indirizzo o un annuncio in questa zona? Esegui il controllo "
 "completo del prezzo equo — fascia OMI, coefficienti e verdetto."
 
-#: src/stimmo/web/templates/zones_index.html:2
-#: src/stimmo/web/templates/zones_index.html:21
-msgid "OMI Milano quotations — €/m² by zone"
-msgstr "Quotazioni OMI Milano — €/m² per zona"
+#: src/stimmo/web/templates/zones_index.html:3
+#, python-format
+msgid "OMI Milano quotations (%(sem)s) — €/m² by zone"
+msgstr "Quotazioni OMI Milano (%(sem)s) — €/m² per zona"
 
-#: src/stimmo/web/templates/zones_index.html:5
-#: src/stimmo/web/templates/zones_index.html:12
-msgid "OMI Milano quotations"
-msgstr "Quotazioni OMI Milano"
-
-#: src/stimmo/web/templates/zones_index.html:6
-#: src/stimmo/web/templates/zones_index.html:7
-#: src/stimmo/web/templates/zones_index.html:13
-#: src/stimmo/web/templates/zones_index.html:23
+#: src/stimmo/web/templates/zones_index.html:4
+#, python-format
 msgid ""
-"OMI Milano: every microzone's official €/m² compravendita band, semester "
-"trend, and boundary — sourced from Agenzia delle Entrate data."
+"OMI Milano %(sem)s: the official Agenzia delle Entrate €/m² band for "
+"%(quoted)s Milan zones, with semester trend and boundaries."
 msgstr ""
-"OMI Milano: fascia ufficiale €/m² compravendita di ogni microzona, "
-"andamento semestrale e perimetri — basati sui dati dell'Agenzia delle "
-"Entrate."
+"OMI Milano %(sem)s: la fascia ufficiale €/m² dell'Agenzia delle Entrate "
+"per %(quoted)s zone di Milano, con tendenza semestrale e confini."
 
-#: src/stimmo/web/templates/zones_index.html:34
-msgid "OMI Milano, <em>zone by zone</em>."
-msgstr "OMI Milano, <em>zona per zona</em>."
+#: src/stimmo/web/templates/zones_index.html:37
+#, python-format
+msgid "OMI Milano, <em>zone by zone</em> — %(sem)s"
+msgstr "OMI Milano, <em>zona per zona</em> — %(sem)s"
 
-#: src/stimmo/web/templates/zones_index.html:35
+#: src/stimmo/web/templates/zones_index.html:38
 msgid ""
 "Every OMI microzone in the comune with its official Compr_min – Compr_max"
 " €/m² band, grouped by fascia. Click through for the semester trend and "
@@ -2126,20 +2121,105 @@ msgstr ""
 "Compr_max €/m², raggruppata per fascia. Clicca per vedere l'andamento "
 "semestrale e il confine della zona."
 
-#: src/stimmo/web/templates/zones_index.html:40
-#: src/stimmo/web/templates/zones_index.html:48
-msgid "zones"
-msgstr "zone"
+#: src/stimmo/web/templates/zones_index.html:43
+msgid "zones with a quotation"
+msgstr "zone con quotazione"
 
-#: src/stimmo/web/templates/zones_index.html:47
+#: src/stimmo/web/templates/zones_index.html:49
+msgid "What OMI is, and how to read it"
+msgstr "Cos'è l'OMI e come leggerlo"
+
+#: src/stimmo/web/templates/zones_index.html:51
+msgid ""
+"OMI is the Osservatorio del Mercato Immobiliare of the Agenzia delle "
+"Entrate. Twice a year it publishes, for every microzone of the comune, a "
+"minimum and a maximum €/m² value for each property type and state of "
+"repair."
+msgstr ""
+"L'OMI è l'Osservatorio del Mercato Immobiliare dell'Agenzia delle "
+"Entrate. Due volte l'anno pubblica, per ogni microzona del comune, un "
+"valore minimo e massimo in €/m² per ogni tipologia immobiliare e stato di"
+" conservazione."
+
+#: src/stimmo/web/templates/zones_index.html:51
+#, python-format
+msgid ""
+"The figures on this page are the residential (\"abitazioni civili\") band"
+" for %(sem)s."
+msgstr ""
+"I dati in questa pagina sono la fascia residenziale (\"abitazioni "
+"civili\") per il %(sem)s."
+
+#: src/stimmo/web/templates/zones_index.html:52
+msgid ""
+"Read the band as a range, not a price. The minimum and maximum bracket "
+"what an ordinary property of that type in that zone is worth; a specific "
+"flat can sit outside it because of floor, condition, outdoor space or "
+"finishes."
+msgstr ""
+"Leggi la fascia come un intervallo, non un prezzo. Il minimo e il massimo"
+" delimitano il valore di un immobile ordinario di quel tipo in quella "
+"zona; un singolo appartamento può collocarsi al di fuori di essa a causa "
+"del piano, dello stato manutentivo, degli spazi esterni o delle finiture."
+
+#: src/stimmo/web/templates/zones_index.html:53
+msgid ""
+"Zones are grouped by fascia: B central, C semi-central, D peripheral, E "
+"suburban, R outlying."
+msgstr ""
+"Le zone sono raggruppate per fascia: B centrale, C semicentrale, D "
+"periferica, E suburbana, R extraurbana."
+
+#: src/stimmo/web/templates/zones_index.html:53
+#, python-format
+msgid ""
+"%(quoted)s of Milan's %(total)s OMI zones have a residential quotation "
+"this semester; a zone with none is shown without a band rather than with "
+"an invented one."
+msgstr ""
+"%(quoted)s delle %(total)s zone OMI di Milano hanno una quotazione "
+"residenziale questo semestre; una zona senza quotazione viene mostrata "
+"senza fascia piuttosto che con una inventata."
+
+#: src/stimmo/web/templates/zones_index.html:54
+msgid ""
+"Listing prices on the portals are asking prices, not sale prices. To "
+"compare a specific listing with its zone's band — adjusted for floor, "
+"condition and the rest — use the estimator."
+msgstr ""
+"I prezzi di annunci sui portali sono prezzi richiesti, non prezzi di "
+"vendita. Per confrontare un annuncio specifico con la fascia della sua "
+"zona — adeguata per piano, stato e resto — usa lo stimatore."
+
+#: src/stimmo/web/templates/zones_index.html:54
+msgid "Check a listing against its band"
+msgstr "Verifica un annuncio rispetto alla sua fascia"
+
+#: src/stimmo/web/templates/zones_index.html:57
+msgid ""
+"Agenzia delle Entrate — Osservatorio del Mercato Immobiliare, quotazioni "
+"immobiliari"
+msgstr ""
+"Agenzia delle Entrate — Osservatorio del Mercato Immobiliare, quotazioni "
+"immobiliari"
+
+#: src/stimmo/web/templates/zones_index.html:59
+msgid "zone boundaries from the Comune di Milano open-data portal"
+msgstr "confini delle zone dal portale open data del Comune di Milano"
+
+#: src/stimmo/web/templates/zones_index.html:67
 msgid "Fascia"
 msgstr "Fascia"
 
-#: src/stimmo/web/templates/zones_index.html:55
+#: src/stimmo/web/templates/zones_index.html:68
+msgid "zones"
+msgstr "zone"
+
+#: src/stimmo/web/templates/zones_index.html:75
 msgid "Neighborhood"
 msgstr "Quartiere"
 
-#: src/stimmo/web/templates/zones_index.html:84
+#: src/stimmo/web/templates/zones_index.html:104
 msgid ""
 "OMI quotations and zone boundaries — Agenzia delle Entrate / Comune di "
 "Milano, licensed IODL 2.0. Bundled with stimmo, refreshed each semester."
@@ -2147,7 +2227,21 @@ msgstr ""
 "Quotazioni OMI e confini delle zone — Agenzia delle Entrate / Comune di "
 "Milano, licenza IODL 2.0. Integrato in stimmo, aggiornato ogni semestre."
 
-#: src/stimmo/web/templates/zones_index.html:89
+#: src/stimmo/web/templates/zones_index.html:109
 msgid "Check a listing against these bands"
 msgstr "Verifica un annuncio rispetto a queste fasce"
+
+#~ msgid "OMI Milano quotations"
+#~ msgstr "Quotazioni OMI Milano"
+
+#~ msgid ""
+#~ "OMI Milano: every microzone's official "
+#~ "€/m² compravendita band, semester trend, "
+#~ "and boundary — sourced from Agenzia "
+#~ "delle Entrate data."
+#~ msgstr ""
+#~ "OMI Milano: fascia ufficiale €/m² "
+#~ "compravendita di ogni microzona, andamento "
+#~ "semestrale e perimetri — basati sui "
+#~ "dati dell'Agenzia delle Entrate."
 

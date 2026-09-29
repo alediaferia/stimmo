@@ -1,16 +1,19 @@
 {% extends "base.html" %}
-{% block title %}{% trans %}OMI Milano quotations — €/m² by zone{% endtrans %} — stimmo{% endblock %}
+{% set _sem = semester | semester %}
+{% set _page_title = _("OMI Milano quotations (%(sem)s) — €/m² by zone") % {"sem": _sem} %}
+{% set _descr = _("OMI Milano %(sem)s: the official Agenzia delle Entrate €/m² band for %(quoted)s Milan zones, with semester trend and boundaries.") % {"sem": _sem, "quoted": quoted_zone_count} %}
+{% block title %}{{ _page_title }} — stimmo{% endblock %}
 {% block og_meta %}
 <meta property="og:type" content="website">
-<meta property="og:title" content="stimmo — {% trans %}OMI Milano quotations{% endtrans %}">
-<meta name="description" content="{% trans %}OMI Milano: every microzone's official €/m² compravendita band, semester trend, and boundary — sourced from Agenzia delle Entrate data.{% endtrans %}">
-<meta property="og:description" content="{% trans %}OMI Milano: every microzone's official €/m² compravendita band, semester trend, and boundary — sourced from Agenzia delle Entrate data.{% endtrans %}">
+<meta property="og:title" content="stimmo — {{ _page_title }}">
+<meta name="description" content="{{ _descr }}">
+<meta property="og:description" content="{{ _descr }}">
 <meta property="og:image" content="{{ request.base_url }}{{ static_url('og-image.png').lstrip('/') }}">
 <meta property="og:url" content="{{ request.url }}">
 <meta property="og:locale" content="{{ locale }}">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="stimmo — {% trans %}OMI Milano quotations{% endtrans %}">
-<meta name="twitter:description" content="{% trans %}OMI Milano: every microzone's official €/m² compravendita band, semester trend, and boundary — sourced from Agenzia delle Entrate data.{% endtrans %}">
+<meta name="twitter:title" content="stimmo — {{ _page_title }}">
+<meta name="twitter:description" content="{{ _descr }}">
 <meta name="twitter:image" content="{{ request.base_url }}{{ static_url('og-image.png').lstrip('/') }}">
 {% endblock %}
 {% block json_ld %}
@@ -18,9 +21,9 @@
 {
   "@context": "https://schema.org",
   "@type": "CollectionPage",
-  "name": {{ _("OMI Milano quotations — €/m² by zone") | tojson }},
+  "name": {{ _page_title | tojson }},
   "url": {{ canonical_url | tojson }},
-  "description": {{ _("OMI Milano: every microzone's official €/m² compravendita band, semester trend, and boundary — sourced from Agenzia delle Entrate data.") | tojson }}
+  "description": {{ _descr | tojson }}
 }
 </script>
 {% endblock %}
@@ -31,14 +34,31 @@
     <div class="stepper">
       <span class="step on"><span class="num">§</span> {% trans %}Zones{% endtrans %}</span>
     </div>
-    <h1>{% trans %}OMI Milano, <em>zone by zone</em>.{% endtrans %}</h1>
+    <h1>{% trans sem=_sem %}OMI Milano, <em>zone by zone</em> — {{ sem }}{% endtrans %}</h1>
     <p class="sub">{% trans %}Every OMI microzone in the comune with its official Compr_min – Compr_max €/m² band, grouped by fascia. Click through for the semester trend and zone boundary.{% endtrans %}</p>
   </div>
   <div class="meta">
     {% trans %}OMI semester{% endtrans %}<br>
-    <b>{{ semester }}</b>
-    <div style="margin-top:8px;opacity:0.7">{{ zone_count }} {% trans %}zones{% endtrans %}</div>
+    <b>{{ _sem }}</b>
+    <div style="margin-top:8px;opacity:0.7">{{ quoted_zone_count }} / {{ zone_count }} {% trans %}zones with a quotation{% endtrans %}</div>
   </div>
+</div>
+
+<div class="doc" id="cose-omi">
+  <div class="doc-head">
+    <h2 class="doc-title">{% trans %}What OMI is, and how to read it{% endtrans %}</h2>
+  </div>
+  <p>{% trans %}OMI is the Osservatorio del Mercato Immobiliare of the Agenzia delle Entrate. Twice a year it publishes, for every microzone of the comune, a minimum and a maximum €/m² value for each property type and state of repair.{% endtrans %} {{ _("The figures on this page are the residential (\"abitazioni civili\") band for %(sem)s.") % {"sem": _sem} }}</p>
+  <p>{% trans %}Read the band as a range, not a price. The minimum and maximum bracket what an ordinary property of that type in that zone is worth; a specific flat can sit outside it because of floor, condition, outdoor space or finishes.{% endtrans %}</p>
+  <p>{% trans %}Zones are grouped by fascia: B central, C semi-central, D peripheral, E suburban, R outlying.{% endtrans %} {{ _("%(quoted)s of Milan's %(total)s OMI zones have a residential quotation this semester; a zone with none is shown without a band rather than with an invented one.") % {"quoted": quoted_zone_count, "total": zone_count} }}</p>
+  <p>{% trans %}Listing prices on the portals are asking prices, not sale prices. To compare a specific listing with its zone's band — adjusted for floor, condition and the rest — use the estimator.{% endtrans %} <a href="/{{ lang }}/">{% trans %}Check a listing against its band{% endtrans %} →</a></p>
+  <p class="note" style="margin-top:12px">
+    <b>{% trans %}Source.{% endtrans %}</b>
+    {% trans %}Agenzia delle Entrate — Osservatorio del Mercato Immobiliare, quotazioni immobiliari{% endtrans %}
+    <a href="https://www.agenziaentrate.gov.it/portale/schede/fabbricatiterreni/omi/banche-dati/quotazioni-immobiliari" rel="noopener">↗</a>;
+    {% trans %}zone boundaries from the Comune di Milano open-data portal{% endtrans %}
+    <a href="https://dati.comune.milano.it/dataset?tags=OMI" rel="noopener">↗</a>, IODL 2.0.
+  </p>
 </div>
 
 {% for fascia, zone_list in fascia_groups %}
