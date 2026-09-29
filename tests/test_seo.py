@@ -20,8 +20,9 @@ from stimmo.data import neighborhoods as nb_module
 from stimmo.data import omi, zones
 from stimmo.web import app as app_module
 from stimmo.web.app import (
+    _STATIC_PAGE_COPY_DATE,
+    _ZONES_INDEX_COPY_DATE,
     SeoRoute,
-    _release_date,
     _semester_start_date,
     _seo_urls,
     _sitemap_xml,
@@ -132,12 +133,20 @@ class TestSitemapXml:
 
 
 class TestSitemapLastmod:
-    """R2: every URL's <lastmod> must derive from whatever actually determines that
-    URL's content (CHANGELOG.md's release date for static template pages, the
-    bundled OMI semester for the OMI-band pages, the content file's per-neighborhood
-    `updated` date otherwise) — never build/deploy time, and never a fabricated
-    date when the real one is unknown. See SeoRoute.lastmod and the three supplier
-    functions in web/app.py."""
+    """R4 (2026-09-23 SEO review): every URL's <lastmod> must derive from whatever
+    actually determines that URL's content — an explicit, deliberately-set content
+    date for hand-written template pages, the bundled OMI semester for zone_detail,
+    the later of the two for zones_index (its title/H1/meta were retargeted after
+    the OMI vintage currently bundled), the content file's per-neighborhood
+    `updated` date otherwise — never build/deploy time, and never a fabricated date
+    when the real one is unknown. See SeoRoute.lastmod and the supplier functions
+    in web/app.py.
+
+    Superseded by this class: the pre-R4 mechanism derived static-page lastmod from
+    CHANGELOG.md's most recent release heading, which moved on every deploy
+    (verified live: v0.21.1, a dependency-only release, bumped all 8 static pages'
+    <lastmod> to its release date) — exactly the bug R4 fixes.
+    """
 
     def _lastmod_after(self, body: str, loc: str) -> str | None:
         i = body.find(f"<loc>{loc}</loc>")
@@ -145,21 +154,48 @@ class TestSitemapLastmod:
         m = re.match(r"\s*<lastmod>([^<]+)</lastmod>", body[i + len(f"<loc>{loc}</loc>") :])
         return m.group(1) if m else None
 
-    def test_static_page_lastmod_is_the_release_date(self, client: TestClient):
-        expected = _release_date()
-        assert expected is not None, "CHANGELOG.md must have at least one version heading"
+    def test_static_page_lastmod_is_a_stable_constant(self, client: TestClient):
         body = client.get("/sitemap.xml").text
-        assert self._lastmod_after(body, "https://stimmo.it/it/about") == expected.isoformat()
-        assert self._lastmod_after(body, "https://stimmo.it/en/privacy") == expected.isoformat()
+        expected = _STATIC_PAGE_COPY_DATE.isoformat()
+        assert self._lastmod_after(body, "https://stimmo.it/it/about") == expected
+        assert self._lastmod_after(body, "https://stimmo.it/en/privacy") == expected
 
-    def test_zone_pages_lastmod_is_the_omi_semester_start(self, client: TestClient):
+    def test_static_page_lastmod_is_unaffected_by_app_version_or_build_time(
+        self, client: TestClient, monkeypatch: pytest.MonkeyPatch
+    ):
+        # Simulate a dependency-only release bump: app_version changes, but no
+        # static-page content did. <lastmod> must not move with it.
+        monkeypatch.setitem(
+            app_module.templates.env.globals, "app_version", "v99.99.99-fake-release"
+        )
+        body = client.get("/sitemap.xml").text
+        assert self._lastmod_after(body, "https://stimmo.it/it/about") == (
+            _STATIC_PAGE_COPY_DATE.isoformat()
+        )
+
+    def test_zone_detail_lastmod_is_the_omi_semester_start_only(self, client: TestClient):
         expected = _semester_start_date(omi.semester())
         assert expected is not None
         body = client.get("/sitemap.xml").text
-        assert self._lastmod_after(body, "https://stimmo.it/it/zones") == expected.isoformat()
         code, _descr = zones.list_zones()[0]
         loc = f"https://stimmo.it/it/zones/{code}"
         assert self._lastmod_after(body, loc) == expected.isoformat()
+
+    def test_zones_index_lastmod_is_the_later_retitle_date(self, client: TestClient):
+        # The 2026-09-01 retitle (2a93fdf) touched zones_index.html only, not
+        # zone_detail.html, and postdates the bundled OMI semester start
+        # (2025-07-01 as of this test's data) — so the index page must carry the
+        # newer copy date, not the OMI date its sibling zone_detail pages use.
+        omi_date = _semester_start_date(omi.semester())
+        assert omi_date is not None
+        assert _ZONES_INDEX_COPY_DATE > omi_date, (
+            "test assumes the retitle date postdates the bundled OMI semester"
+        )
+        body = client.get("/sitemap.xml").text
+        assert (
+            self._lastmod_after(body, "https://stimmo.it/it/zones")
+            == _ZONES_INDEX_COPY_DATE.isoformat()
+        )
 
     def test_every_emitted_lastmod_is_a_valid_iso_date(self, client: TestClient):
         body = client.get("/sitemap.xml").text

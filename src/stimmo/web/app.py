@@ -493,47 +493,67 @@ def _register_seo_route(
 # ---------------------------------------------------------------------------
 
 
-@lru_cache(maxsize=1)
-def _release_date() -> date | None:
-    """Date of the most recent version heading in CHANGELOG.md
-    ("## vX.Y.Z (YYYY-MM-DD)"). CHANGELOG.md is a committed, bundled file — this is
-    the same kind of real, stable data as app_version's _pkg_version() lookup just
-    above, not a proxy for "when was this specific page last touched". Returns None
-    if the file is missing or its heading format ever changes underneath this regex.
-    """
-    changelog = Path(__file__).parent.parent.parent.parent / "CHANGELOG.md"
-    try:
-        text = changelog.read_text(encoding="utf-8")
-    except FileNotFoundError:
-        return None
-    m = re.search(r"^## v\d+\.\d+\.\d+ \((\d{4}-\d{2}-\d{2})\)", text, re.MULTILINE)
-    if not m:
-        return None
-    try:
-        return date.fromisoformat(m.group(1))
-    except ValueError:
-        return None
+# Explicit, deliberately-set content dates — NOT build/release/deploy time, which
+# bumps every URL together on every deploy regardless of what actually changed
+# (the bug this replaces: v0.21.1, a dependency-only release, moved all 8 static
+# pages' <lastmod> to its release date). Each constant below is the date of the
+# most recent commit that changed what that page family actually *renders* —
+# copy, title, or shared structured data — found by inspecting git history, and
+# it only moves when someone deliberately bumps it in the same commit as a real
+# content edit. See the 2026-09-23 SEO review, R4.
+#
+# form/about/bookmarklet/privacy all share one date: 188d581 ("feat(web): add
+# JSON-LD structured data for brand SERP disambiguation", 2026-08-25) added the
+# Organization JSON-LD node unconditionally in base.html — outside the
+# overridable json_ld block — so it renders on every page including these four,
+# and it postdates every other content change to any of them individually
+# (form/about's own JSON-LD in 9580a92 on 2026-07-06; bookmarklet and privacy
+# have had no copy changes since original ship). It is therefore the true most-
+# recent "content changed" event shared by this whole family.
+_STATIC_PAGE_COPY_DATE = date(2026, 8, 25)
+
+# zones_index's title/H1/meta description were retargeted at the "omi milano"
+# head term in 2a93fdf ("feat(web): retarget /it/zones for OMI Milano query",
+# 2026-09-01), then again on 2026-09-23 (R6 of that date's SEO review: semester
+# label, quoted-zone count, and the "Cos'è l'OMI" explainer block). Both changes
+# touched only zones_index.html — not zone_detail.html — so this date applies to
+# the index page alone; see _zones_index_lastmod vs. the plain _omi_lastmod used
+# for zone_detail below. Bump this constant again the next time zones_index.html's
+# rendered copy meaningfully changes.
+_ZONES_INDEX_COPY_DATE = date(2026, 9, 23)
 
 
-def _release_lastmod(_params: Mapping[str, str]) -> date | None:
-    """SeoRoute.lastmod for pages that are hand-written template markup with no
-    finer-grained per-page timestamp of their own (form, about, bookmarklet,
-    privacy) — the release date is the best real signal available for them.
-    Ignores params; every route using this shares one process-wide release date.
+def _static_lastmod(_params: Mapping[str, str]) -> date | None:
+    """SeoRoute.lastmod for hand-written template pages with no finer-grained
+    per-page timestamp of their own (form, about, bookmarklet, privacy). Returns
+    the explicit constant above rather than anything build/deploy-derived —
+    see the comment on _STATIC_PAGE_COPY_DATE for why these four share one date.
     """
-    return _release_date()
+    return _STATIC_PAGE_COPY_DATE
 
 
 def _omi_lastmod(_params: Mapping[str, str]) -> date | None:
     """Start-of-semester date for the OMI vintage currently bundled
-    (data.omi.semester(), e.g. "2025-2" -> 2025-07-01). Used for zones_index and
-    zone_detail: their entire content is exactly this semester's €/m² band, so
-    refreshing OMI (scripts/refresh_omi.py) is the one real event that changes what
-    these pages say — and is therefore the one honest answer to "when did this
-    page's content last change". Same param shape (ignores zone code) for both
-    routes since every zone shares one bundled vintage.
+    (data.omi.semester(), e.g. "2025-2" -> 2025-07-01). Used for zone_detail:
+    its entire content is exactly this semester's €/m² band for that one zone, so
+    refreshing OMI (scripts/refresh_omi.py) is the one real event that changes
+    what the page says. zones_index uses _zones_index_lastmod instead, since its
+    title/copy has its own, separate last-changed date — see that function.
     """
     return _semester_start_date(omi.semester())
+
+
+def _zones_index_lastmod(_params: Mapping[str, str]) -> date | None:
+    """SeoRoute.lastmod for zones_index: the later of the OMI data date (its
+    price bands) and _ZONES_INDEX_COPY_DATE (its own title/H1/meta retitle) —
+    whichever actually changed the page's rendered content more recently. Unlike
+    zone_detail, the retitle commit touched this page specifically, so it gets
+    its own supplier instead of sharing _omi_lastmod.
+    """
+    omi_date = _semester_start_date(omi.semester())
+    if omi_date is None:
+        return _ZONES_INDEX_COPY_DATE
+    return max(omi_date, _ZONES_INDEX_COPY_DATE)
 
 
 def _neighborhood_lastmod(params: Mapping[str, str]) -> date | None:
@@ -594,19 +614,19 @@ def _sitemap_xml() -> str:
 # _register_seo_route calls _sitemap_xml.cache_clear(), so this must come after
 # _sitemap_xml's def above (a plain top-level name lookup, resolved at call time —
 # see the comment inside _register_seo_route).
-_register_seo_route("form", "form", {"it": "/", "en": "/"}, lastmod=_release_lastmod)
-_register_seo_route("about", "about", {"it": "/about", "en": "/about"}, lastmod=_release_lastmod)
+_register_seo_route("form", "form", {"it": "/", "en": "/"}, lastmod=_static_lastmod)
+_register_seo_route("about", "about", {"it": "/about", "en": "/about"}, lastmod=_static_lastmod)
 _register_seo_route(
     "bookmarklet",
     "bookmarklet_page",
     {"it": "/bookmarklet", "en": "/bookmarklet"},
-    lastmod=_release_lastmod,
+    lastmod=_static_lastmod,
 )
 _register_seo_route(
-    "privacy", "privacy", {"it": "/privacy", "en": "/privacy"}, lastmod=_release_lastmod
+    "privacy", "privacy", {"it": "/privacy", "en": "/privacy"}, lastmod=_static_lastmod
 )
 _register_seo_route(
-    "zones_index", "zones_index", {"it": "/zones", "en": "/zones"}, lastmod=_omi_lastmod
+    "zones_index", "zones_index", {"it": "/zones", "en": "/zones"}, lastmod=_zones_index_lastmod
 )
 _register_seo_route(
     "zone_detail",
@@ -626,13 +646,7 @@ _register_seo_route(
     # a neighborhood only enters the sitemap once BOTH language blurbs are filled in,
     # so we never ask Google to index a page that's thin/near-duplicate in either
     # language. The route resolves and renders regardless — see neighborhood_detail
-    # further down — so it stays reachable via the zone pages/zones index links, and
-    # a gated slug (this same both-blurbs condition, checked again at render time)
-    # is served with `<meta name="robots" content="noindex, follow">` so it can be
-    # crawled and its links followed without being indexed as a thin/near-duplicate
-    # page — reconciling the sitemap gate with the index gate (2026-09-23 SEO
-    # review, R3; chiaravalle is the one slug this affects today, since zone R2
-    # has no OMI quotations and its price band is empty).
+    # further down — so it stays reachable via the zone pages/zones index links.
     lastmod=_neighborhood_lastmod,
     expand=lambda: (
         {"slug_it": n.slug_it, "slug_en": n.slug_en}
@@ -1030,12 +1044,6 @@ def _render_neighborhood_detail(request: Request, lang: str, slug: str) -> HTMLR
             "surface_band_rows": _surface_band_rows(band) if band else None,
             "ntn_size_distribution": ntn_distribution if band else None,
             "ntn_latest_quarter": ntn_quarter,
-            # Same both-blurbs condition the sitemap gate uses (see the
-            # neighborhood_detail registration above) — a slug failing it is
-            # served noindex,follow by base.html so it stays crawlable and
-            # linked without being indexed as a thin/near-duplicate page.
-            # 2026-09-23 SEO review, R3.
-            "noindex": not (n.blurb_it and n.blurb_en),
         },
         seo_route="neighborhood_detail",
         seo_params={"slug_it": n.slug_it, "slug_en": n.slug_en},
