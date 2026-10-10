@@ -1,0 +1,163 @@
+{# Purchase-cost inputs: a plain GET form (works without JavaScript). The scenario travels in
+   the query string, so a result is a bookmarkable URL. Expects: costs (form, options,
+   agency_default_pct, ltv_slider) and form_action. The including page also loads
+   static/costs-form.js (mortgage unit conversion and slider); the form never needs it. #}
+<form method="get" action="{{ form_action }}#costs-result" class="costs-form">
+  <div class="form-grid">
+
+    <div class="field col-6">
+      <label for="cost-price">{% trans %}Purchase price{% endtrans %}</label>
+      <div class="input-affix">
+        <span class="affix">€</span>
+        <input class="input numeric" id="cost-price" name="price" type="number" inputmode="decimal"
+          step="any" min="10000" value="{{ costs.form.price }}" required>
+      </div>
+      <span class="hint">{% trans %}What you expect to pay at the deed, not necessarily the asking price.{% endtrans %}</span>
+    </div>
+
+    <div class="field col-6">
+      <label for="cost-surface">{% trans %}Surface{% endtrans %}</label>
+      <div class="input-affix">
+        <input class="input numeric" id="cost-surface" name="surface" type="number" inputmode="decimal"
+          step="any" min="0" value="{{ costs.form.surface }}">
+        <span class="affix right">m²</span>
+      </div>
+      <span class="hint">{% trans %}Only needed to price a renovation.{% endtrans %}</span>
+    </div>
+
+    <div class="field col-6">
+      <label for="cost-home">{% trans %}Tax regime{% endtrans %}</label>
+      <select class="select" id="cost-home" name="home">
+        {% for value, label in costs.options.homes %}
+        <option value="{{ value }}" {% if value == costs.form.home %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="field col-6">
+      <label for="cost-seller">{% trans %}Seller{% endtrans %}</label>
+      <select class="select" id="cost-seller" name="seller">
+        {% for value, label in costs.options.sellers %}
+        <option value="{{ value }}" {% if value == costs.form.seller %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="field col-6">
+      <label for="cost-category">{% trans %}Cadastral category{% endtrans %}</label>
+      <select class="select" id="cost-category" name="category">
+        {% for value, label in costs.options.categories %}
+        <option value="{{ value }}" {% if value == costs.form.category %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <span class="hint">{% trans %}On the visura catastale. A/1, A/8 and A/9 cannot use the prima-casa regime.{% endtrans %}</span>
+    </div>
+
+    <div class="field col-6">
+      <label for="cost-rendita">{% trans %}Rendita catastale{% endtrans %}</label>
+      <div class="input-affix">
+        <span class="affix">€</span>
+        <input class="input numeric" id="cost-rendita" name="rendita" type="number" inputmode="decimal"
+          step="any" min="0" value="{{ costs.form.rendita }}" placeholder="{% trans %}optional{% endtrans %}">
+      </div>
+      <span class="hint">{% trans %}From the visura or the agent. Leave empty if unknown: the registro tax is then shown as a range.{% endtrans %}</span>
+    </div>
+
+    <div class="field col-4">
+      <label for="cost-agency">{% trans %}Agency fee{% endtrans %}</label>
+      <div class="input-affix">
+        <input class="input numeric" id="cost-agency" name="agency" type="number" inputmode="decimal"
+          step="0.1" min="0" max="10" value="{{ costs.form.agency }}">
+        <span class="affix right">%</span>
+      </div>
+      <span class="hint">{% trans %}Plus IVA. 0 if there is no agency.{% endtrans %}</span>
+    </div>
+
+    {# The mortgage is one number plus a unit. Everything inside .ltv, the equivalent line and the
+       error line is progressive enhancement: static/costs-form.js reveals and drives them, and the
+       plain form below works without it. The limits (80 / 100) come from costs/rates.py. #}
+    {% set ltv = costs.ltv_slider %}
+    <div class="field col-8" id="cost-mortgage-field"
+      data-ltv-limit="{{ ltv.limit }}" data-ltv-max="{{ ltv.max }}"
+      data-of-price="{% trans %}of the price{% endtrans %}"
+      data-msg-over-price="{% trans %}The mortgage cannot exceed the purchase price.{% endtrans %}"
+      data-msg-pct-range="{% trans low='0%', high=ltv.max_label %}The mortgage percentage must be between %(low)s and %(high)s.{% endtrans %}">
+      <label for="cost-mortgage">{% trans %}Mortgage{% endtrans %}</label>
+      <div class="input-affix">
+        <input class="input numeric" id="cost-mortgage" name="mortgage" type="number" inputmode="decimal"
+          step="any" min="0" value="{{ costs.form.mortgage }}" placeholder="{% trans %}optional{% endtrans %}"
+          aria-describedby="cost-mortgage-equiv cost-mortgage-error">
+        <select class="select unit" id="cost-mortgage-unit" name="mortgage_unit" aria-label="{% trans %}Mortgage unit{% endtrans %}">
+          <option value="eur" {% if costs.form.mortgage_unit != "pct" %}selected{% endif %}>€</option>
+          <option value="pct" {% if costs.form.mortgage_unit == "pct" %}selected{% endif %}>% {% trans %}of the price{% endtrans %}</option>
+        </select>
+      </div>
+      <span class="ltv-equiv" id="cost-mortgage-equiv"></span>
+      <span class="hint ltv-error" id="cost-mortgage-error" role="alert" hidden></span>
+      <div class="ltv" id="cost-ltv" style="--ltv-frac: {{ ltv.frac }}" data-zone="ok" hidden>
+        <div class="ltv-track">
+          <input class="ltv-range" id="cost-mortgage-range" type="range" min="0" max="{{ ltv.max }}" step="1" value="0"
+            aria-label="{% trans %}Mortgage, as a percentage of the price{% endtrans %}"
+            aria-describedby="cost-ltv-legend">
+          <span class="ltv-mark" aria-hidden="true"></span>
+        </div>
+        <div class="ltv-scale" aria-hidden="true">
+          <span class="at-min">0%</span><span class="at-limit">{{ ltv.limit_label }}</span><span class="at-max">{{ ltv.max_label }}</span>
+        </div>
+        <div class="ltv-legend" id="cost-ltv-legend">
+          <span><i class="sw mark"></i>{% trans limit=ltv.limit_label %}%(limit)s: ordinary mutuo fondiario limit{% endtrans %}</span>
+          <span><i class="sw zone"></i>{% trans limit=ltv.limit_label, max=ltv.max_label %}%(limit)s to %(max)s: integrative guarantees required{% endtrans %}</span>
+        </div>
+        <p class="ltv-caution" id="cost-ltv-caution" role="status" hidden>{% trans limit=ltv.limit_label, max=ltv.max_label %}Above the ordinary %(limit)s limit, the rules allow up to %(max)s only with integrative guarantees. This is the general rule, not an assessment of your case: ask the bank.{% endtrans %}</p>
+      </div>
+      <span class="hint">{% trans %}An amount in euros or a percentage of the price (loan-to-value), from 0 to 100. A percentage is computed on the price, while the bank applies its limits to the value of its own appraisal (perizia), so it is an approximation. Leave empty for no mortgage.{% endtrans %}</span>
+    </div>
+
+    {# Term and rate of the mortgage, for the monthly payment. Plain fields: read only when a
+       mortgage is set, and the rate is the buyer's own — the reference below is information, and
+       the pre-filled value is the same average, visible and editable. #}
+    <div class="field col-4">
+      <label for="cost-mortgage-years">{% trans %}Mortgage term{% endtrans %}</label>
+      <select class="select" id="cost-mortgage-years" name="mortgage_years">
+        {% for value, label in costs.options.years %}
+        <option value="{{ value }}" {% if value == costs.form.mortgage_years %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="field col-4">
+      <label for="cost-mortgage-rate">{% trans %}Interest rate (TAN){% endtrans %}</label>
+      <div class="input-affix">
+        <input class="input numeric" id="cost-mortgage-rate" name="mortgage_rate" type="number" inputmode="decimal"
+          step="0.01" min="0" max="20" value="{{ costs.form.mortgage_rate }}" placeholder="{% trans %}optional{% endtrans %}">
+        <span class="affix right">%</span>
+      </div>
+      <span class="hint">{% trans %}Annual nominal rate, interest only and without fees. Used only when a mortgage is set.{% endtrans %}</span>
+    </div>
+
+    {% set ref = costs.rate_ref %}
+    <div class="field col-12 rate-ref" id="cost-rate-ref">
+      <p class="rate-ref-head"><b>{% trans %}Market averages{% endtrans %}</b> · {% trans month=ref.month %}new house-purchase loans to households, Banca d'Italia, %(month)s{% endtrans %}{% if ref.provisional %} <span class="tag">{% trans %}provisional{% endtrans %}</span>{% endif %}{% if ref.stale %} <span class="tag stale ref-stale">{{ cost_stale_label() }}</span>{% endif %}</p>
+      <ul class="rate-ref-list">
+        {% for label, value in ref.rows %}
+        <li><span>{{ label }}</span> <b class="mono">{{ value }}</b></li>
+        {% endfor %}
+      </ul>
+      <span class="hint">{% trans taeg=ref.taeg %}The TAN is the interest rate alone; the TAEG (%(taeg)s on average) also counts fees and mandatory insurance, so it is higher and is not a TAN.{% endtrans %} {% trans %}Averages across new loans, not an offer: the rate any lender applies depends on its own conditions.{% endtrans %} <a class="cost-src" href="{{ ref.source_url }}" target="_blank" rel="noopener nofollow">{% trans %}source{% endtrans %}</a></span>
+    </div>
+
+    <div class="field col-12">
+      <label for="cost-tier">{% trans %}Renovation{% endtrans %}</label>
+      <select class="select" id="cost-tier" name="tier">
+        {% for value, label in costs.options.tiers %}
+        <option value="{{ value }}" {% if value == costs.form.tier %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <span class="hint">{% trans %}Works are priced per m² at Milan prices, assumed to exclude IVA. Pick the tier closest to what you expect to do.{% endtrans %}</span>
+    </div>
+
+  </div>
+  <div class="form-actions" style="margin-top:16px">
+    <button class="btn" type="submit">{% trans %}Recalculate{% endtrans %} <span class="arrow">→</span></button>
+  </div>
+</form>

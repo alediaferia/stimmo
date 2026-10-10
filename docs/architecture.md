@@ -47,6 +47,10 @@ Rules the file follows, because the figures are advice-adjacent and some are not
 
 ### Pure calculator, structured output
 
+`calculator.compute(PurchaseScenario) -> CostBreakdown` takes no clock and does no I/O (the scenario's `as_of` decides which bonus years are shown and which benchmark ranges are past their review date). It returns `CostLine`s — `code` + `params` + `CostStatus` (`statutory`, `contractual`, `benchmark`, `indicative`, `needs_input`) + low/central/high — which `web/labels.py` renders per locale. The shared types are in `models.py`, so the calculator is frontend-agnostic like the engine.
+
+A line built from a benchmark past its `due` date carries `stale=True` (and `due`), separate from its `CostStatus` because a line can be both indicative and stale; one `ranges_overdue` note counts them and gives the oldest review date, and the web layer renders the "to be checked" badge and the note through `web/labels.py`. The web layer and the MCP tool supply today's date; `scripts/check_rates.py` lists what is overdue or due soon (exit 1 when something is overdue). Staleness is presentational: it never changes a figure or a total.
+
 Totals are closing costs, renovation, total on top of the price and cash needed. The renovation-bonus deduction is a separate `offset` group: it is shown per payment year and never subtracted from the totals, because it is spread over ten years and depends on the buyer's income.
 
 ### Missing inputs are bounded, not estimated
@@ -67,6 +71,10 @@ The legal boundary is hard: a generic calculation on the amount, term and rate t
 
 Reference rates live in `costs/rates.py` as `Benchmark`s with `review_months=3`, so the freshness mechanism covers them: Banca d'Italia, "Banche e moneta: serie nazionali", Tavola 2.4 (MIR0400), new loans to households for house purchase — the average nominal rate (net of fees, the TAN's kind of figure), the same split by initial rate-setting period (up to / over one year: Banca d'Italia publishes no fixed/variable split as such, and the copy says "typically"), and the TAEG, a different measure (fees and insurance included) shown as a TAEG and never used as a TAN. `MORTGAGE_RATE_DATA_MONTH` is the month they describe and is shown with them; they are market averages, not an offer. Refresh them from the newest monthly issue (listed at `bancaditalia.it/pubblicazioni/moneta-banche/<year>-moneta/`), update the figures, the data month, the provisional flag and the URL together, and bump the `as_of` dates.
 
+### Web surface
+
+- Result page: a section below the verdict, prefilled from the property (price, surface, condition → default renovation tier via `rates.FINE_CONDITION_DEFAULT_TIER`). Its form is a plain GET form to the standalone calculator, so it works without JavaScript and every scenario is a bookmarkable URL.
+- Standalone calculator: `/it/costi-acquisto-casa-milano` and `/en/milan/home-buying-costs`, registered once through `_register_seo_route` (canonical, hreflang and sitemap `<lastmod>` = `RATES_AS_OF`). The bare URL renders a worked example so the indexable page always carries real numbers; a submitted scenario is served `noindex` with the bare URL as canonical. "Not included" is its own section (`#not-included`, which the estimate's one-line summary of the exclusions links to) and the methodology (`#method`) is a native, collapsed `<details>`; `static/costs-form.js` opens it when the URL fragment points inside it. Both pages show the renovation €/m² as Milan prices.
 ## Web layer
 
 ### Server-rendered Jinja2, no JS framework
@@ -76,6 +84,9 @@ All pages are rendered on the server. JavaScript is used only for:
 - Live geocoder debounce (form page, `fetch /api/geocode`).
 - Segmented control state (form page, one 5-line function).
 - Bookmarklet copy-to-clipboard and paste-fallback toggle (bookmarklet page).
+- The purchase-cost form's mortgage field (`static/costs-form.js`, loaded by the result page and the standalone calculator): switching the unit converts the value using the price field, and in % mode a 0–100 slider (with the 80% / 100% mutuo-fondiario limits) and a live equivalent appear. The limits, the translated labels and the validation messages are rendered by `_costs_form.html` into data attributes (limits from `costs/rates.py`), so the script holds no rate or copy.
+
+The purchase-cost inputs (result page and standalone calculator) are plain GET forms and need no JavaScript: the script only enhances them, the slider markup is rendered `hidden`, and the server validates everything again (a percentage above 100 is an error, never read as euros).
 
 There is no React, Vue, or any framework. The design prototype (`/tmp/stimmo-design/`) was React/Babel-CDN; that JSX was translated into Jinja partials when implementing. Do not introduce a JS build step or bundler — the lack of one is a feature, not an oversight.
 

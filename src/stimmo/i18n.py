@@ -99,10 +99,14 @@ def gettext_lazy(key: str) -> _LazyStr:
 # ---------------------------------------------------------------------------
 
 
-def fmt_eur(n: float, locale: str | None = None) -> str:
-    """Format as Euro currency according to locale conventions."""
+def fmt_eur(n: float, locale: str | None = None, *, cents: bool = False) -> str:
+    """Format as Euro currency according to locale conventions: whole euros, or with the cents
+    (``cents=True``, for a figure that is quoted to the cent, like a monthly loan payment)."""
     loc = locale or _current_locale.get()
-    formatted = format_decimal(round(n), format="#,##0", locale=loc)
+    if cents:
+        formatted = format_decimal(round(n, 2), format="#,##0.00", locale=loc)
+    else:
+        formatted = format_decimal(round(n), format="#,##0", locale=loc)
     return ("€ " if loc.startswith("it") else "€") + formatted
 
 

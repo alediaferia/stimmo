@@ -156,9 +156,14 @@ class TestSitemapLastmod:
 
     def test_static_page_lastmod_is_a_stable_constant(self, client: TestClient):
         body = client.get("/sitemap.xml").text
-        expected = _STATIC_PAGE_COPY_DATE.isoformat()
-        assert self._lastmod_after(body, "https://stimmo.it/it/about") == expected
-        assert self._lastmod_after(body, "https://stimmo.it/en/privacy") == expected
+        shared = _STATIC_PAGE_COPY_DATE.isoformat()
+        own = app_module._ABOUT_PRIVACY_COPY_DATE.isoformat()
+        # form and bookmarklet keep the shared date; about and privacy carry their own.
+        assert self._lastmod_after(body, "https://stimmo.it/it/") == shared
+        assert self._lastmod_after(body, "https://stimmo.it/en/bookmarklet") == shared
+        assert self._lastmod_after(body, "https://stimmo.it/it/about") == own
+        assert self._lastmod_after(body, "https://stimmo.it/en/privacy") == own
+        assert own > shared
 
     def test_static_page_lastmod_is_unaffected_by_app_version_or_build_time(
         self, client: TestClient, monkeypatch: pytest.MonkeyPatch
@@ -170,7 +175,7 @@ class TestSitemapLastmod:
         )
         body = client.get("/sitemap.xml").text
         assert self._lastmod_after(body, "https://stimmo.it/it/about") == (
-            _STATIC_PAGE_COPY_DATE.isoformat()
+            app_module._ABOUT_PRIVACY_COPY_DATE.isoformat()
         )
 
     def test_zone_detail_lastmod_is_the_omi_semester_start_only(self, client: TestClient):
@@ -464,7 +469,7 @@ def empty_content_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 
 class TestSitemapRegressionSnapshot:
-    """The non-neighborhood sitemap surface is 96 URLs: 5 static paths x 2 langs,
+    """The non-neighborhood sitemap surface is 98 URLs: 6 static paths x 2 langs,
     plus every OMI zone code x 2 langs. This is the regression bar for the registry
     refactor — the exact same URL set, computed independently of _sitemap_xml's
     implementation, and pinned to an empty content dir so it can never drift just
@@ -483,12 +488,15 @@ class TestSitemapRegressionSnapshot:
         for path in ("/about", "/bookmarklet", "/privacy", "/zones"):
             for lang in ("it", "en"):
                 expected.add(f"https://stimmo.it/{lang}{path}")
+        # The purchase-cost calculator: per-language slugs, so spelled out rather than looped.
+        expected.add("https://stimmo.it/it/costi-acquisto-casa-milano")
+        expected.add("https://stimmo.it/en/milan/home-buying-costs")
         for code, _descr in zones.list_zones():
             for lang in ("it", "en"):
                 expected.add(f"https://stimmo.it/{lang}/zones/{code}")
 
         assert locs == expected
-        assert len(locs) == 96
+        assert len(locs) == 98
 
     def test_fully_blurbed_neighborhood_adds_exactly_its_two_urls(
         self, client: TestClient, empty_content_dir: Path
@@ -502,7 +510,7 @@ class TestSitemapRegressionSnapshot:
         body = client.get("/sitemap.xml").text
         locs = set(re.findall(r"<loc>(.*?)</loc>", body))
 
-        assert len(locs) == 98
+        assert len(locs) == 100
         assert f"https://stimmo.it/it/milano/{n.slug_it}-prezzi-al-mq" in locs
         assert f"https://stimmo.it/en/milan/{n.slug_en}-property-prices" in locs
 

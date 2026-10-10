@@ -138,6 +138,23 @@
   </div>
 </div>
 
+{% if costs and costs.cb %}
+<div class="doc" id="costs" style="margin-top:24px">
+  <div class="doc-head">
+    <h2 class="doc-title">{% trans %}What it really costs{% endtrans %}</h2>
+    <span class="doc-eyebrow">§ {% trans %}On top of the asking price · separate from the verdict{% endtrans %}</span>
+  </div>
+  {% with compact=True %}{% include "_costs_breakdown.html" %}{% endwith %}
+  <details class="costs-adjust" id="costs-adjust">
+    <summary>{% trans %}Adjust the assumptions{% endtrans %}</summary>
+    {% set form_action = costs.calculator_url %}
+    {% include "_costs_form.html" %}
+  </details>
+  <p class="costs-assume" style="margin:12px 0 0"><a href="{{ costs.calculator_url }}#method">{% trans %}How this is calculated{% endtrans %} →</a></p>
+</div>
+{% endif %}
+
+
 <div class="grid-2" style="margin-top:24px">
   <div>
     <div class="doc">
@@ -319,6 +336,9 @@
 {% endblock %}
 
 {% block scripts %}
+{% if costs and costs.cb %}
+<script src="{{ static_url('costs-form.js') }}"></script>
+{% endif %}
 {% if share_url %}
 <script>
 (function () {

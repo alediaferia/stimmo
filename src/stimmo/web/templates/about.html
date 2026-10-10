@@ -207,11 +207,12 @@
     <div class="principle-eyebrow">Principle · 01</div>
     <h2 class="principle-h">{% trans %}No machine learning.{% endtrans %}</h2>
     <p class="principle-p">
-      {% trans %}stimmo has no trained model. The entire tuning surface is a single
-      file — <span class="mono">valuation/adjustments.py</span>. Every
+      {% trans %}stimmo has no trained model. Valuation multipliers live in a single
+      file — <span class="mono">valuation/adjustments.py</span> — and transaction-cost
+      rates in another, <span class="mono">costs/rates.py</span>. Every valuation
       multiplier (floor, lift, size, condition, energy, outdoor, era, orientation,
       exposure, room density, second bathroom, parking box, and amenities)
-      lives there in plain Python.{% endtrans %}
+      lives in the first, in plain Python.{% endtrans %}
     </p>
     <p class="principle-p">
       {% trans %}The verdict is <em>deterministic</em>: same inputs, same output.
@@ -259,6 +260,20 @@
       classifying. ±5 % around the shifted band is "fair". The constant lives
       in <span class="mono">verdict.py::ASK_PREMIUM_PCT</span>.{% endtrans %}
     </p>
+  </div>
+</div>
+
+<!-- Purchase costs -->
+<h2 class="section-h">{% trans %}What buying it costs{% endtrans %}</h2>
+<div class="doc">
+  <p class="principle-p">
+    {% trans %}The price is not the whole bill. Taxes, notary, agency, mortgage and any renovation come on top, so the report also shows an estimate of what the purchase really costs.{% endtrans %}
+  </p>
+  <p class="principle-p">
+    {% trans %}It is a separate, deterministic calculation with its own rates file, <span class="mono">costs/rates.py</span>, and it never feeds the verdict, which still comes only from the valuation coefficients above. Taxes follow the statutory formulas; fees and renovation are published ranges, and any range we could not confirm as current is labelled indicative. Where an input is missing, such as the rendita catastale that listings rarely state, the figure is shown as a range rather than guessed.{% endtrans %}
+  </p>
+  <div class="principle-foot">
+    <a href="{{ costs_calculator_url(lang) }}" class="btn btn-ghost">{% trans %}Open the costs calculator{% endtrans %} <span class="arrow">→</span></a>
   </div>
 </div>
 

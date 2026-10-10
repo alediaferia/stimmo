@@ -59,6 +59,7 @@ from stimmo.models import (
 )
 from stimmo.valuation import engine
 from stimmo.valuation.verdict import HIGH_TOL
+from stimmo.web import costs_view as _costs_view
 from stimmo.web import labels as _labels
 from stimmo.web import metrics as _metrics
 from stimmo.web import ogimage as _ogimage
@@ -74,11 +75,17 @@ templates.env.add_extension("jinja2.ext.i18n")
 templates.env.install_gettext_callables(_, ngettext, newstyle=False)
 
 templates.env.filters["eur"] = lambda n: fmt_eur(n)
+templates.env.filters["eur_cents"] = lambda n: fmt_eur(n, cents=True)
 templates.env.filters["pct"] = lambda n, d=1: fmt_pct(n, digits=d)
 templates.env.filters["semester"] = lambda s: fmt_semester(s)
 templates.env.filters["num"] = lambda n: _fmt_num(n)
 templates.env.globals["app_version"] = "v" + _pkg_version("stimmo")
 templates.env.globals["render_label"] = _labels.render
+templates.env.globals["render_cost_line"] = _labels.render_cost_line
+templates.env.globals["render_cost_note"] = _labels.render_cost_note
+templates.env.globals["cost_status_label"] = _labels.status_label
+templates.env.globals["cost_stale_label"] = _labels.stale_label
+templates.env.globals["cost_pct"] = _labels.pct_str
 
 
 @lru_cache(maxsize=256)
@@ -514,6 +521,12 @@ def _register_seo_route(
 # recent "content changed" event shared by this whole family.
 _STATIC_PAGE_COPY_DATE = date(2026, 8, 25)
 
+# about and privacy had real copy changes after the shared date above (a costs section on
+# about, a sentence on anonymous click counting on privacy, both 2026-10-07), while form and
+# bookmarklet did not — so those two pages carry their own, later date. Bump this one only
+# with a deliberate copy edit to about.html or privacy.html.
+_ABOUT_PRIVACY_COPY_DATE = date(2026, 10, 7)
+
 # zones_index's title/H1/meta description were retargeted at the "omi milano"
 # head term in 2a93fdf ("feat(web): retarget /it/zones for OMI Milano query",
 # 2026-09-01), then again on 2026-09-23 (R6 of that date's SEO review: semester
@@ -529,9 +542,15 @@ def _static_lastmod(_params: Mapping[str, str]) -> date | None:
     """SeoRoute.lastmod for hand-written template pages with no finer-grained
     per-page timestamp of their own (form, about, bookmarklet, privacy). Returns
     the explicit constant above rather than anything build/deploy-derived —
-    see the comment on _STATIC_PAGE_COPY_DATE for why these four share one date.
+    see the comment on _STATIC_PAGE_COPY_DATE for why form and bookmarklet share one date
+    (about and privacy have their own, see _about_privacy_lastmod).
     """
     return _STATIC_PAGE_COPY_DATE
+
+
+def _about_privacy_lastmod(_params: Mapping[str, str]) -> date | None:
+    """SeoRoute.lastmod for about and privacy: their own explicit copy date, not build time."""
+    return _ABOUT_PRIVACY_COPY_DATE
 
 
 def _omi_lastmod(_params: Mapping[str, str]) -> date | None:
@@ -556,6 +575,14 @@ def _zones_index_lastmod(_params: Mapping[str, str]) -> date | None:
     if omi_date is None:
         return _ZONES_INDEX_COPY_DATE
     return max(omi_date, _ZONES_INDEX_COPY_DATE)
+
+
+def _costs_lastmod(_params: Mapping[str, str]) -> date | None:
+    """SeoRoute.lastmod for the purchase-cost calculator: the date its rates and benchmarks
+    were last reviewed (costs/rates.py RATES_AS_OF) — the one thing that changes what the
+    page says, exactly as the OMI semester does for zone_detail.
+    """
+    return _costs_view.RATES_AS_OF
 
 
 def _neighborhood_lastmod(params: Mapping[str, str]) -> date | None:
@@ -617,7 +644,9 @@ def _sitemap_xml() -> str:
 # _sitemap_xml's def above (a plain top-level name lookup, resolved at call time —
 # see the comment inside _register_seo_route).
 _register_seo_route("form", "form", {"it": "/", "en": "/"}, lastmod=_static_lastmod)
-_register_seo_route("about", "about", {"it": "/about", "en": "/about"}, lastmod=_static_lastmod)
+_register_seo_route(
+    "about", "about", {"it": "/about", "en": "/about"}, lastmod=_about_privacy_lastmod
+)
 _register_seo_route(
     "bookmarklet",
     "bookmarklet_page",
@@ -625,7 +654,13 @@ _register_seo_route(
     lastmod=_static_lastmod,
 )
 _register_seo_route(
-    "privacy", "privacy", {"it": "/privacy", "en": "/privacy"}, lastmod=_static_lastmod
+    "privacy", "privacy", {"it": "/privacy", "en": "/privacy"}, lastmod=_about_privacy_lastmod
+)
+_register_seo_route(
+    "purchase_costs",
+    "purchase_costs",
+    {"it": "/costi-acquisto-casa-milano", "en": "/milan/home-buying-costs"},
+    lastmod=_costs_lastmod,
 )
 _register_seo_route(
     "zones_index", "zones_index", {"it": "/zones", "en": "/zones"}, lastmod=_zones_index_lastmod
@@ -870,6 +905,54 @@ def about(request: Request, lang: str = FPath(pattern=_LANG_RE)) -> HTMLResponse
 def privacy(request: Request, lang: str = FPath(pattern=_LANG_RE)) -> HTMLResponse:
     _set_locale(request, lang)
     return _tpl(request, "privacy.html", seo_route="privacy")
+
+
+# ---------------------------------------------------------------------------
+# Purchase-cost calculator (stimmo.costs): what buying a Milan home costs on top of the price.
+#
+# Display only — all rates live in costs/rates.py and the arithmetic in costs/calculator.py;
+# this layer parses the query string and renders. The per-language paths differ
+# ("/it/costi-acquisto-casa-milano" vs "/en/milan/home-buying-costs"), so, like
+# neighborhood_detail, one view is registered under two literal templates and one
+# _SEO_ROUTES entry. A GET form works without JavaScript: the scenario lives in the URL.
+# ---------------------------------------------------------------------------
+
+
+def _today() -> date:
+    """The date the cost calculator is read at: decides which benchmark ranges are past their
+    review date. The one clock the calculator's web surface uses, so tests can freeze it."""
+    return date.today()
+
+
+def _costs_calculator_url(lang: str) -> str:
+    """Canonical per-language path of the calculator, from the SEO registry so link targets
+    can never drift from the route / sitemap definitions (same idea as neighborhood_url)."""
+    return f"/{lang}{_SEO_ROUTES['purchase_costs'].suffixes[lang]}"
+
+
+templates.env.globals["costs_calculator_url"] = _costs_calculator_url
+
+
+@app.get("/it/costi-acquisto-casa-milano", response_class=HTMLResponse)
+@app.get("/en/milan/home-buying-costs", response_class=HTMLResponse)
+def purchase_costs(request: Request) -> HTMLResponse:
+    lang = "it" if request.url.path.startswith("/it/") else "en"
+    _set_locale(request, lang)
+    # `price` present = the form was submitted. Bare URL = the worked example, so the
+    # indexable page always carries real numbers; a submitted scenario is a per-visitor
+    # variant of it and is kept out of the index (canonical stays the bare URL either way).
+    submitted = "price" in request.query_params
+    parsed = _costs_view.parse(
+        request.query_params if submitted else _costs_view.EXAMPLE_VALUES, _today()
+    )
+    costs = _costs_view.build_context(parsed, _today())
+    costs.update(_costs_view.methodology(), calculator_url=_costs_calculator_url(lang))
+    return _tpl(
+        request,
+        "costs.html",
+        {"costs": costs, "is_example": not submitted, "noindex": submitted},
+        seo_route="purchase_costs",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -1264,6 +1347,7 @@ def _build_result_context(
         "share_url": share_url,
         "og_image_url": og_image_url,
         "token": token,
+        "costs": _costs_view.result_page_context(prop, _costs_calculator_url(lang), _today()),
     }
 
 

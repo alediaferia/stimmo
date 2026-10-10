@@ -420,6 +420,12 @@
       border-right: 1px solid var(--paper-rule-2);
     }
     .input-affix .affix.right { border-right: 0; border-left: 1px solid var(--paper-rule-2); }
+    /* A unit select sharing the box with its number input (the costs form's mortgage field). */
+    .input-affix .input { min-width: 0; }
+    .input-affix .select.unit {
+      flex: 0 0 auto; width: auto; border: 0; border-left: 1px solid var(--paper-rule-2);
+      box-shadow: none; background-color: var(--paper-2); font-family: var(--mono); font-size: 12px;
+    }
 
     .check {
       display: flex; align-items: center; gap: 10px;
@@ -728,6 +734,120 @@
     }
     .note b { color: var(--ink); font-weight: 600; }
     .note.error { border-left-color: var(--bad); }
+
+    /* ------------ Purchase costs ------------ */
+    .costs-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px 28px;
+      margin: 2px 0 14px;
+    }
+    .costs-summary .vstat .rng { font-family: var(--mono); font-size: 11px; color: var(--ink-muted); margin-top: 3px; font-variant-numeric: tabular-nums; }
+    .costs-summary .vstat.total .val { color: var(--accent); }
+    .costs-assume { font-size: 12.5px; color: var(--ink-muted); margin: 0 0 12px; line-height: 1.5; }
+    .costs-assume b { color: var(--ink-2); font-weight: 500; }
+    .costs-lines, .costs-adjust { margin-top: 14px; border-top: 1px solid var(--paper-rule); padding-top: 4px; }
+    .costs-lines > summary, .costs-adjust > summary {
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink-2);
+      padding: 8px 0;
+    }
+    .costs-lines[open] > summary, .costs-adjust[open] > summary { margin-bottom: 10px; }
+    .costs-h { font-family: var(--serif); font-weight: 400; font-size: 18px; margin: 22px 0 8px; }
+    .table-scroll { overflow-x: auto; }
+    table.costs-table { min-width: 540px; }  /* scroll sideways in .table-scroll rather than squeeze the label column */
+    table.costs-table td, table.costs-table th { vertical-align: top; }
+    table.costs-table tr.grp th { background: var(--paper-2); font-weight: 500; }
+    table.costs-table tr.sub td { font-weight: 600; border-top: 1px solid var(--paper-rule-2); }
+    table.costs-table tr.sub.total td { font-family: var(--serif); font-size: 16px; font-weight: 400; }
+    table.costs-table tr.sub.total td.num { font-family: var(--mono); font-size: 13.5px; font-weight: 600; }
+    table.costs-table td.num { white-space: nowrap; }
+    table.costs-table a.cost-src { font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; margin-left: 6px; color: var(--ink-muted); }
+    .tag {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 9.5px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-muted);
+      border: 1px solid var(--paper-rule-2);
+      border-radius: 2px;
+      padding: 1px 6px;
+      margin-left: 6px;
+      vertical-align: 1px;
+      white-space: nowrap;
+    }
+    .tag.indicative { color: var(--ink-2); border-color: var(--warn); background: var(--warn-soft); }
+    .tag.needs_input { color: var(--ink-2); border-color: var(--bad); background: var(--bad-soft); }
+    .tag.stale { color: var(--ink-2); border-color: var(--warn); border-style: dashed; }
+    .costs-method h3 { font-family: var(--serif); font-weight: 400; font-size: 19px; margin: 22px 0 6px; }
+    .costs-method h3:first-child { margin-top: 0; }
+    .costs-method p { font-size: 14px; color: var(--ink-2); line-height: 1.6; margin: 0 0 10px; max-width: 78ch; }
+    .costs-sources { margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.7; color: var(--ink-2); }
+
+    /* Mortgage % slider (progressive enhancement: static/costs-form.js un-hides it). The track
+       is the field's full width; --ltv-at is where the ordinary-limit mark sits, accounting for
+       the thumb's inset so the mark lines up with the thumb at exactly that value. */
+    .ltv { --thumb: 24px; --ltv-at: calc(var(--thumb) / 2 + (100% - var(--thumb)) * var(--ltv-frac, 0.8));
+      display: flex; flex-direction: column; gap: 4px; margin-top: 2px; }
+    .ltv[hidden], .ltv-caution[hidden], .field .hint.ltv-error[hidden] { display: none; }
+    .ltv-equiv { font-family: var(--mono); font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+    .ltv-equiv:empty { display: none; }
+    .input-affix:has(.input[aria-invalid="true"]) { border-color: var(--bad); }
+    .field .hint.ltv-error { color: var(--bad); font-size: 12px; }
+    .ltv-track { position: relative; height: 36px; }  /* finger-sized hit area */
+    .ltv-range { -webkit-appearance: none; appearance: none; position: absolute; inset: 0; width: 100%; height: 100%;
+      margin: 0; padding: 0; background: transparent; cursor: pointer; }
+    .ltv-range:focus { outline: none; }
+    .ltv-range::-webkit-slider-runnable-track { height: 10px; border: 1px solid var(--paper-rule-2); border-radius: 2px;
+      background: linear-gradient(to right, var(--paper-2) 0, var(--paper-2) var(--ltv-at), var(--warn-soft) var(--ltv-at), var(--warn-soft) 100%); }
+    .ltv-range::-moz-range-track { height: 8px; border: 1px solid var(--paper-rule-2); border-radius: 2px;
+      background: linear-gradient(to right, var(--paper-2) 0, var(--paper-2) var(--ltv-at), var(--warn-soft) var(--ltv-at), var(--warn-soft) 100%); }
+    .ltv-range::-webkit-slider-thumb { -webkit-appearance: none; width: var(--thumb); height: var(--thumb); margin-top: -8px;
+      border-radius: 50%; background: var(--ink); border: 3px solid var(--paper); box-shadow: 0 0 0 1px var(--ink); }
+    .ltv-range::-moz-range-thumb { width: calc(var(--thumb) - 6px); height: calc(var(--thumb) - 6px);
+      border-radius: 50%; background: var(--ink); border: 3px solid var(--paper); box-shadow: 0 0 0 1px var(--ink); }
+    .ltv[data-zone="caution"] .ltv-range::-webkit-slider-thumb { background: var(--warn); box-shadow: 0 0 0 1px var(--warn); }
+    .ltv[data-zone="caution"] .ltv-range::-moz-range-thumb { background: var(--warn); box-shadow: 0 0 0 1px var(--warn); }
+    .ltv-range:focus-visible::-webkit-slider-thumb { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .ltv-range:focus-visible::-moz-range-thumb { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .ltv-mark { position: absolute; top: 6px; bottom: 6px; left: var(--ltv-at); width: 2px; margin-left: -1px;
+      background: var(--ink-2); pointer-events: none; }
+    .ltv-scale { position: relative; height: 14px; font-family: var(--mono); font-size: 10.5px; color: var(--ink-muted); }
+    .ltv-scale span { position: absolute; top: 0; }
+    .ltv-scale .at-min { left: 0; }
+    .ltv-scale .at-limit { left: var(--ltv-at); transform: translateX(-50%); color: var(--ink-2); }
+    .ltv-scale .at-max { right: 0; }
+    .ltv-legend { display: flex; flex-wrap: wrap; gap: 2px 16px; font-size: 11.5px; line-height: 1.4; color: var(--ink-muted); }
+    .ltv-legend .sw { display: inline-block; vertical-align: -1px; margin-right: 6px; }
+    .ltv-legend .sw.mark { width: 2px; height: 11px; background: var(--ink-2); margin-left: 4px; margin-right: 8px; }
+    .ltv-legend .sw.zone { width: 14px; height: 9px; border: 1px solid var(--warn); background: var(--warn-soft); border-radius: 1px; }
+    .ltv-caution { margin: 2px 0 0; padding: 8px 10px; font-size: 12px; line-height: 1.45; color: var(--ink-2);
+      background: var(--warn-soft); border: 1px solid var(--warn); border-left-width: 3px; border-radius: 2px; }
+
+    /* Market reference rates beside the mortgage-rate field (plain text: no script involved). */
+    .rate-ref { background: var(--paper-2); border: 1px solid var(--paper-rule); border-radius: 2px; padding: 10px 12px; }
+    .rate-ref-head { margin: 0 0 6px; font-size: 12.5px; line-height: 1.5; color: var(--ink-2); }
+    .rate-ref-list { list-style: none; margin: 0 0 6px; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 22px;
+      font-size: 12.5px; line-height: 1.45; color: var(--ink-2); }
+    .rate-ref-list b { margin-left: 6px; color: var(--ink); font-weight: 600; }
+    .rate-ref .hint a.cost-src { font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; margin-left: 4px; color: var(--ink-muted); }
+
+    /* "Not included" line under the totals, and the home page's way into the calculator. */
+    .costs-excluded a { white-space: nowrap; }
+    .form-alt { margin: 12px 0 0; text-align: right; font-size: 13px; color: var(--ink-muted); }
+
+    /* The methodology is a native <details> (no script): the summary is the section head. */
+    .costs-details > summary.doc-head { cursor: pointer; list-style: none; border-bottom-color: transparent; padding-bottom: 0; margin-bottom: 0; }
+    .costs-details > summary.doc-head::-webkit-details-marker { display: none; }
+    .costs-details > summary .doc-title::after { content: "+"; margin-left: 10px; font-family: var(--mono); font-size: 16px; color: var(--ink-muted); }
+    .costs-details[open] > summary .doc-title::after { content: "\2212"; }
+    .costs-details[open] > summary.doc-head { border-bottom-color: var(--paper-rule); padding-bottom: 10px; margin-bottom: 16px; }
+    .costs-details > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
 
     /* ------------ OMI strip ------------ */
     .strip {

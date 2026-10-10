@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}{% trans %}What buying a home in Milan really costs — calculator{% endtrans %} — stimmo{% endblock %}
+
+{% block og_meta %}
+{% set _desc = _("Free calculator for the taxes, fees and renovation costs on top of a Milan home's price: registro, notary, agency, mortgage and works — from statute and sourced ranges.") %}
+<meta name="description" content="{{ _desc }}">
+<meta property="og:type" content="website">
+<meta property="og:title" content="stimmo — {% trans %}Home-buying costs in Milan{% endtrans %}">
+<meta property="og:description" content="{{ _desc }}">
+<meta property="og:image" content="{{ request.base_url }}{{ static_url('og-image.png').lstrip('/') }}">
+<meta property="og:url" content="{{ canonical_url }}">
+<meta property="og:locale" content="{{ locale }}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="stimmo — {% trans %}Home-buying costs in Milan{% endtrans %}">
+<meta name="twitter:description" content="{{ _desc }}">
+<meta name="twitter:image" content="{{ request.base_url }}{{ static_url('og-image.png').lstrip('/') }}">
+{% endblock %}
+
+{% block json_ld %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": {{ _("stimmo — home-buying costs calculator") | tojson }},
+  "url": {{ canonical_url | tojson }},
+  "description": {{ _("Free calculator for the taxes, fees and renovation costs on top of a Milan home's price: registro, notary, agency, mortgage and works — from statute and sourced ranges.") | tojson }},
+  "applicationCategory": "FinanceApplication",
+  "operatingSystem": "Web",
+  "isAccessibleForFree": true,
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "EUR"
+  },
+  "creator": {
+    "@type": "Person",
+    "name": "Alessandro Diaferia",
+    "url": "https://github.com/alediaferia"
+  },
+  "publisher": {"@id": {{ ((request.base_url | string) ~ '#organization') | tojson }}}
+}
+</script>
+{% endblock %}
+
+{% block content %}
+
+<div class="pagehead">
+  <div>
+    <div class="stepper">
+      <span class="step on"><span class="num">€</span> {% trans %}Costs{% endtrans %}</span>
+    </div>
+    <h1>{% trans %}What buying a Milan home<br><em>really costs</em>.{% endtrans %}</h1>
+    <p class="sub">{% trans %}Taxes, notary, agency, mortgage and renovation on top of the price. Statutory figures follow the law; the rest are sourced ranges. No sign-up, nothing stored.{% endtrans %}</p>
+  </div>
+  <div class="meta">
+    {% trans %}Rates reviewed{% endtrans %}<br>
+    <b>{{ costs.rates_as_of.isoformat() }}</b>
+  </div>
+</div>
+
+{% for e in costs.errors %}
+<div class="note error" style="margin-bottom:14px">{{ e }}</div>
+{% endfor %}
+
+<div class="doc">
+  <div class="doc-head">
+    <h2 class="doc-title">{% trans %}Your purchase{% endtrans %}</h2>
+    <span class="doc-eyebrow">§ 01 · {% trans %}Inputs{% endtrans %}</span>
+  </div>
+  {% set form_action = costs.calculator_url %}
+  {% include "_costs_form.html" %}
+</div>
+
+{% if costs.cb %}
+<div class="doc" id="costs-result">
+  <div class="doc-head">
+    <h2 class="doc-title">{% if is_example %}{% trans %}Worked example{% endtrans %}{% else %}{% trans %}Your estimate{% endtrans %}{% endif %}</h2>
+    <span class="doc-eyebrow">§ 02 · {% trans %}On top of the price{% endtrans %}</span>
+  </div>
+  {% if is_example %}
+  <p class="costs-assume">{% trans price=(costs.cb.price_eur | eur) %}Example figures for a %(price)s purchase. Change any input above to see your own numbers.{% endtrans %}</p>
+  {% endif %}
+  {% with compact=False, not_included_href="#not-included" %}{% include "_costs_breakdown.html" %}{% endwith %}
+</div>
+{% endif %}
+
+{# What the calculator leaves out stays on the page, outside the collapsed methodology: the estimate links here. #}
+<div class="doc" id="not-included">
+  <div class="doc-head">
+    <h2 class="doc-title">{% trans %}Not included{% endtrans %}</h2>
+    <span class="doc-eyebrow">§ 03 · {% trans %}Limits{% endtrans %}</span>
+  </div>
+  <div class="costs-method">
+    <p>{% trans %}Condominium arrears and works already approved, IMU and TARI, and anything a conformity check might call for (such as a late CILA or a sanatoria fee) are not included.{% endtrans %}</p>
+  </div>
+</div>
+
+{# Native, JavaScript-free disclosure: collapsed by default, the content is in the DOM either way. static/costs-form.js only opens it when the URL points inside it. #}
+<details class="doc costs-details" id="method">
+  <summary class="doc-head">
+    <h2 class="doc-title">{% trans %}How this is calculated{% endtrans %}</h2>
+    <span class="doc-eyebrow">§ 04 · {% trans %}Methodology{% endtrans %}</span>
+  </summary>
+  {% set m = costs.method %}
+  <div class="costs-method">
+    <h3>{% trans %}Purchase taxes — statute{% endtrans %}</h3>
+    <p>{% trans registro_prima=m.registro_prima, registro_other=m.registro_other, registro_min=m.registro_min, ipo_cat=m.ipo_cat, cadastral_prima=m.cadastral_prima, cadastral_other=m.cadastral_other %}On a purchase from a private seller, registro tax is %(registro_prima)s of the cadastral value for a prima casa and %(registro_other)s otherwise, never less than %(registro_min)s per deed, plus imposta ipotecaria and catastale of %(ipo_cat)s. The cadastral value is the rendita catastale × %(cadastral_prima)s for a prima casa, or × %(cadastral_other)s otherwise, when the buyer asks for the prezzo-valore rule in the deed.{% endtrans %}</p>
+    <p>{% trans builder_iva=m.builder_iva, builder_fixed=m.builder_fixed, sostitutiva=m.sostitutiva %}On a purchase from a builder who sells under IVA, IVA applies to the price instead (%(builder_iva)s for a prima casa, any other home, and categories A/1, A/8 and A/9), with registro, ipotecaria and catastale at %(builder_fixed)s each. A mortgage adds imposta sostitutiva (%(sostitutiva)s for a prima casa, otherwise).{% endtrans %}</p>
+    <p>{% trans %}Listings rarely state the rendita catastale, and it is not guessed here. Without it, registro tax is shown as a range: from the per-deed minimum up to the rate applied to the price, which is what you would owe without the prezzo-valore request. The totals budget the upper figure until you enter the rendita.{% endtrans %}</p>
+
+    <h3 id="ltv">{% trans %}Mortgage — loan-to-value limits{% endtrans %}</h3>
+    {% set l = costs.ltv %}
+    <p>{% trans limit=l.limit, max=l.max %}A mutuo fondiario is a medium- or long-term loan secured by a first-ranking mortgage on real estate (art. 38 TUB). The Banca d'Italia, following a CICR deliberation of 22 April 1995, caps it at %(limit)s of the value of the mortgaged property, or of the cost of the works. The cap can be raised up to %(max)s when integrative guarantees are provided: bank or insurance guarantees (fideiussioni), public guarantee funds, guarantee consortia and a few others. The guarantees must be large enough that the loan is no more than %(limit)s of the property's value plus the guarantees.{% endtrans %}</p>
+    <p>{% trans %}The limit is measured on the value of the mortgaged property, which the bank assesses in its own appraisal (perizia) and which can be lower than the price. The percentage you enter here is computed on the price, so it is an approximation of the bank's own ratio. A loan equal to the whole price still leaves the taxes, the notary and agency fees and the other costs to be paid in cash.{% endtrans %}</p>
+    <p>{% trans consap_pct=l.consap_pct, consap_max_loan=l.consap_max_loan %}The Fondo di garanzia per la prima casa, managed by Consap, is a public guarantee on loans to buy a main residence. It covers %(consap_pct)s of the principal, on loans of up to %(consap_max_loan)s. When applying, the borrower must not own another home, including abroad (except a home inherited and lent free of charge to parents or siblings). The home must become the borrower's main residence, must not be in categories A/1, A/8 or A/9 and must not have the luxury features of ministerial decree no. 1072 of 2 August 1969; that last condition cannot be checked from a listing, so it is not applied here.{% endtrans %}</p>
+    <p>{% trans consap_isee_3=l.consap_family_isee[0], consap_isee_4=l.consap_family_isee[1], consap_isee_5=l.consap_family_isee[2], consap_disability_from=l.consap_disability_from %}Access is reserved to priority categories: married or cohabiting young couples whose household was formed at least two years ago and in which at least one member is under 36; single-parent households with minor children; tenants of IACP public housing; people under 36; and families with three, four or five or more children under 21 and an ISEE of at most %(consap_isee_3)s, %(consap_isee_4)s or %(consap_isee_5)s respectively. From %(consap_disability_from)s the list also includes people with a permanent disability under art. 3, paragraph 3, of law 104/1992, and members of a household that has included for at least two years a cohabiting child or sibling of the applicant with such a disability.{% endtrans %}</p>
+    <p>{% trans consap_high=l.consap_high, consap_disability_isee=l.consap_disability_isee, consap_isee=l.consap_isee, consap_ltv=l.consap_ltv, consap_until=l.consap_until %}The guarantee can be raised to %(consap_high)s of the principal under two separate rules: for the disability categories, when the ISEE is at most %(consap_disability_isee)s, whatever the size of the loan relative to the price; for the other categories, on loans above %(consap_ltv)s of the purchase price including accessory costs, with an ISEE of at most %(consap_isee)s, for applications up to %(consap_until)s. The percentage you enter here is computed on the price alone, which is never lower than the ratio on the price plus accessory costs: the guarantee may therefore be mentioned for a loan that does not exceed the threshold.{% endtrans %}</p>
+    <p>{% trans %}This is general information about the rules, not an assessment of any buyer: whether a loan can be granted, for how much and on what guarantees is for the bank to decide. Check with the bank.{% endtrans %}</p>
+
+    <h3 id="payment">{% trans %}Mortgage — monthly payment{% endtrans %}</h3>
+    <p>{% trans %}The monthly payment is the standard French amortisation: equal monthly instalments of principal and interest at a constant rate, payment = P × i ÷ (1 − (1 + i)^−n), where P is the loan, i the nominal annual rate (TAN) divided by 12 and n the number of months. At a rate of 0%, it is P ÷ n. The total interest is what you repay beyond P, and the total cost of the mortgage adds to it the mortgage costs already in the closing costs. Insurance or collection charges that a bank may add to the instalment are not modelled.{% endtrans %}</p>
+    <p>{% trans month=costs.rate_ref.month %}The rate is the one you enter. The market averages beside the field are Banca d'Italia's, from its monthly statistics on new house-purchase loans to households (%(month)s): the average nominal rate, which is net of fees like a TAN, and the same average split by the period for which the rate is initially set. Banca d'Italia does not publish a fixed/variable split: a rate set for up to a year is typically a variable-rate loan, a longer one typically a fixed- or mixed-rate loan. The TAEG in the same table also counts fees and mandatory insurance, so it is higher and cannot stand in for a TAN. They are averages, not an offer.{% endtrans %}</p>
+    <p>{% trans %}This is a calculation on the amount, term and rate you choose. It does not say whether a loan can be granted or sustained: that is for the bank to decide. If the rate is variable the payment will change over time; the figure is computed at the rate you entered, today.{% endtrans %}</p>
+
+    <h3>{% trans %}Fees — published ranges{% endtrans %}</h3>
+    <p>{% trans agency_range=m.agency_range %}Notary, bank and insurance figures are typical published ranges, shown from low to high with a budgeted central value. The agency fee is your input (typically %(agency_range)s plus IVA, owed when a proposal is accepted, not at the deed). Ranges that could not be confirmed as current, or that cite no public source, are labelled indicative.{% endtrans %}</p>
+
+    <p>{% trans label=cost_stale_label() %}Each published range is re-checked against its source on a fixed schedule. A range past its review date is marked “%(label)s” and counted in a note above the table: it is still shown, but it may no longer be current.{% endtrans %}</p>
+
+    <h3>{% trans %}Renovation — Milan prices, indicative{% endtrans %}</h3>
+    <p>{% trans renovation_iva=m.renovation_iva %}Works are priced per m² by tier, assumed to exclude IVA, then IVA at %(renovation_iva)s and a contingency on the works are added, plus technical fees and filings from the medium tier up (light works are edilizia libera and need no filing). The tier suggested for a listing follows its stated condition and can always be changed.{% endtrans %}</p>
+    <p>{% trans %}The € per m² figures are Milan prices. This calculator is for homes in Milan: the same works would cost a different amount elsewhere.{% endtrans %}</p>
+    <p>{% trans %}The source of the € per m² figures does not say whether they include IVA. They are assumed to exclude it, since IVA is added separately here: if they already include it, the works are overstated by about that IVA. This is an unconfirmed assumption, and one more reason the table is labelled indicative. The regional public-works price list that the source itself cites, Regione Lombardia's Prezzario 2026, states that its prices are always net of IVA; that fixes the convention of public price lists, not the basis of these figures.{% endtrans %}</p>
+    <div class="table-scroll">
+      <table class="t costs-table">
+        <thead><tr><th>{% trans %}Tier{% endtrans %}</th><th class="num">{% trans %}€ per m², Milan, ex IVA (assumed){% endtrans %}</th></tr></thead>
+        <tbody>
+          {% for label, low, high, open_ended in costs.renovation_tiers %}
+          <tr><td>{{ label }}</td><td class="num">{{ low | num }} – {{ high | num }}{% if open_ended %}+{% endif %}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <h3>{% trans %}Bonus ristrutturazione{% endtrans %}</h3>
+    <p>{% trans bonus_cap=m.bonus_cap, bonus_years=m.bonus_years %}A deduction from income tax on renovation spend, up to %(bonus_cap)s per home and spread over %(bonus_years)s years. The rate depends on the year the works are paid. It is shown apart and never subtracted from the totals. Light works (paint, overlay floors, internal doors) are ordinary maintenance and do not qualify on their own, but can become eligible when they are part of a larger extraordinary-maintenance intervention.{% endtrans %}</p>
+    <div class="table-scroll">
+      <table class="t costs-table">
+        <thead><tr><th>{% trans %}Paid in{% endtrans %}</th><th class="num">{% trans %}Main residence{% endtrans %}</th><th class="num">{% trans %}Other homes{% endtrans %}</th></tr></thead>
+        <tbody>
+          {% for year, main, other, provisional in costs.bonus_rules %}
+          <tr>
+            <td>{{ year }}{% if provisional %} <span class="tag indicative">{% trans year=year %}subject to the %(year)s budget law{% endtrans %}</span>{% endif %}</td>
+            <td class="num">{{ main }}</td>
+            <td class="num">{{ other }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <h3>{% trans %}Sources{% endtrans %}</h3>
+    <ul class="costs-sources">
+      {% for title, url in costs.sources %}
+      <li><a href="{{ url }}" target="_blank" rel="noopener nofollow">{{ title }}</a></li>
+      {% endfor %}
+    </ul>
+    <p>{% trans %}Found an error, or want something added?{% endtrans %} <a href="{{ costs.report_issue_url }}" target="_blank" rel="noopener">{% trans %}Open an issue on GitHub{% endtrans %} →</a></p>
+  </div>
+</details>
+
+<div class="note" style="margin-top:18px">
+  <b>{% trans %}Not advice.{% endtrans %}</b> {% trans %}stimmo is not a notary, tax adviser or estate agent. Use these figures to plan and to ask better questions, not to sign anything.{% endtrans %}
+  <a href="/{{ lang }}/">{% trans %}Check whether an asking price is fair{% endtrans %} →</a>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ static_url('costs-form.js') }}"></script>
+{% endblock %}

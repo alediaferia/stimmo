@@ -17,11 +17,13 @@ COSTS_TODAY = date(2026, 10, 8)
 
 @pytest.fixture(autouse=True)
 def _frozen_costs_clock(monkeypatch: pytest.MonkeyPatch):
-    """Freeze the date the MCP cost tool reads (its `_today` seam), so the cost
-    figures are read at COSTS_TODAY. A test that needs another date patches the same
-    seam itself."""
+    """Freeze the two places that supply today's date to the cost calculator (the web layer and
+    the MCP tool each read it through one `_today` seam). A test that needs another date patches
+    the same seam itself."""
     from stimmo.mcp import tools
+    from stimmo.web import app as app_module
 
+    monkeypatch.setattr(app_module, "_today", lambda: COSTS_TODAY)
     monkeypatch.setattr(tools, "_today", lambda: COSTS_TODAY)
 
 

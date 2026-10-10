@@ -1,0 +1,150 @@
+{# Result of the purchase-cost calculator. Expects `costs` (cb, scenario, assumptions,
+   closing_lines, renovation_lines, offset_lines) and `compact` (collapse the line table). #}
+{% set cb = costs.cb %}
+
+{% macro line_row(ln) -%}
+<tr>
+  <td>
+    {{ render_cost_line(ln) }}
+    <span class="tag {{ ln.status.value }}">{{ cost_status_label(ln.status) }}</span>
+    {% if ln.stale %}<span class="tag stale">{{ cost_stale_label() }}</span>{% endif %}
+    {% if ln.source_url %}<a class="cost-src" href="{{ ln.source_url }}" target="_blank" rel="noopener nofollow">{% trans %}source{% endtrans %}</a>{% endif %}
+  </td>
+  <td class="num">{% if ln.low_eur != ln.high_eur %}{{ ln.low_eur | eur }} – {{ ln.high_eur | eur }}{% endif %}</td>
+  <td class="num">{% if ln.status.value == "needs_input" %}≤ {% endif %}{{ ln.central_eur | eur }}</td>
+</tr>
+{%- endmacro %}
+
+<div class="costs-summary">
+  <div class="vstat">
+    <div class="lbl">{% trans %}Closing costs{% endtrans %}</div>
+    <div class="val mono">{{ cb.closing.central_eur | eur }}</div>
+    <div class="rng">{{ cb.closing.low_eur | eur }} – {{ cb.closing.high_eur | eur }}</div>
+  </div>
+  <div class="vstat">
+    <div class="lbl">{% trans %}Renovation{% endtrans %}</div>
+    {% if costs.renovation_lines %}
+    <div class="val mono">{{ cb.renovation.central_eur | eur }}</div>
+    <div class="rng">{{ cb.renovation.low_eur | eur }} – {{ cb.renovation.high_eur | eur }}</div>
+    {% else %}
+    <div class="val mono">—</div>
+    <div class="rng">{% trans %}none assumed{% endtrans %}</div>
+    {% endif %}
+  </div>
+  <div class="vstat total">
+    <div class="lbl">{% trans %}Total on top of the price{% endtrans %}</div>
+    <div class="val mono">{{ cb.total_on_top.central_eur | eur }}</div>
+    <div class="rng">{{ cb.total_on_top.low_eur | eur }} – {{ cb.total_on_top.high_eur | eur }} · {{ (cb.total_on_top.central_eur / cb.price_eur * 100) | share_pct }}</div>
+  </div>
+  {% if cb.mortgage_eur %}
+  <div class="vstat">
+    <div class="lbl">{% trans %}Cash needed up front{% endtrans %}</div>
+    <div class="val mono">{{ cb.cash_needed.central_eur | eur }}</div>
+    <div class="rng">{{ cb.cash_needed.low_eur | eur }} – {{ cb.cash_needed.high_eur | eur }}</div>
+    <div class="rng">{% trans down=(cb.down_payment_eur | eur), costs=(cb.total_on_top.central_eur | eur) %}%(down)s down payment + %(costs)s costs{% endtrans %}</div>
+  </div>
+  {% endif %}
+</div>
+
+<p class="costs-assume"><b>{% trans %}Assumes{% endtrans %}:</b> {{ costs.assumptions | join(" · ") }}</p>
+
+{# What the figures leave out, up front; the full list is the "Not included" section of the calculator page. On the calculator page itself the including template passes a bare #fragment so a visitor's scenario in the URL is kept. #}
+<p class="costs-assume costs-excluded"><b>{% trans %}Not included{% endtrans %}:</b> {% trans %}condominium arrears and works already approved, IMU and TARI, a late CILA or sanatoria fees.{% endtrans %} <a href="{{ not_included_href or (costs.calculator_url ~ '#not-included') }}">{% trans %}The full list{% endtrans %} →</a></p>
+
+{% set mp = cb.mortgage_payment %}
+{% if mp %}
+<h3 class="costs-h" id="mortgage-payment">{% trans %}Monthly payment and cost of the mortgage{% endtrans %}</h3>
+<div class="costs-summary">
+  <div class="vstat total">
+    <div class="lbl">{% trans %}Monthly payment{% endtrans %}</div>
+    <div class="val mono">{{ mp.monthly_payment_eur | eur_cents }}</div>
+    <div class="rng">{% trans years=mp.years, rate=cost_pct(mp.rate_pct) %}%(years)s years at %(rate)s TAN{% endtrans %}</div>
+  </div>
+  <div class="vstat">
+    <div class="lbl">{% trans %}Total interest{% endtrans %}</div>
+    <div class="val mono">{{ mp.total_interest_eur | eur }}</div>
+    <div class="rng">{% trans years=mp.years %}over %(years)s years{% endtrans %}</div>
+  </div>
+  <div class="vstat">
+    <div class="lbl">{% trans %}Total repaid{% endtrans %}</div>
+    <div class="val mono">{{ mp.total_repaid_eur | eur }}</div>
+    <div class="rng">{% trans %}principal + interest{% endtrans %}</div>
+  </div>
+  <div class="vstat">
+    <div class="lbl">{% trans %}Total cost of the mortgage{% endtrans %}</div>
+    <div class="val mono">{{ mp.total_cost.central_eur | eur }}</div>
+    <div class="rng">{{ mp.total_cost.low_eur | eur }} – {{ mp.total_cost.high_eur | eur }}</div>
+    <div class="rng">{% trans interest=(mp.total_interest_eur | eur), costs=(mp.mortgage_costs.central_eur | eur) %}%(interest)s interest + %(costs)s mortgage costs{% endtrans %}</div>
+  </div>
+</div>
+<p class="costs-assume">{% trans %}Equal monthly payments of principal and interest at a constant rate (French amortisation), without any insurance or collection charges the bank may add. The mortgage costs are the ones already in the closing costs: imposta sostitutiva, mortgage-deed notary, bank fees and insurance. The price is not in this total.{% endtrans %}</p>
+{% for n in cb.notes if n.code == 'mortgage_variable_rate' %}
+<div class="note" style="margin-bottom:10px">{{ render_cost_note(n) }}</div>
+{% endfor %}
+{% endif %}
+
+{% for n in cb.notes if n.code != 'mortgage_variable_rate' %}
+<div class="note" style="margin-bottom:10px{% if n.code in ('rendita_missing', 'ranges_overdue') %};border-left-color:var(--warn){% endif %}">{{ render_cost_note(n) }}{% if n.source_url %} <a class="cost-src" href="{{ n.source_url }}" target="_blank" rel="noopener nofollow">{% trans %}source{% endtrans %}</a>{% endif %}</div>
+{% endfor %}
+
+<details class="costs-lines" {% if not compact %}open{% endif %}>
+  <summary>{% trans %}Line by line{% endtrans %}</summary>
+  <div class="table-scroll">
+    <table class="t costs-table">
+      <thead>
+        <tr><th>{% trans %}Item{% endtrans %}</th><th class="num">{% trans %}Range{% endtrans %}</th><th class="num">{% trans %}Budgeted{% endtrans %}</th></tr>
+      </thead>
+      <tbody>
+        <tr class="grp"><th colspan="3">{% trans %}Closing costs{% endtrans %}</th></tr>
+        {% for ln in costs.closing_lines %}{{ line_row(ln) }}{% endfor %}
+        <tr class="sub">
+          <td>{% trans %}Closing costs subtotal{% endtrans %}</td>
+          <td class="num">{{ cb.closing.low_eur | eur }} – {{ cb.closing.high_eur | eur }}</td>
+          <td class="num">{{ cb.closing.central_eur | eur }}</td>
+        </tr>
+        {% if costs.renovation_lines %}
+        <tr class="grp"><th colspan="3">{% trans %}Renovation{% endtrans %}</th></tr>
+        {% for ln in costs.renovation_lines %}{{ line_row(ln) }}{% endfor %}
+        <tr class="sub">
+          <td>{% trans %}Renovation subtotal — Milan prices{% endtrans %}</td>
+          <td class="num">{{ cb.renovation.low_eur | eur }} – {{ cb.renovation.high_eur | eur }}</td>
+          <td class="num">{{ cb.renovation.central_eur | eur }}</td>
+        </tr>
+        {% endif %}
+        <tr class="sub total">
+          <td>{% trans %}Total on top of the price{% endtrans %}</td>
+          <td class="num">{{ cb.total_on_top.low_eur | eur }} – {{ cb.total_on_top.high_eur | eur }}</td>
+          <td class="num">{{ cb.total_on_top.central_eur | eur }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  {% if costs.offset_lines %}
+  <h3 class="costs-h">{% trans %}Tax relief — not subtracted from the totals above{% endtrans %}</h3>
+  <div class="table-scroll">
+    <table class="t costs-table">
+      <thead>
+        <tr><th>{% trans %}Item{% endtrans %}</th><th class="num">{% trans %}Range{% endtrans %}</th><th class="num">{% trans %}Total deduction{% endtrans %}</th><th class="num">{% trans %}Per year{% endtrans %}</th></tr>
+      </thead>
+      <tbody>
+        {% for ln in costs.offset_lines %}
+        <tr>
+          <td>
+            {{ render_cost_line(ln) }}
+            <span class="tag {{ ln.status.value }}">{{ cost_status_label(ln.status) }}</span>
+            {% if ln.source_url %}<a class="cost-src" href="{{ ln.source_url }}" target="_blank" rel="noopener nofollow">{% trans %}source{% endtrans %}</a>{% endif %}
+          </td>
+          <td class="num">{{ ln.low_eur | eur }} – {{ ln.high_eur | eur }}</td>
+          <td class="num">{{ ln.central_eur | eur }}</td>
+          <td class="num">{{ (ln.central_eur / ln.params.years) | eur }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="costs-assume">{% trans %}A deduction from your income tax, spread over ten years. The cap on total deductions for higher incomes (art. 16-ter TUIR) is not modelled.{% endtrans %}</p>
+  {% endif %}
+</details>
+
+<p class="costs-assume" style="margin-top:12px">{% trans %}Estimates, not advice. Statutory figures follow the rules in force; everything else is a published range, and ranges marked indicative could not be confirmed as current. Check the figures with your notary and tax adviser.{% endtrans %}</p>
