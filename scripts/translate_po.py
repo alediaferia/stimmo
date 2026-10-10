@@ -44,9 +44,23 @@ Compr_min, Compr_max, spese condominiali, spese straordinarie, piano nobile, \
 cortile, Agenzia delle Entrate, comune, cintura metropolitana, semestre.
 4. Keep the same register (professional but accessible) and roughly the \
 same length as the source.
-5. Do NOT translate proper nouns: Milano, OpenStreetMap, Overpass, Nominatim, \
+5. Italian must read as written natively by an Italian, not translated: the \
+words a Milanese buyer, notaio or commercialista would actually use, never \
+English calques. Address the reader informally with "tu", consistent with \
+the rest of the UI. Use the established fiscal and real-estate terms: \
+imposta di registro, imposte ipotecaria e catastale, valore catastale, \
+rendita catastale, prezzo-valore, prima casa / seconda casa, abitazione \
+principale, impresa costruttrice, provvigione dell'agenzia, onorario del \
+notaio, atto di mutuo, imposta sostitutiva, spese di istruttoria, perizia, \
+polizza scoppio-incendio, caparra, compromesso, rogito, manutenzione \
+ordinaria / straordinaria, spese tecniche, imprevisti, detrazione (the \
+bonus ristrutturazione is a detrazione IRPEF, not a credito d'imposta). \
+Cadastral categories use their official Agenzia delle Entrate labels \
+(e.g. A/2 "abitazione di tipo civile"). Keep the UI's established terms: \
+"verdict" is always "verdetto".
+6. Do NOT translate proper nouns: Milano, OpenStreetMap, Overpass, Nominatim, \
 immobiliare.it, IODL, ODbL, GitHub.
-6. Return ONLY a valid JSON object mapping each source string exactly to its \
+7. Return ONLY a valid JSON object mapping each source string exactly to its \
 translation. No comments, no explanation, no markdown fences.\
 """
 
