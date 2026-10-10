@@ -1,0 +1,43 @@
+name: Correzione di contenuti
+description: Segnala un errore o una mancanza in una pagina (cifre, norme, testi, traduzioni) / Report a wrong or missing figure, rule or text on a page
+title: "[Correzione] "
+labels: ["contenuti"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Grazie per la segnalazione. Descrivi cosa non torna e, se puoi, indica la fonte: ogni cifra del sito cita la norma o il documento da cui deriva.
+
+        *Thanks for the report. Tell us what is wrong and, if you can, where the correct figure comes from.*
+
+        Per un verdetto o una stima sbagliati usa invece il modulo **Bug report** / *For a wrong estimate or verdict, use the **Bug report** form instead.*
+  - type: input
+    id: pagina
+    attributes:
+      label: Indirizzo della pagina
+      description: "URL della pagina con l'errore, es. https://stimmo.it/it/costi-acquisto-casa-milano / URL of the page with the problem."
+      placeholder: https://stimmo.it/it/...
+    validations:
+      required: true
+  - type: textarea
+    id: errore
+    attributes:
+      label: Cosa è sbagliato o manca
+      description: "Quale cifra, frase o regola è errata o assente, e cosa dovrebbe esserci. / What is wrong or missing, and what it should say."
+    validations:
+      required: true
+  - type: textarea
+    id: fonte
+    attributes:
+      label: Fonte o riferimento (facoltativo)
+      description: "Un link o un riferimento normativo (legge, articolo, sito ufficiale). / A link or legal reference (law, article, official site)."
+    validations:
+      required: false
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Dati personali
+      description: "Questa segnalazione è pubblica. / This report is public."
+      options:
+        - label: Confermo che non ho inserito dati personali (nomi, indirizzi, recapiti, redditi) / I confirm I have not included personal data
+          required: true
