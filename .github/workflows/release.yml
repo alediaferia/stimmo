@@ -108,6 +108,14 @@ jobs:
         if: env.OVERLAY_ENABLED == 'true'
         run: printf '%s\n' /stimmo-content/ /private-overlay/ >> .git/info/exclude
 
+      # uv has to be on the PATH before the overlay is applied, not only before
+      # it is tested: after patching the tree, the overlay rebuilds the files
+      # that are generated from the source, and runs the generating tool
+      # through uv. The same installation serves the test run further down.
+      - name: Set up uv for the overlay
+        if: env.OVERLAY_ENABLED == 'true'
+        uses: astral-sh/setup-uv@v8.1.0
+
       # Delegates entirely to the overlay repo's own apply entrypoint rather
       # than reimplementing patch application here - it already knows how to
       # apply its series and preflight its pinned base commit. Both streams
@@ -137,10 +145,6 @@ jobs:
       # Output is captured, not printed, for the same reason as the apply step:
       # this repository's run logs are public, and pytest names the files and
       # tests it runs. Only a pass/fail line is surfaced.
-      - name: Set up uv for the post-overlay test run
-        if: env.OVERLAY_ENABLED == 'true'
-        uses: astral-sh/setup-uv@v8.1.0
-
       - name: Test the overlaid tree
         if: env.OVERLAY_ENABLED == 'true'
         run: |
