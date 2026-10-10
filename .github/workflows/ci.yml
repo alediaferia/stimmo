@@ -129,3 +129,33 @@ jobs:
               --label docs-drift \
               --body "$body"
           fi
+
+  # Tells the optional private overlay (see release.yml) that main moved, so it can re-check
+  # itself against the new tip and refresh without anyone remembering to. Like the overlay
+  # checkout in release.yml it is optional and secret-gated: without OVERLAY_DISPATCH_TOKEN the
+  # job does nothing, and failing to notify never fails CI. It waits for `test` so that a red
+  # main is not announced. The event carries only this commit's public id; its type and payload
+  # say nothing about the overlay's contents, and the response is discarded.
+  overlay-notify:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: test
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    permissions: {}
+    env:
+      # A job-level boolean, so a step `if:` never reads the secret itself (as in release.yml).
+      NOTIFY_ENABLED: ${{ secrets.OVERLAY_DISPATCH_TOKEN != '' }}
+    steps:
+      - name: Notify the overlay repo, if configured
+        if: env.NOTIFY_ENABLED == 'true'
+        env:
+          # A fine-grained token with Contents: read and write on the overlay repo only.
+          GH_TOKEN: ${{ secrets.OVERLAY_DISPATCH_TOKEN }}
+          SHA: ${{ github.sha }}
+        run: |
+          if gh api repos/alediaferia/stimmo-growth/dispatches \
+              -f event_type=upstream-updated -f "client_payload[sha]=$SHA" > /dev/null 2>&1; then
+            echo "Overlay notified."
+          else
+            echo "::warning::Could not notify the overlay."
+          fi
