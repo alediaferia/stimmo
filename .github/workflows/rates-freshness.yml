@@ -1,0 +1,120 @@
+name: Rates freshness
+
+# Weekly nudge: when a purchase-cost calculator benchmark range (src/stimmo/costs/rates.py) is
+# overdue for review or falls due within 30 days, open or update a single `rates-freshness`
+# issue; when nothing is due, close it. The issue is the signal, so the job stays green on
+# overdue ranges and fails only if scripts/check_rates.py crashes or prints something unexpected.
+# No network is used by the script: the schedule is read from rates.py alone.
+
+on:
+  schedule:
+    # Mondays 08:23 UTC = 09:23 CET (winter) / 10:23 CEST (summer): working hours in Rome all
+    # year. Off the top of the hour because GitHub delays scheduled runs at :00 under load.
+    # Scheduled workflows only run from the default branch.
+    - cron: "23 8 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+# One run at a time, so a manual dispatch overlapping the cron run cannot create two issues.
+concurrency:
+  group: rates-freshness
+  cancel-in-progress: false
+
+jobs:
+  rates-freshness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # Nothing below pushes; don't leave the issues:write token in .git/config.
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v8.1.0
+        with:
+          enable-cache: true
+      - run: uv sync --all-extras --dev
+
+      # Exit 1 from the script means "something is overdue" and is an expected result, so the
+      # status is captured rather than letting `set -e` fail the step. What tells a real crash
+      # from an overdue result is the output: a table header is only printed when at least one
+      # range is overdue or due soon, and the heading is always printed on success.
+      - name: Check benchmark review schedule
+        id: check
+        run: |
+          set -euo pipefail
+          body_file="$RUNNER_TEMP/rates-freshness.md"
+          rc=0
+          uv run python scripts/check_rates.py --format markdown --within 30 > "$body_file" || rc=$?
+
+          heading='## Cost calculator: benchmark ranges to review'
+          has_heading=false; has_table=false
+          grep -qxF "$heading" "$body_file" && has_heading=true
+          grep -qF '| Status | Constant |' "$body_file" && has_table=true
+
+          if [[ "$has_heading" == true && "$has_table" == true && ( "$rc" -eq 0 || "$rc" -eq 1 ) ]]; then
+            state=due      # rc 1: overdue ranges; rc 0: ranges due soon only
+          elif [[ "$has_heading" == true && "$has_table" == false && "$rc" -eq 0 ]]; then
+            state=clear    # nothing overdue and nothing due within the window
+          else
+            echo "::error::check_rates.py crashed or printed unexpected output (exit status $rc)."
+            echo "--- stdout ---"
+            cat "$body_file"
+            exit 1
+          fi
+
+          echo "Exit status $rc, state: $state"
+          cat "$body_file"
+          {
+            echo "state=$state"
+            echo "body_file=$body_file"
+          } >> "$GITHUB_OUTPUT"
+
+      # The issue body is the script's own markdown output, verbatim: constant names, dates and
+      # source URLs, nothing else. This is a public repository.
+      - name: Open, update or close the rates-freshness issue
+        env:
+          STATE: ${{ steps.check.outputs.state }}
+          BODY_FILE: ${{ steps.check.outputs.body_file }}
+          # The repository owner, so that opening or updating the issue notifies them.
+          ASSIGNEE: ${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+          label=rates-freshness
+          title='Cost calculator: benchmark ranges due for review'
+
+          # Open issues carrying the label, oldest first. Dedupe is by label + open state, so
+          # there is at most one to edit; if strays exist, the oldest is the one kept up to date.
+          open_issues=$(gh issue list --label "$label" --state open --limit 100 \
+            --json number --jq 'map(.number) | sort | .[]')
+
+          if [[ "$STATE" == due ]]; then
+            # Create the label only when missing (no `|| true`, so real permission errors surface).
+            labels=$(gh label list --search "$label" --json name --jq '.[].name')
+            if ! grep -qxF "$label" <<< "$labels"; then
+              gh label create "$label" \
+                --description "Cost calculator benchmark ranges overdue or due for review" \
+                --color FBCA04
+            fi
+
+            existing=${open_issues%%$'\n'*}
+            if [[ -n "$existing" ]]; then
+              # --add-assignee is idempotent: it also covers an issue opened before assignment existed.
+              gh issue edit "$existing" --body-file "$BODY_FILE" --add-assignee "$ASSIGNEE"
+              echo "Updated issue #$existing"
+            else
+              gh issue create --title "$title" --label "$label" --assignee "$ASSIGNEE" \
+                --body-file "$BODY_FILE"
+            fi
+          else
+            for n in $open_issues; do
+              gh issue close "$n" --reason completed \
+                --comment "No benchmark ranges are overdue or due within 30 days as of $(date -u +%F). Closing; a new issue is opened if that changes."
+              echo "Closed issue #$n"
+            done
+          fi
