@@ -38,7 +38,8 @@ FINE_CONDITION_DELTA: dict[FineCondition, float] = {
     FineCondition.NUOVO: +6.0,
     FineCondition.RISTRUTTURATO: +3.0,
     FineCondition.ABITABILE: 0.0,
-    # Milano renovation runs €1.2–2.0 k/m²; on 90 m² that's 15–25 % of a €700 k ask.
+    # Renovation €/m² tiers live in stimmo/costs/rates.py (RENOVATION_TIERS); this delta is
+    # a separate market-pricing judgement and is deliberately not derived from them.
     FineCondition.DA_RISTRUTTURARE: -15.0,
 }
 

@@ -40,7 +40,7 @@ Python >= 3.12. Dependency + script management is via `uv` (see `pyproject.toml`
 
 ## Architecture
 
-stimmo estimates whether a Milan listing's asking price is under/fair/over, built around a single-pass pipeline with **no ML** — the entire tuning surface is one coefficients file.
+stimmo estimates whether a Milan listing's asking price is under/fair/over, built around a single-pass pipeline with **no ML** — the entire valuation tuning surface is one coefficients file. What a purchase costs on top of the price is a separate, equally deterministic calculation with its own rates file (see "Purchase-cost calculator" below); it never feeds the verdict.
 
 ### Data flow
 
@@ -50,11 +50,22 @@ The engine is intentionally thin (`valuation/engine.py`): it asks `adjustments.c
 
 ### Key invariants
 
-- **`valuation/adjustments.py` is the only tuning surface.** Floor/lift/condition/energy/outdoor/box/amenity coefficients all live there. Do not scatter multipliers into the engine, models, or renderers.
+- **`valuation/adjustments.py` is the only *valuation* tuning surface.** Floor/lift/condition/energy/outdoor/box/amenity coefficients all live there. Do not scatter multipliers into the engine, models, or renderers.
+- **`costs/rates.py` is the only *transaction-cost* tuning surface** — a declared second surface, never merged with the first. Every statutory rate, fee band and renovation €/m² tier lives there, each with a comment citing its law or source; every benchmark carries `as_of`, `source_url` and a review interval (`review_months`), and a figure with no public source (or not confirmed current) is `indicative=True`. Do not put a rate in `costs/calculator.py`, the web layer or a template, and do not make the valuation read from it (a test pins the estimate to golden values and checks the two packages do not import each other).
 - **OMI band is the spine.** Italian per-transaction sale data is not public; the estimate is an OMI `Compr_min`–`Compr_max` band with a multiplier on top. Don't introduce "comparable listings" logic — the absence is by design.
 - **Data is bundled, not fetched at runtime.** `data/assets/` carries OMI quotations, zone polygons (for point-in-polygon), and `milano_omi_history.csv` (8 semesters for the trend panel). The only live calls are Nominatim (`data/geocode.py`) and Overpass (`data/amenities.py`).
 - **Milano comune only.** `data/zones.py` point-in-polygon will reject addresses in the metropolitan belt — this is expected, not a bug.
 - **Refreshing data:** `scripts/refresh_omi.py` rewrites `data/assets/` from the CKAN API. After running it, bump `SEMESTER` in `data/omi.py` if the semester advanced.
+
+### Purchase-cost calculator
+
+`stimmo/costs/` answers "what does buying this really cost?" for a Milan home. It is independent of the valuation: `engine.estimate()` and `Estimate` do not know it exists.
+
+- `costs/rates.py` — the tuning surface above (statutory taxes, conventional fee bands, renovation tiers, bonus by payment year, and the deterministic `FineCondition` → default renovation tier).
+- Output: closing subtotal, renovation subtotal, total on top of the price, cash needed — and the renovation-bonus offset, which is reported apart and **never netted** from them.
+- **Mortgage payment.** With a mortgage and a rate, `compute()` also returns the monthly payment (French amortisation, formula in `calculator.py`, constants in `rates.py`), the interest and the total cost of the mortgage (interest + the mortgage lines already counted). **No affordability or payment-to-income ratio, no "you can afford", no lender or product names** — a generic calculation on the amount, term and rate the user chooses; the rate is never guessed (the form pre-fills the market average, visibly). The reference rates are `Benchmark`s with `review_months=3` from Banca d'Italia's Tavola 2.4 (new house-purchase loans): shown with their data month as market averages, not an offer; the TAEG is shown as a TAEG, never as a TAN.
+- **A missing input is never guessed.** The rendita catastale (rarely in listings) is not estimated: the registro line becomes `needs_input`, bounded by the per-deed minimum and rate × price, the totals budget the ceiling, and a note asks for the rendita. Notary bands stop at €465k (purchase) / €370k (mortgage); above that the top band is reused and flagged, not extrapolated.
+- **`RATES_AS_OF` is derived**: the latest of `STATUTORY_AS_OF` and every benchmark's `as_of` (`rates.latest_review_date()`), so it advances whenever any figure is re-reviewed. It is also the calculator's sitemap `<lastmod>`. Re-reviewing a range means editing that constant's value, `source_url` and `as_of` in `costs/rates.py`, nothing else.
 
 ### Models
 

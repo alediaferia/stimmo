@@ -16,7 +16,7 @@ Do not add a "comparable listings" stage. The absence is by design: portal price
 
 ### Single tuning surface
 
-**`valuation/adjustments.py` is the only place where coefficients live.** Floor level, lift presence, fine condition, energy class, outdoor space type, construction era, orientation, amenity score — all multipliers are explicit Python constants in that one file.
+**`valuation/adjustments.py` is the only place where valuation coefficients live.** (What a purchase costs on top of the price has its own, separate surface — see [Purchase-cost calculator](#purchase-cost-calculator).) Floor level, lift presence, fine condition, energy class, outdoor space type, construction era, orientation, amenity score — all multipliers are explicit Python constants in that one file.
 
 Do not move multipliers into `engine.py`, `models.py`, templates, or anywhere else. The invariant is that a developer can read and change every tuning assumption in one file, and the test suite (which covers the engine end-to-end with known inputs) will immediately surface any regression.
 
@@ -29,6 +29,43 @@ Rationale: OMI records transacted prices (after negotiation). Milano asking pric
 ### No machine learning
 
 The engine is a pure function: `estimate(property, omi_quote, amenity_score) → Estimate`. Same inputs always produce the same output. There is no model to train, no weights to load, no version drift. This is a deliberate constraint — the tool's value is transparency ("here is every number and where it came from"), not predictive accuracy.
+
+## Purchase-cost calculator
+
+`stimmo/costs/` computes what buying a Milan home costs on top of the price: purchase taxes, notary, agency, mortgage costs and an optional renovation. It sits beside the valuation, not inside it.
+
+### A second, separate tuning surface
+
+**`costs/rates.py` is the only place where transaction-cost rates live.** It is a declared second tuning surface next to `valuation/adjustments.py`, and the two are deliberately kept apart: the valuation answers "is the price fair?", the costs answer "what else will I pay?". `engine.estimate()`, `Estimate` and the verdict do not import or read it, and `costs/` does not import `valuation/` (both checked in `tests/test_costs_regression.py`, which also pins the engine's output to golden values so a cost change can never move a valuation).
+
+Rules the file follows, because the figures are advice-adjacent and some are not firm:
+
+- every constant cites its law or source in a comment;
+- every benchmark (a range, not a statute) carries `as_of`, `source_url` and a review interval (`review_months`; `due` = `as_of` + interval). Statutory figures have no interval: they are re-verified after each budget law (`STATUTORY_AS_OF`), and the review schedule carries one annual reminder for that (`rates.statutory_review()`, due 15 January of the year after `STATUTORY_AS_OF`) that only notifies the maintainer and never marks a line stale. `RATES_AS_OF` is derived as the latest review of any figure;
+- a range that is not confirmed current, or has no public source, is `indicative=True` and is rendered as an indicative range — an unsourced benchmark cannot be built without that flag;
+- a figure that is not in a cited source is left out, not guessed.
+
+### Pure calculator, structured output
+
+Totals are closing costs, renovation, total on top of the price and cash needed. The renovation-bonus deduction is a separate `offset` group: it is shown per payment year and never subtracted from the totals, because it is spread over ten years and depends on the buyer's income.
+
+### Missing inputs are bounded, not estimated
+
+Listings rarely state the rendita catastale, which drives the registro tax. The calculator does not estimate it. Without it the registro line is `needs_input`: the floor is the per-deed minimum, the ceiling is the rate applied to the price (what is owed without a prezzo-valore request), and the totals budget the ceiling so a missing input never understates the cash needed. A note asks the user to enter the rendita. Likewise the notary bands are published only up to €465k (purchase) and €370k (mortgage): above that the top band is reused and flagged rather than extrapolated.
+
+### The mortgage: an amount or a share of the price
+
+The mortgage is an amount in € or a percentage of the price (LTV), never both (`PurchaseScenario.mortgage_eur` / `mortgage_ltv_pct`). `PurchaseScenario.mortgage_amount_eur` is the single place a percentage becomes whole euros; the imposta sostitutiva, the mortgage-deed notary band, the down payment and the notes all read it. `CostBreakdown.cash_needed` is `down_payment_eur` + `total_on_top`, reported as those two parts.
+
+The loan-to-value rules (the 80 % mutuo-fondiario limit, art. 38 TUB / CICR 22 April 1995, raised to 100 % only with integrative guarantees; the Consap Fondo Garanzia prima casa) live in `costs/rates.py` with their citations and only feed `CostNote`s. They are general information, stated neutrally ("as a rule", "ask the bank"). **No note may say or imply that the buyer qualifies for, can obtain or can afford a loan, and none recommends a lender or product**; there is no eligibility scoring. The percentage is computed on the price while the bank applies its limits to its own appraised value, so the UI always presents it as an approximation.
+
+### The mortgage payment: a calculation on the user's own numbers
+
+With a mortgage **and** a rate, `compute()` also returns `CostBreakdown.mortgage_payment` (a `MortgagePayment`): the monthly payment under French amortisation (`calculator.monthly_payment`, `P · i / (1 − (1 + i)^−n)`, `P / n` at 0 %), the total interest, the total repaid, and the total cost of the mortgage = interest + the mortgage-related lines already in the closing costs (imposta sostitutiva, mortgage-deed notary, istruttoria, perizia, insurance). The term (`mortgage_years`, default `rates.MORTGAGE_DEFAULT_YEARS` = 25; the form offers 10–30) and the nominal rate (`mortgage_rate_pct`, TAN) are scenario inputs. **The rate is never guessed**: without one there is no payment and a `mortgage_rate_missing` note; the web form pre-fills the market average, visibly and editably. Every payment carries a `mortgage_variable_rate` note (computed at today's rate; a variable rate will move it). It moves no total and no line.
+
+The legal boundary is hard: a generic calculation on the amount, term and rate the user chooses. No affordability or payment-to-income notion, no "you can afford", no lender or product names, no eligibility (`tests/test_costs_calculator.py` pins the model's fields and the payment block's copy).
+
+Reference rates live in `costs/rates.py` as `Benchmark`s with `review_months=3`, so the freshness mechanism covers them: Banca d'Italia, "Banche e moneta: serie nazionali", Tavola 2.4 (MIR0400), new loans to households for house purchase — the average nominal rate (net of fees, the TAN's kind of figure), the same split by initial rate-setting period (up to / over one year: Banca d'Italia publishes no fixed/variable split as such, and the copy says "typically"), and the TAEG, a different measure (fees and insurance included) shown as a TAEG and never used as a TAN. `MORTGAGE_RATE_DATA_MONTH` is the month they describe and is shown with them; they are market averages, not an offer. Refresh them from the newest monthly issue (listed at `bancaditalia.it/pubblicazioni/moneta-banche/<year>-moneta/`), update the figures, the data month, the provisional flag and the URL together, and bump the `as_of` dates.
 
 ## Web layer
 

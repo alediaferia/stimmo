@@ -79,6 +79,7 @@ The band gauge on the result page. Column heights and horizontal positions are c
 
 `body::before` injects a faint `repeating-linear-gradient` horizontal hairline pattern every 32 px. This sits at `z-index: 0`; `.app` is at `z-index: 1` to stay above it. If you need to remove the texture for a specific context, set `--tex: 0` on a parent element (not currently wired to any toggle in production).
 
+
 ## Mobile breakpoint
 
 `max-width: 880px` collapses multi-column layouts (`.grid-2`, `.brand-row`, `.pipeline`, `.src-grid`, `.not-grid`, `.explainer`) to single column and scales down headline type (`h1` from 56 px → 40 px, `.verdict-label` from 64 px → 44 px, `.wm-big` from 96 px → 64 px). The breakpoint is set once at the bottom of each relevant rule — do not add per-component JS-based resize logic.

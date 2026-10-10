@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  stimmo\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-30 09:38+0200\n"
+"POT-Creation-Date: 2026-10-10 07:26+0200\n"
 "PO-Revision-Date: 2026-05-05 08:34+0200\n"
 "Last-Translator: Alessandro Diaferia\n"
 "Language: it_IT\n"
@@ -17,19 +17,19 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: src/stimmo/models.py:18
+#: src/stimmo/models.py:28
 msgid "Street-facing"
 msgstr "Su strada"
 
-#: src/stimmo/models.py:19
+#: src/stimmo/models.py:29
 msgid "Mixed (street + courtyard)"
 msgstr "Misto (strada + cortile)"
 
-#: src/stimmo/models.py:20
+#: src/stimmo/models.py:30
 msgid "Internal courtyard"
 msgstr "Cortile interno"
 
-#: src/stimmo/models.py:33
+#: src/stimmo/models.py:43
 msgid ""
 "Upscale residential — post-2000 build or prestigious older building, "
 "doorman (portineria), marble/parquet finish, prime zone. Pick this if the"
@@ -39,7 +39,7 @@ msgstr ""
 "prestigioso, portineria, finiture in marmo/parquet, zona premium. Scegli "
 "questa se l'annuncio pubblicizza esplicitamente 'signorile'."
 
-#: src/stimmo/models.py:38
+#: src/stimmo/models.py:48
 msgid ""
 "Standard residential — typical condominium 1960s–90s, ordinary finishes, "
 "no doorman (most common choice for anything that doesn't clearly fit "
@@ -49,7 +49,7 @@ msgstr ""
 "ordinarie, senza portineria (scelta più comune per tutto ciò che non "
 "rientra chiaramente in un'altra categoria)."
 
-#: src/stimmo/models.py:42
+#: src/stimmo/models.py:52
 msgid ""
 "Economy residential — palazzina economica, peripheral or semi-peripheral "
 "area, basic finishes, pre-1960s low-spec build or post-war INA-casa type."
@@ -58,7 +58,7 @@ msgstr ""
 "semiperiferica, finiture base, costruzione pre-anni ’60 a basso costo o "
 "tipo INA-casa del dopoguerra."
 
-#: src/stimmo/models.py:46
+#: src/stimmo/models.py:56
 msgid ""
 "Detached houses and small villas — independent or semi-detached with "
 "private garden/land."
@@ -66,53 +66,113 @@ msgstr ""
 "Case indipendenti e villette — indipendenti o bifamiliari con "
 "giardino/terreno privato."
 
-#: src/stimmo/models.py:94
+#: src/stimmo/models.py:104
 msgid "No outdoor space"
 msgstr "Nessuno spazio esterno"
 
-#: src/stimmo/models.py:95
+#: src/stimmo/models.py:105
 msgid "Balcony"
 msgstr "Balcone"
 
-#: src/stimmo/models.py:96
+#: src/stimmo/models.py:106
 msgid "Small terrace (≤ 10 m²)"
 msgstr "Terrazzo piccolo (≤ 10 m²)"
 
-#: src/stimmo/models.py:97
+#: src/stimmo/models.py:107
 msgid "Large terrace (> 10 m²)"
 msgstr "Terrazzo grande (> 10 m²)"
 
-#: src/stimmo/models.py:110
+#: src/stimmo/models.py:120
 msgid "Pre-war (before 1945)"
 msgstr "Anteguerra (prima del 1945)"
 
-#: src/stimmo/models.py:111
+#: src/stimmo/models.py:121
 msgid "Post-war boom (1945–1980)"
 msgstr "Boom del dopoguerra (1945–1980)"
 
-#: src/stimmo/models.py:112
+#: src/stimmo/models.py:122
 msgid "1980s–90s (1981–2000)"
 msgstr "Anni ’80–’90 (1981–2000)"
 
-#: src/stimmo/models.py:113
+#: src/stimmo/models.py:123
 msgid "Contemporary (2001–2015)"
 msgstr "Contemporaneo (2001–2015)"
 
-#: src/stimmo/models.py:114
+#: src/stimmo/models.py:124
 msgid "Recent (after 2015)"
 msgstr "Recente (dopo il 2015)"
 
-#: src/stimmo/models.py:125
+#: src/stimmo/models.py:135
 msgid "South / south-west"
 msgstr "Sud / sud-ovest"
 
-#: src/stimmo/models.py:126
+#: src/stimmo/models.py:136
 msgid "East / west / mixed"
 msgstr "Est / ovest / misto"
 
-#: src/stimmo/models.py:127
+#: src/stimmo/models.py:137
 msgid "North / north-east"
 msgstr "Nord / nord-est"
+
+#: src/stimmo/models.py:241
+msgid "Private seller (or not subject to IVA)"
+msgstr "Venditore privato (o non soggetto a IVA)"
+
+#: src/stimmo/models.py:242
+msgid "Builder selling under IVA"
+msgstr "Impresa costruttrice (vendita con IVA)"
+
+#: src/stimmo/models.py:264
+msgid "A/1 · Upscale residential (signorile)"
+msgstr "A/1 · Abitazione di tipo signorile"
+
+#: src/stimmo/models.py:265
+msgid "A/2 · Standard residential (civile)"
+msgstr "A/2 · Abitazione di tipo civile"
+
+#: src/stimmo/models.py:266
+msgid "A/3 · Economy residential (economico)"
+msgstr "A/3 · Abitazione di tipo economico"
+
+#: src/stimmo/models.py:267
+msgid "A/4 · Working-class residential (popolare)"
+msgstr "A/4 · Abitazione di tipo popolare"
+
+#: src/stimmo/models.py:268
+msgid "A/5 · Basic residential (ultrapopolare)"
+msgstr "A/5 · Abitazione di tipo ultrapopolare"
+
+#: src/stimmo/models.py:269
+msgid "A/7 · Small villa (villino)"
+msgstr "A/7 · Abitazione in villino"
+
+#: src/stimmo/models.py:270
+msgid "A/8 · Villa"
+msgstr "A/8 · Abitazione in villa"
+
+#: src/stimmo/models.py:271
+msgid "A/9 · Castle or palace of artistic value"
+msgstr "A/9 · Castello o palazzo di eminente pregio artistico o storico"
+
+#: src/stimmo/models.py:284
+msgid "None — move-in ready"
+msgstr "Nessuna — pronto da abitare"
+
+#: src/stimmo/models.py:285
+msgid "Light — paint, overlay floors, doors"
+msgstr "Leggera — tinteggiatura, pavimenti in sovrapposizione, porte"
+
+#: src/stimmo/models.py:286
+msgid "Medium — bathroom, kitchen, electrical, floors"
+msgstr "Media — bagno, cucina, impianto elettrico, pavimenti"
+
+#: src/stimmo/models.py:287
+msgid "Full — strip-out, new layout, systems, windows"
+msgstr "Completa — demolizioni, nuova distribuzione, impianti, serramenti"
+
+#: src/stimmo/models.py:288
+msgid "Premium — high-end or structural"
+msgstr "Di pregio — finiture di alta gamma o interventi strutturali"
 
 #: src/stimmo/web/app.py:1116
 msgid "Invalid import request"
@@ -615,6 +675,7 @@ msgid "No machine learning."
 msgstr "Niente machine learning."
 
 #: src/stimmo/web/templates/about.html:210
+#, fuzzy
 msgid ""
 "stimmo has no trained model. The entire tuning surface is a single\n"
 "      file — <span class=\"mono\">valuation/adjustments.py</span>. Every\n"
@@ -624,13 +685,18 @@ msgid ""
 "amenities)\n"
 "      lives there in plain Python."
 msgstr ""
-"stimmo non ha un modello addestrato. L'intera superficie di regolazione è"
-" un singolo\n"
-"      file — <span class=\"mono\">valuation/adjustments.py</span>. Ogni\n"
-"      moltiplicatore (piano, ascensore, superficie, stato, energetico, "
-"esterno, epoca, orientamento,\n"
-"      esposizione, densità stanze, secondo bagno, box auto e servizi)\n"
-"      vive lì in Python puro."
+"stimmo non usa alcun modello addestrato. I coefficienti di valutazione si"
+" trovano in un unico\n"
+"      file, <span class=\"mono\">valuation/adjustments.py</span>, e le "
+"aliquote dei costi\n"
+"      d'acquisto in un altro, <span class=\"mono\">costs/rates.py</span>."
+" Ogni coefficiente\n"
+"      di valutazione (piano, ascensore, metratura, stato di "
+"conservazione, classe energetica, spazi esterni, epoca di costruzione, "
+"orientamento,\n"
+"      esposizione, densità dei locali, secondo bagno, box auto e servizi "
+"in zona)\n"
+"      sta nel primo, scritto in Python semplice."
 
 #: src/stimmo/web/templates/about.html:217
 msgid ""
@@ -2230,18 +2296,4 @@ msgstr ""
 #: src/stimmo/web/templates/zones_index.html:109
 msgid "Check a listing against these bands"
 msgstr "Verifica un annuncio rispetto a queste fasce"
-
-#~ msgid "OMI Milano quotations"
-#~ msgstr "Quotazioni OMI Milano"
-
-#~ msgid ""
-#~ "OMI Milano: every microzone's official "
-#~ "€/m² compravendita band, semester trend, "
-#~ "and boundary — sourced from Agenzia "
-#~ "delle Entrate data."
-#~ msgstr ""
-#~ "OMI Milano: fascia ufficiale €/m² "
-#~ "compravendita di ogni microzona, andamento "
-#~ "semestrale e perimetri — basati sui "
-#~ "dati dell'Agenzia delle Entrate."
 

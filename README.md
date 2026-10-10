@@ -39,6 +39,7 @@ Override the bind address via `STIMMO_HOST` / `STIMMO_PORT` env vars.
 
 - `src/stimmo/data/` — bundled OMI quotations, zone polygons, and history CSV; live calls to Nominatim and Overpass.
 - `src/stimmo/valuation/` — the estimation pipeline: adjustments (single tuning surface), engine, and verdict classifier.
+- `src/stimmo/costs/` — the purchase-cost calculator (taxes, notary, agency, mortgage costs, renovation on top of the price): a pure calculator plus its own rates file, [`costs/rates.py`](src/stimmo/costs/rates.py). It never feeds the verdict.
 - `src/stimmo/web/` — FastAPI app and Jinja templates; `stimmo-web` entry point.
 - `src/stimmo/mcp/` — MCP server exposing the valuation pipeline over Streamable HTTP (mounted at `/mcp`).
 - `scripts/` — data refresh tooling (pulls latest OMI assets from the CKAN API).
