@@ -14,6 +14,7 @@ uv run stimmo-web                 # FastAPI app on 127.0.0.1:8000 (STIMMO_HOST/S
 uv run pytest                    # all tests
 uv run pytest tests/test_engine.py::test_name   # single test
 uv run python scripts/refresh_omi.py            # refresh bundled OMI assets
+uv run python scripts/check_rates.py            # cost-calculator ranges overdue / due in 30 days (exit 1 if overdue)
 
 # i18n catalog management (run from repo root)
 uv run pybabel extract -F babel.cfg -o src/stimmo/locale/messages.pot .

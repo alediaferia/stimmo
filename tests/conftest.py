@@ -5,9 +5,14 @@ from __future__ import annotations
 import asyncio
 import json
 from contextlib import asynccontextmanager
+from datetime import date
 
 import httpx
 import pytest
+
+# The date every test reads the cost calculator's figures at, unless it picks its own. Ranges
+# go stale as the real calendar moves, so no test may be left to the real clock.
+COSTS_TODAY = date(2026, 10, 8)
 
 
 @asynccontextmanager
