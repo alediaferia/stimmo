@@ -85,6 +85,8 @@ Added to the same `base.html` `<style>` block (section "Purchase costs"):
 - `.ltv` — the mortgage % slider (a native `input[type=range]`, progressive enhancement, `hidden` until `static/costs-form.js` runs). `--ltv-frac` (limit / ceiling, from `costs/rates.py`) places the `.ltv-mark` and starts the `--warn-soft` caution zone on the track; `data-zone="caution"` turns the thumb `--warn`; `.ltv-caution` is the amber note shown above the ordinary limit. `.ltv-equiv` is the live `= €…` / `≈ …%` line and `.ltv-error` the client-side validation message (`--bad`).
 - `details.doc.costs-details` — the calculator page's methodology: a `<details class="doc">` whose `<summary class="doc-head">` is the section head (a `+` / `−` after the title, no marker), collapsed by default, no script. `#not-included` is a separate, always-open `.doc`.
 - `.rate-ref` — the tinted box under the mortgage-rate field listing Banca d'Italia's market averages (`.rate-ref-head`, `.rate-ref-list`); a past-review reference carries `.tag.stale.ref-stale`. `.costs-excluded` is the one-line "not included" under the totals; `.form-alt` is the home page's line into the calculator.
+- `.doc.interest` — dashed, tinted card for a feature that is not available yet; it always carries a `.tag.indicative` saying so.
+
 ## Paper texture
 
 `body::before` injects a faint `repeating-linear-gradient` horizontal hairline pattern every 32 px. This sits at `z-index: 0`; `.app` is at `z-index: 1` to stay above it. If you need to remove the texture for a specific context, set `--tex: 0` on a parent element (not currently wired to any toggle in production).

@@ -154,6 +154,17 @@
 </div>
 {% endif %}
 
+{% if dossier_interest and not is_shared_view %}
+<div class="doc interest" id="dossier-interest">
+  <h2>{% trans price=(dossier_interest_price_eur | eur) %}Negotiation dossier · %(price)s · coming soon{% endtrans %} <span class="tag indicative">{% trans %}not available yet{% endtrans %}</span></h2>
+  <p>{% trans %}Planned contents: a sensitivity table, the prices at which the verdict flips, an opening offer and a walk-away price, and a due-diligence checklist.{% endtrans %}</p>
+  <form id="interest-form" method="post" action="/{{ lang }}/dossier-interest">
+    <button class="btn btn-ghost" type="submit">{% trans %}I'd want this{% endtrans %}</button>
+    <span class="costs-assume" style="margin-left:10px">{% trans %}A click only adds one to an anonymous counter.{% endtrans %}</span>
+  </form>
+  <p class="interest-msg" id="interest-msg" hidden>{% trans %}Not available yet — we're measuring interest. No data collected.{% endtrans %}</p>
+</div>
+{% endif %}
 
 <div class="grid-2" style="margin-top:24px">
   <div>
@@ -338,6 +349,26 @@
 {% block scripts %}
 {% if costs and costs.cb %}
 <script src="{{ static_url('costs-form.js') }}"></script>
+{% endif %}
+{% if dossier_interest and not is_shared_view %}
+<script>
+// Interest button: one same-origin POST (no body, no cookies, no identifiers), then an inline
+// message. Without JavaScript the form still POSTs and the 204 response leaves the page as is.
+(function () {
+  var form = document.getElementById('interest-form');
+  var msg = document.getElementById('interest-msg');
+  if (!form || !msg) return;
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var btn = form.querySelector('button');
+    btn.disabled = true;
+    fetch(form.action, {
+      method: 'POST', mode: 'same-origin', credentials: 'omit', cache: 'no-store',
+      referrerPolicy: 'no-referrer'
+    }).catch(function () {}).then(function () { msg.hidden = false; });
+  });
+})();
+</script>
 {% endif %}
 {% if share_url %}
 <script>

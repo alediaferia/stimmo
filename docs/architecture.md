@@ -75,6 +75,8 @@ Reference rates live in `costs/rates.py` as `Benchmark`s with `review_months=3`,
 
 - Result page: a section below the verdict, prefilled from the property (price, surface, condition → default renovation tier via `rates.FINE_CONDITION_DEFAULT_TIER`). Its form is a plain GET form to the standalone calculator, so it works without JavaScript and every scenario is a bookmarkable URL.
 - Standalone calculator: `/it/costi-acquisto-casa-milano` and `/en/milan/home-buying-costs`, registered once through `_register_seo_route` (canonical, hreflang and sitemap `<lastmod>` = `RATES_AS_OF`). The bare URL renders a worked example so the indexable page always carries real numbers; a submitted scenario is served `noindex` with the bare URL as canonical. "Not included" is its own section (`#not-included`, which the estimate's one-line summary of the exclusions links to) and the methodology (`#method`) is a native, collapsed `<details>`; `static/costs-form.js` opens it when the URL fragment points inside it. Both pages show the renovation €/m² as Milan prices.
+- Interest button: env-gated by `STIMMO_DOSSIER_INTEREST`, live result pages only. A click is an anonymous same-origin POST returning 204; the only state is the `stimmo_dossier_interest_total{event,lang}` counter.
+
 ## Web layer
 
 ### Server-rendered Jinja2, no JS framework
@@ -84,6 +86,7 @@ All pages are rendered on the server. JavaScript is used only for:
 - Live geocoder debounce (form page, `fetch /api/geocode`).
 - Segmented control state (form page, one 5-line function).
 - Bookmarklet copy-to-clipboard and paste-fallback toggle (bookmarklet page).
+- The env-gated interest button on the result page (one same-origin `fetch` POST and an inline message; without JavaScript the form still POSTs and the 204 leaves the page unchanged).
 - The purchase-cost form's mortgage field (`static/costs-form.js`, loaded by the result page and the standalone calculator): switching the unit converts the value using the price field, and in % mode a 0–100 slider (with the 80% / 100% mutuo-fondiario limits) and a live equivalent appear. The limits, the translated labels and the validation messages are rendered by `_costs_form.html` into data attributes (limits from `costs/rates.py`), so the script holds no rate or copy.
 
 The purchase-cost inputs (result page and standalone calculator) are plain GET forms and need no JavaScript: the script only enhances them, the slider markup is rendered `hidden`, and the server validates everything again (a percentage above 100 is an error, never read as euros).

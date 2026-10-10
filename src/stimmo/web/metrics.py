@@ -40,6 +40,18 @@ SHARE_RESOLVE: prometheus_client.Counter = prometheus_client.Counter(
 )
 
 
+# Interest in a not-yet-available feature, counted anonymously. event=view (the button was
+# rendered on a result page) | click (the same-origin POST was received); lang is the URL
+# language slug (it | en) — the only label, so cardinality is fixed at 2 x 2. Incremented in
+# the handlers, not _dispatch, per the observability invariant: a click is a 204 with no body
+# and could not be told apart from any other POST in the HTTP counters.
+DOSSIER_INTEREST: prometheus_client.Counter = prometheus_client.Counter(
+    "stimmo_dossier_interest_total",
+    "Anonymous view / click counts for the dossier interest button",
+    ["event", "lang"],
+)
+
+
 def instrument(app_callable: Callable) -> Callable:
     """Wrap an ASGI callable to record per-route request count and latency."""
 

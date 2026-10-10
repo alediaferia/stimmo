@@ -1,4 +1,4 @@
-"""Web glue for the purchase-cost calculator.
+"""Web glue for the purchase-cost calculator and the interest button.
 
 Everything here is presentation: parsing a query string / the result-page form into a
 ``PurchaseScenario``, listing the select options, and packaging the calculator's output for the
@@ -12,6 +12,7 @@ the scenario travels in the query string, so a result is a bookmarkable, shareab
 from __future__ import annotations
 
 import math
+import os
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import date
@@ -38,6 +39,22 @@ from stimmo.web.labels import date_str, month_str, pct_str, tier_short
 
 # Re-exported so web/app.py (sitemap <lastmod>) need not import the rates module directly.
 RATES_AS_OF = rates.RATES_AS_OF
+
+# ---------------------------------------------------------------------------
+# Interest button
+# ---------------------------------------------------------------------------
+
+INTEREST_ENV_VAR = "STIMMO_DOSSIER_INTEREST"
+# Price shown on the button copy.
+INTEREST_PRICE_EUR = 29
+_OFF_VALUES = frozenset({"", "0", "false", "no", "off"})
+
+
+def interest_enabled() -> bool:
+    """Read per call (like the Cloudflare beacon token) so tests can toggle it with monkeypatch.
+    Unset means off: nothing renders and the POST endpoint 404s."""
+    return os.environ.get(INTEREST_ENV_VAR, "").strip().lower() not in _OFF_VALUES
+
 
 # ---------------------------------------------------------------------------
 # Form <-> scenario

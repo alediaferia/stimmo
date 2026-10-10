@@ -22,7 +22,8 @@ from stimmo.models import (
 )
 from stimmo.web import app as app_module
 from stimmo.web import costs_view, labels
-from stimmo.web.app import _sitemap_xml, app
+from stimmo.web.app import _sitemap_xml, app, application
+from stimmo.web.metrics import DOSSIER_INTEREST, REQUESTS
 from stimmo.web.share_store import SqliteShareStore
 
 
@@ -76,6 +77,10 @@ def _form(**kw) -> dict[str, str]:
     }
     data.update(kw)
     return data
+
+
+def _counter(event: str, lang: str) -> float:
+    return DOSSIER_INTEREST.labels(event=event, lang=lang)._value.get()
 
 
 def _selected(body: str, select_id: str) -> str:
@@ -687,6 +692,146 @@ class TestResultPageSection:
 
 
 # ---------------------------------------------------------------------------
+# Interest button
+# ---------------------------------------------------------------------------
+
+
+class TestInterestButton:
+    def test_hidden_and_inert_when_the_env_var_is_unset(
+        self, client: TestClient, estimate_env, monkeypatch: pytest.MonkeyPatch
+    ):
+        monkeypatch.delenv("STIMMO_DOSSIER_INTEREST", raising=False)
+        view, click = _counter("view", "en"), _counter("click", "en")
+        body = client.post("/en/estimate", data=_form()).text
+        assert "dossier-interest" not in body
+        assert "interest-form" not in body
+        assert "Negotiation dossier" not in body
+        assert _counter("view", "en") == view
+        r = client.post("/en/dossier-interest")
+        assert r.status_code == 404
+        assert _counter("click", "en") == click
+
+    @pytest.mark.parametrize("value", ["", "0", "false", "off", "no"])
+    def test_falsy_values_keep_it_off(
+        self, client: TestClient, estimate_env, monkeypatch: pytest.MonkeyPatch, value: str
+    ):
+        monkeypatch.setenv("STIMMO_DOSSIER_INTEREST", value)
+        assert "interest-form" not in client.post("/en/estimate", data=_form()).text
+        assert client.post("/en/dossier-interest").status_code == 404
+
+    def test_renders_clearly_marked_as_not_available_and_counts_a_view(
+        self, client: TestClient, estimate_env, monkeypatch: pytest.MonkeyPatch
+    ):
+        monkeypatch.setenv("STIMMO_DOSSIER_INTEREST", "1")
+        before = _counter("view", "en")
+        body = client.post("/en/estimate", data=_form()).text
+        assert 'id="interest-form"' in body
+        assert "Negotiation dossier · €29 · coming soon" in body
+        assert "not available yet" in body
+        assert "sensitivity table" in body
+        assert "walk-away" in body
+        assert "due-diligence checklist" in body
+        assert _counter("view", "en") == before + 1
+        assert 'method="post" action="/en/dossier-interest"' in body
+
+    @needs_italian("Negotiation dossier · %(price)s · coming soon")
+    def test_italian_copy_is_translated(
+        self, client: TestClient, estimate_env, monkeypatch: pytest.MonkeyPatch
+    ):
+        monkeypatch.setenv("STIMMO_DOSSIER_INTEREST", "1")
+        body = client.post("/it/estimate", data=_form()).text
+        # Wording-agnostic: the Italian product name is owner-reviewed copy.
+        assert "Negotiation dossier" not in body
+        assert "in arrivo" in body
+
+    def test_italian_view_is_counted_under_the_it_label(
+        self, client: TestClient, estimate_env, monkeypatch: pytest.MonkeyPatch
+    ):
+        monkeypatch.setenv("STIMMO_DOSSIER_INTEREST", "1")
+        before_it, before_en = _counter("view", "it"), _counter("view", "en")
+        body = client.post("/it/estimate", data=_form()).text
+        assert 'action="/it/dossier-interest"' in body
+        assert "Negotiation dossier" not in body or _italian_missing(
+            "Negotiation dossier · %(price)s · coming soon"
+        )
+        assert _counter("view", "it") == before_it + 1
+        assert _counter("view", "en") == before_en
+
+    def test_not_rendered_on_share_views_and_not_counted(
+        self, client: TestClient, estimate_env, monkeypatch: pytest.MonkeyPatch
+    ):
+        monkeypatch.setenv("STIMMO_DOSSIER_INTEREST", "1")
+        body = client.post("/en/estimate", data=_form()).text
+        share_path = re.search(r'data-url="https?://[^/]+(/s/[A-Za-z0-9]+)"', body)
+        assert share_path
+        before = _counter("view", "en")
+        shared = client.get(share_path.group(1), headers={"Accept-Language": "en"})
+        assert shared.status_code == 200
+        assert "interest-form" not in shared.text
+        assert "Negotiation dossier" not in shared.text
+        assert _counter("view", "en") == before
+
+    def test_click_returns_204_counts_and_sets_nothing(
+        self, client: TestClient, monkeypatch: pytest.MonkeyPatch
+    ):
+        monkeypatch.setenv("STIMMO_DOSSIER_INTEREST", "1")
+        before = _counter("click", "en")
+        r = client.post("/en/dossier-interest")
+        assert r.status_code == 204
+        assert r.content == b""
+        assert "set-cookie" not in r.headers
+        assert r.headers["cache-control"] == "no-store"
+        assert _counter("click", "en") == before + 1
+
+    def test_click_is_labelled_by_language(
+        self, client: TestClient, monkeypatch: pytest.MonkeyPatch
+    ):
+        monkeypatch.setenv("STIMMO_DOSSIER_INTEREST", "1")
+        before_it, before_en = _counter("click", "it"), _counter("click", "en")
+        assert client.post("/it/dossier-interest").status_code == 204
+        assert _counter("click", "it") == before_it + 1
+        assert _counter("click", "en") == before_en
+
+    def test_cross_site_post_is_refused_and_not_counted(
+        self, client: TestClient, monkeypatch: pytest.MonkeyPatch
+    ):
+        monkeypatch.setenv("STIMMO_DOSSIER_INTEREST", "1")
+        before = _counter("click", "en")
+        r = client.post("/en/dossier-interest", headers={"Sec-Fetch-Site": "cross-site"})
+        assert r.status_code == 403
+        assert _counter("click", "en") == before
+        ok = client.post("/en/dossier-interest", headers={"Sec-Fetch-Site": "same-origin"})
+        assert ok.status_code == 204
+
+    def test_unsupported_language_is_rejected(
+        self, client: TestClient, monkeypatch: pytest.MonkeyPatch
+    ):
+        monkeypatch.setenv("STIMMO_DOSSIER_INTEREST", "1")
+        assert client.post("/fr/dossier-interest").status_code in (404, 405, 422)
+
+    def test_label_set_is_event_and_lang_only(self):
+        assert DOSSIER_INTEREST._labelnames == ("event", "lang")
+        assert DOSSIER_INTEREST._name == "stimmo_dossier_interest"
+
+    def test_click_is_labelled_by_endpoint_name_at_the_dispatcher(
+        self, monkeypatch: pytest.MonkeyPatch
+    ):
+        monkeypatch.setenv("STIMMO_DOSSIER_INTEREST", "1")
+        before = REQUESTS.labels(method="POST", route="dossier_interest", status="204")._value.get()
+        r = TestClient(application).post("/en/dossier-interest")
+        assert r.status_code == 204
+        after = REQUESTS.labels(method="POST", route="dossier_interest", status="204")._value.get()
+        assert after == before + 1
+
+    def test_is_not_a_html_response_route(self):
+        route = next(
+            r for r in app.routes if getattr(r, "path", None) == "/{lang}/dossier-interest"
+        )
+        assert route.status_code == 204
+        assert "POST" in route.methods
+
+
+# ---------------------------------------------------------------------------
 # About / privacy copy
 # ---------------------------------------------------------------------------
 
@@ -737,6 +882,19 @@ class TestCopy:
 
     def test_about_italian_links_to_the_italian_calculator(self, client: TestClient):
         assert f'href="{IT_URL}"' in client.get("/it/about").text
+
+    def test_privacy_mentions_the_anonymous_click_counter(self, client: TestClient):
+        body = client.get("/en/privacy").text
+        assert "anonymous counter" in body
+        assert "no listing data, cookie or identifier" in body
+
+    @needs_italian(
+        "If the result page offers a feature that is not available yet, clicking its interest "
+        "button adds one to an anonymous counter kept by interface language only: the request "
+        "carries no listing data, cookie or identifier, and nothing else about it is stored."
+    )
+    def test_privacy_sentence_is_translated(self, client: TestClient):
+        assert "anonymous counter" not in client.get("/it/privacy").text
 
     def test_no_new_link_on_hub_pages(self, client: TestClient):
         """The neighbourhood hubs and the zones pages do not link the calculator from

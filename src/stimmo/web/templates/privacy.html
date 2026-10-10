@@ -43,6 +43,7 @@
     <h2 class="doc-title">{% trans %}Metrics{% endtrans %}</h2>
   </div>
   <p>{% trans %}stimmo collects aggregate, anonymous Prometheus counters — request counts and latencies by route, and share-link open/render outcomes. These are operational metrics, not per-user tracking: they carry no IP address, cookie, or identifier tied to a specific visitor.{% endtrans %}</p>
+  <p>{% trans %}If the result page offers a feature that is not available yet, clicking its interest button adds one to an anonymous counter kept by interface language only: the request carries no listing data, cookie or identifier, and nothing else about it is stored.{% endtrans %}</p>
   <p>{% trans %}If a Cloudflare Web Analytics token is configured, this page also loads Cloudflare's privacy-first analytics beacon, which does not use cookies or persistent identifiers to track individuals across sites.{% endtrans %}</p>
 </div>
 

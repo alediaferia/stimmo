@@ -174,212 +174,212 @@ msgstr "Completa — demolizioni, nuova distribuzione, impianti, serramenti"
 msgid "Premium — high-end or structural"
 msgstr "Di pregio — finiture di alta gamma o interventi strutturali"
 
-#: src/stimmo/web/app.py:1199
+#: src/stimmo/web/app.py:1200
 msgid "Invalid import request"
 msgstr "Richiesta di importazione non valida"
 
-#: src/stimmo/web/app.py:1205
+#: src/stimmo/web/app.py:1206
 msgid "Payload too large"
 msgstr "Carico utile troppo grande"
 
-#: src/stimmo/web/app.py:1208
+#: src/stimmo/web/app.py:1209
 msgid "Malformed import payload"
 msgstr "Carico utile di importazione malformato"
 
-#: src/stimmo/web/app.py:1224
+#: src/stimmo/web/app.py:1225
 msgid "Missing source or HTML content"
 msgstr "Mancano fonte o contenuto HTML"
 
-#: src/stimmo/web/app.py:1227
+#: src/stimmo/web/app.py:1228
 msgid "Pasted HTML too large"
 msgstr "HTML incollato troppo grande"
 
-#: src/stimmo/web/app.py:1235
+#: src/stimmo/web/app.py:1236
 msgid "Could not find listing data in pasted HTML"
 msgstr "Impossibile trovare i dati dell'annuncio nell'HTML incollato"
 
-#: src/stimmo/web/app.py:1240
+#: src/stimmo/web/app.py:1241
 msgid "Could not parse listing data"
 msgstr "Impossibile analizzare i dati dell'annuncio"
 
-#: src/stimmo/web/app.py:1244
+#: src/stimmo/web/app.py:1245
 msgid "Could not locate listing fields in pasted data"
 msgstr "Impossibile individuare i campi dell'annuncio nei dati incollati"
 
-#: src/stimmo/web/app.py:1256
+#: src/stimmo/web/app.py:1257
 msgid "Bookmarklet not available"
 msgstr "Bookmarklet non disponibile"
 
-#: src/stimmo/web/app.py:1260
+#: src/stimmo/web/app.py:1261
 msgid "stimmo: could not find listing data on this page"
 msgstr "stimmo: impossibile trovare i dati dell'annuncio in questa pagina"
 
-#: src/stimmo/web/app.py:1314
+#: src/stimmo/web/app.py:1315
 msgid "OMI low"
 msgstr "OMI basso"
 
-#: src/stimmo/web/app.py:1315
+#: src/stimmo/web/app.py:1316
 msgid "Ask low"
 msgstr "Prezzo richiesto basso"
 
-#: src/stimmo/web/app.py:1316
+#: src/stimmo/web/app.py:1317
 msgid "Ask mid"
 msgstr "Prezzo richiesto medio"
 
-#: src/stimmo/web/app.py:1317
+#: src/stimmo/web/app.py:1318
 msgid "OMI high"
 msgstr "OMI alto"
 
-#: src/stimmo/web/app.py:1318
+#: src/stimmo/web/app.py:1319
 msgid "Ask high"
 msgstr "Prezzo richiesto alto"
 
-#: src/stimmo/web/app.py:1409
+#: src/stimmo/web/app.py:1410
 #, python-format
 msgid "Geocoding failed: %(e)s"
 msgstr "Geocodifica fallita: %(e)s"
 
-#: src/stimmo/web/app.py:1413 src/stimmo/web/app.py:1499
-#: src/stimmo/web/app.py:1544
+#: src/stimmo/web/app.py:1414 src/stimmo/web/app.py:1503
+#: src/stimmo/web/app.py:1548
 msgid "Address is outside the Milano comune — no OMI zone."
 msgstr "L'indirizzo è fuori dal comune di Milano — nessuna zona OMI."
 
-#: src/stimmo/web/app.py:1452 src/stimmo/web/app.py:1506
-#: src/stimmo/web/app.py:1551
+#: src/stimmo/web/app.py:1453 src/stimmo/web/app.py:1510
+#: src/stimmo/web/app.py:1555
 #, python-format
 msgid "OMI lookup failed: %(e)s"
 msgstr "Ricerca OMI fallita: %(e)s"
 
-#: src/stimmo/web/app.py:1494 src/stimmo/web/app.py:1537
+#: src/stimmo/web/app.py:1498 src/stimmo/web/app.py:1541
 msgid "Invalid or expired share link."
 msgstr "Link di condivisione non valido o scaduto."
 
-#: src/stimmo/web/costs_view.py:144
+#: src/stimmo/web/costs_view.py:161
 #, python-format
 msgid "“%(value)s” is not a valid number."
 msgstr "“%(value)s” non è un numero valido."
 
-#: src/stimmo/web/costs_view.py:156 src/stimmo/web/costs_view.py:163
+#: src/stimmo/web/costs_view.py:173 src/stimmo/web/costs_view.py:180
 #, python-format
 msgid "Unknown option “%(value)s”."
 msgstr "Opzione sconosciuta: “%(value)s”."
 
-#: src/stimmo/web/costs_view.py:169
+#: src/stimmo/web/costs_view.py:186
 #, python-format
 msgid "The purchase price must be between %(low)s and %(high)s."
 msgstr "Il prezzo di acquisto deve essere compreso tra %(low)s e %(high)s."
 
-#: src/stimmo/web/costs_view.py:175
+#: src/stimmo/web/costs_view.py:192
 #, python-format
 msgid "The agency fee must be between %(low)s and %(high)s."
 msgstr "La provvigione dell'agenzia deve essere compresa tra %(low)s e %(high)s."
 
-#: src/stimmo/web/costs_view.py:182
+#: src/stimmo/web/costs_view.py:199
 #: src/stimmo/web/templates/_costs_form.html:84
 #, python-format
 msgid "The mortgage percentage must be between %(low)s and %(high)s."
 msgstr "La percentuale del mutuo deve essere compresa tra %(low)s e %(high)s."
 
-#: src/stimmo/web/costs_view.py:186
+#: src/stimmo/web/costs_view.py:203
 #: src/stimmo/web/templates/_costs_form.html:83
 msgid "The mortgage cannot exceed the purchase price."
 msgstr "Il mutuo non può superare il prezzo di acquisto."
 
-#: src/stimmo/web/costs_view.py:190
+#: src/stimmo/web/costs_view.py:207
 #, python-format
 msgid "The interest rate must be between %(low)s and %(high)s."
 msgstr "Il tasso di interesse deve essere compreso tra %(low)s e %(high)s."
 
-#: src/stimmo/web/costs_view.py:194
+#: src/stimmo/web/costs_view.py:211
 msgid "Amounts cannot be negative."
 msgstr "Gli importi non possono essere negativi."
 
-#: src/stimmo/web/costs_view.py:196 src/stimmo/web/costs_view.py:222
+#: src/stimmo/web/costs_view.py:213 src/stimmo/web/costs_view.py:239
 msgid "One of the values is out of range."
 msgstr "Uno dei valori è fuori dall'intervallo consentito."
 
-#: src/stimmo/web/costs_view.py:199
+#: src/stimmo/web/costs_view.py:216
 msgid "Enter the surface to price a renovation."
 msgstr "Inserisci la superficie per stimare il costo della ristrutturazione."
 
-#: src/stimmo/web/costs_view.py:235
+#: src/stimmo/web/costs_view.py:252
 msgid "Prima casa — main home, first-home tax regime"
 msgstr "Prima casa — abitazione principale, con agevolazioni prima casa"
 
-#: src/stimmo/web/costs_view.py:236
+#: src/stimmo/web/costs_view.py:253
 msgid "Not prima casa — second or investment home"
 msgstr "Non prima casa — seconda casa o investimento"
 
-#: src/stimmo/web/costs_view.py:242
+#: src/stimmo/web/costs_view.py:259
 #, python-format
 msgid "%(years)s years"
 msgstr "%(years)s anni"
 
-#: src/stimmo/web/costs_view.py:252
+#: src/stimmo/web/costs_view.py:269
 msgid "All new loans"
 msgstr "Tutti i nuovi mutui"
 
-#: src/stimmo/web/costs_view.py:254
+#: src/stimmo/web/costs_view.py:271
 msgid "Rate set for up to 1 year at the outset (typically variable)"
 msgstr ""
 "Tasso fissato all'origine per un periodo fino a 1 anno (di solito "
 "variabile)"
 
-#: src/stimmo/web/costs_view.py:258
+#: src/stimmo/web/costs_view.py:275
 msgid "Rate set for over 1 year at the outset (typically fixed)"
 msgstr "Tasso fissato all'origine per oltre 1 anno (di solito fisso)"
 
-#: src/stimmo/web/costs_view.py:335
+#: src/stimmo/web/costs_view.py:352
 msgid "prima casa"
 msgstr "prima casa"
 
-#: src/stimmo/web/costs_view.py:335
+#: src/stimmo/web/costs_view.py:352
 msgid "not prima casa"
 msgstr "non prima casa"
 
-#: src/stimmo/web/costs_view.py:337
+#: src/stimmo/web/costs_view.py:354
 #, python-format
 msgid "category %(category)s"
 msgstr "categoria %(category)s"
 
-#: src/stimmo/web/costs_view.py:340
+#: src/stimmo/web/costs_view.py:357
 #, python-format
 msgid "rendita %(value)s"
 msgstr "rendita %(value)s"
 
-#: src/stimmo/web/costs_view.py:342
+#: src/stimmo/web/costs_view.py:359
 msgid "rendita unknown"
 msgstr "rendita non nota"
 
-#: src/stimmo/web/costs_view.py:345
+#: src/stimmo/web/costs_view.py:362
 #, python-format
 msgid "agency %(pct)s + IVA"
 msgstr "agenzia %(pct)s + IVA"
 
-#: src/stimmo/web/costs_view.py:345
+#: src/stimmo/web/costs_view.py:362
 msgid "no agency fee"
 msgstr "senza agenzia"
 
-#: src/stimmo/web/costs_view.py:348
+#: src/stimmo/web/costs_view.py:365
 #, python-format
 msgid "mortgage %(amount)s (%(pct)s of the price)"
 msgstr "mutuo di %(amount)s (%(pct)s del prezzo)"
 
-#: src/stimmo/web/costs_view.py:351
+#: src/stimmo/web/costs_view.py:368
 msgid "no mortgage"
 msgstr "senza mutuo"
 
-#: src/stimmo/web/costs_view.py:355
+#: src/stimmo/web/costs_view.py:372
 #, python-format
 msgid "%(years)s-year term at %(rate)s TAN"
 msgstr "Durata %(years)s anni al %(rate)s TAN"
 
-#: src/stimmo/web/costs_view.py:362
+#: src/stimmo/web/costs_view.py:379
 #, python-format
 msgid "%(tier)s renovation"
 msgstr "ristrutturazione %(tier)s"
 
-#: src/stimmo/web/costs_view.py:364
+#: src/stimmo/web/costs_view.py:381
 msgid "no renovation"
 msgstr "senza ristrutturazione"
 
@@ -1009,7 +1009,7 @@ msgstr ""
 
 #: src/stimmo/web/templates/_costs_form.html:19
 #: src/stimmo/web/templates/form.html:70
-#: src/stimmo/web/templates/result.html:246
+#: src/stimmo/web/templates/result.html:257
 msgid "Surface"
 msgstr "Superficie"
 
@@ -1206,7 +1206,7 @@ msgstr ""
 " all'OMI, nessun machine learning, ogni moltiplicatore visibile."
 
 #: src/stimmo/web/templates/about.html:33
-#: src/stimmo/web/templates/base.html:1160
+#: src/stimmo/web/templates/base.html:1164
 msgid "About"
 msgstr "Informazioni"
 
@@ -1709,36 +1709,36 @@ msgstr "Apri un issue su GitHub"
 msgid "Milan fair-price check"
 msgstr "Controllo prezzo equo"
 
-#: src/stimmo/web/templates/base.html:1154
+#: src/stimmo/web/templates/base.html:1158
 msgid "Fair-price check"
 msgstr "Controllo del prezzo equo"
 
-#: src/stimmo/web/templates/base.html:1158
+#: src/stimmo/web/templates/base.html:1162
 msgid "Estimate"
 msgstr "Stima"
 
-#: src/stimmo/web/templates/base.html:1159
+#: src/stimmo/web/templates/base.html:1163
 msgid "Bookmarklet"
 msgstr "Bookmarklet"
 
-#: src/stimmo/web/templates/base.html:1171
+#: src/stimmo/web/templates/base.html:1175
 msgid "By"
 msgstr "Da"
 
-#: src/stimmo/web/templates/base.html:1175
+#: src/stimmo/web/templates/base.html:1179
 #: src/stimmo/web/templates/neighborhood_detail.html:37
 #: src/stimmo/web/templates/zone_detail.html:37
 #: src/stimmo/web/templates/zones_index.html:35
 msgid "Zones"
 msgstr "Zone"
 
-#: src/stimmo/web/templates/base.html:1176
+#: src/stimmo/web/templates/base.html:1180
 #: src/stimmo/web/templates/bookmarklet.html:22
 #: src/stimmo/web/templates/privacy.html:8
 msgid "Privacy"
 msgstr "Privacy"
 
-#: src/stimmo/web/templates/base.html:1177
+#: src/stimmo/web/templates/base.html:1181
 msgid "Requests &amp; feedback"
 msgstr "Richieste &amp; feedback"
 
@@ -2539,7 +2539,7 @@ msgstr "Via + numero civico, solo comune di Milano."
 
 #: src/stimmo/web/templates/form.html:79
 #: src/stimmo/web/templates/result.html:113
-#: src/stimmo/web/templates/result.html:256
+#: src/stimmo/web/templates/result.html:267
 msgid "Asking price"
 msgstr "Prezzo richiesto"
 
@@ -2553,7 +2553,7 @@ msgid "Building &amp; unit"
 msgstr "Edificio &amp; unità"
 
 #: src/stimmo/web/templates/form.html:108
-#: src/stimmo/web/templates/result.html:162
+#: src/stimmo/web/templates/result.html:173
 msgid "Adjustments"
 msgstr "Aggiustamenti"
 
@@ -3092,6 +3092,19 @@ msgstr ""
 
 #: src/stimmo/web/templates/privacy.html:46
 msgid ""
+"If the result page offers a feature that is not available yet, clicking "
+"its interest button adds one to an anonymous counter kept by interface "
+"language only: the request carries no listing data, cookie or identifier,"
+" and nothing else about it is stored."
+msgstr ""
+"Se nella pagina dei risultati compare una funzione non ancora "
+"disponibile, cliccando il relativo pulsante di interesse incrementi di "
+"uno un contatore anonimo, distinto solo per lingua dell'interfaccia: la "
+"richiesta non contiene dati dell'annuncio, cookie né identificativi, e "
+"non viene memorizzato nient'altro."
+
+#: src/stimmo/web/templates/privacy.html:47
+msgid ""
 "If a Cloudflare Web Analytics token is configured, this page also loads "
 "Cloudflare's privacy-first analytics beacon, which does not use cookies "
 "or persistent identifiers to track individuals across sites."
@@ -3101,11 +3114,11 @@ msgstr ""
 "cookie o identificatori persistenti per tracciare gli individui tra i "
 "siti."
 
-#: src/stimmo/web/templates/privacy.html:51
+#: src/stimmo/web/templates/privacy.html:52
 msgid "Infrastructure"
 msgstr "Infrastruttura"
 
-#: src/stimmo/web/templates/privacy.html:53
+#: src/stimmo/web/templates/privacy.html:54
 msgid ""
 "stimmo runs behind Cloudflare, used as a reverse proxy and CDN to serve "
 "the site reliably. Cloudflare processes standard connection metadata "
@@ -3256,7 +3269,7 @@ msgid "Adjusted €/m²"
 msgstr "€/m² aggiustato"
 
 #: src/stimmo/web/templates/result.html:131
-#: src/stimmo/web/templates/result.html:244
+#: src/stimmo/web/templates/result.html:255
 msgid "Asking €/m²"
 msgstr "€/m² richiesto"
 
@@ -3276,85 +3289,118 @@ msgstr "In aggiunta al prezzo richiesto · non incide sul verdetto"
 msgid "Adjust the assumptions"
 msgstr "Modifica le ipotesi"
 
+#: src/stimmo/web/templates/result.html:159
+#, python-format
+msgid "Negotiation dossier · %(price)s · coming soon"
+msgstr "Dossier per la trattativa · %(price)s · in arrivo"
+
+#: src/stimmo/web/templates/result.html:159
+msgid "not available yet"
+msgstr "non ancora disponibile"
+
+#: src/stimmo/web/templates/result.html:160
+msgid ""
+"Planned contents: a sensitivity table, the prices at which the verdict "
+"flips, an opening offer and a walk-away price, and a due-diligence "
+"checklist."
+msgstr ""
+"Contenuti previsti: una tabella di sensibilità, i prezzi a cui il "
+"verdetto cambia, un'offerta di partenza e un prezzo oltre il quale "
+"rinunciare, e una checklist delle verifiche da fare prima dell'acquisto."
+
+#: src/stimmo/web/templates/result.html:162
+msgid "I'd want this"
+msgstr "Mi interessa"
+
 #: src/stimmo/web/templates/result.html:163
+msgid "A click only adds one to an anonymous counter."
+msgstr "Un clic aggiunge solo un'unità a un contatore anonimo."
+
+#: src/stimmo/web/templates/result.html:165
+msgid "Not available yet — we're measuring interest. No data collected."
+msgstr ""
+"Non ancora disponibile: stiamo valutando l'interesse. Nessun dato "
+"raccolto."
+
+#: src/stimmo/web/templates/result.html:174
 msgid "One coefficients file · valuation/adjustments.py"
 msgstr "Un file di coefficienti · valuation/adjustments.py"
 
-#: src/stimmo/web/templates/result.html:167
+#: src/stimmo/web/templates/result.html:178
 msgid "Factor"
 msgstr "Fattore"
 
-#: src/stimmo/web/templates/result.html:183
+#: src/stimmo/web/templates/result.html:194
 msgid "Compound multiplier"
 msgstr "Moltiplicatore composto"
 
-#: src/stimmo/web/templates/result.html:189
+#: src/stimmo/web/templates/result.html:200
 msgid "Box auto · flat extra"
 msgstr "Box auto · extra appartamento"
 
-#: src/stimmo/web/templates/result.html:208
+#: src/stimmo/web/templates/result.html:219
 msgid "Market activity"
 msgstr "Attività di mercato"
 
-#: src/stimmo/web/templates/result.html:209
+#: src/stimmo/web/templates/result.html:220
 msgid "context only · not a pricing input"
 msgstr "solo contesto · non un input di prezzo"
 
-#: src/stimmo/web/templates/result.html:212
+#: src/stimmo/web/templates/result.html:223
 msgid "Milano total last 8 quarters"
 msgstr "Milano totale ultimi 8 trimestri"
 
-#: src/stimmo/web/templates/result.html:234
+#: src/stimmo/web/templates/result.html:245
 msgid "Numbers"
 msgstr "Numeri"
 
-#: src/stimmo/web/templates/result.html:235
+#: src/stimmo/web/templates/result.html:246
 msgid "The maths in plain sight"
 msgstr "La matematica in piena vista"
 
-#: src/stimmo/web/templates/result.html:238
+#: src/stimmo/web/templates/result.html:249
 msgid "OMI condition"
 msgstr "Condizione OMI"
 
-#: src/stimmo/web/templates/result.html:240
+#: src/stimmo/web/templates/result.html:251
 msgid "OMI base"
 msgstr "Base OMI"
 
-#: src/stimmo/web/templates/result.html:242
+#: src/stimmo/web/templates/result.html:253
 msgid "Adjusted"
 msgstr "Aggiustato"
 
-#: src/stimmo/web/templates/result.html:248
+#: src/stimmo/web/templates/result.html:259
 msgid "OMI rogito range"
 msgstr "Intervallo OMI rogito"
 
-#: src/stimmo/web/templates/result.html:254
+#: src/stimmo/web/templates/result.html:265
 msgid "Typical ask range"
 msgstr "Intervallo richiesta tipico"
 
-#: src/stimmo/web/templates/result.html:258
+#: src/stimmo/web/templates/result.html:269
 msgid "Δ vs ask mid"
 msgstr "Δ vs richiesta media"
 
-#: src/stimmo/web/templates/result.html:267
+#: src/stimmo/web/templates/result.html:278
 msgid "Amenities"
 msgstr "Servizi"
 
-#: src/stimmo/web/templates/result.html:272
+#: src/stimmo/web/templates/result.html:283
 msgid "Amenity data unavailable."
 msgstr "Dati sui servizi non disponibili."
 
-#: src/stimmo/web/templates/result.html:275
-#: src/stimmo/web/templates/result.html:406
-#: src/stimmo/web/templates/result.html:413
+#: src/stimmo/web/templates/result.html:286
+#: src/stimmo/web/templates/result.html:437
+#: src/stimmo/web/templates/result.html:444
 msgid "Retry amenity lookup"
 msgstr "Riprova ricerca servizi"
 
-#: src/stimmo/web/templates/result.html:307
+#: src/stimmo/web/templates/result.html:318
 msgid "What this estimate does not cover."
 msgstr "Cosa non copre questa stima."
 
-#: src/stimmo/web/templates/result.html:307
+#: src/stimmo/web/templates/result.html:318
 msgid ""
 "Spese condominiali, extraordinary works already deliberated, piano nobile"
 " premium, street noise, view, cortile vs giardino — these can drive ±5–10"
@@ -3365,24 +3411,24 @@ msgstr ""
 " determinare ±5–10 % all'interno dello stesso edificio e sono invisibili "
 "all'OMI."
 
-#: src/stimmo/web/templates/result.html:312
+#: src/stimmo/web/templates/result.html:323
 #, python-format
 msgid "OMI data is %(months)s months old."
 msgstr "I dati OMI hanno %(months)s mesi."
 
-#: src/stimmo/web/templates/result.html:312
+#: src/stimmo/web/templates/result.html:323
 msgid "Semester "
 msgstr "Semestre "
 
-#: src/stimmo/web/templates/result.html:312
+#: src/stimmo/web/templates/result.html:323
 msgid "consider refreshing the bundled data with"
 msgstr "considera di aggiornare i dati inclusi con"
 
-#: src/stimmo/web/templates/result.html:321
+#: src/stimmo/web/templates/result.html:332
 msgid "OMI band, not a model"
 msgstr "Fascia OMI, non un modello"
 
-#: src/stimmo/web/templates/result.html:322
+#: src/stimmo/web/templates/result.html:333
 msgid ""
 "Italian per-transaction sale data isn't public. The €/m² Compr min–max "
 "band — built from observed sales by the Agenzia delle Entrate — is the "
@@ -3392,11 +3438,11 @@ msgstr ""
 "Compr min–max in €/m² — costruita sulle vendite osservate dall'Agenzia "
 "delle Entrate — è la spina dorsale di ogni stima."
 
-#: src/stimmo/web/templates/result.html:326
+#: src/stimmo/web/templates/result.html:337
 msgid "One file of coefficients"
 msgstr "Un file di coefficienti"
 
-#: src/stimmo/web/templates/result.html:327
+#: src/stimmo/web/templates/result.html:338
 msgid ""
 "Floor, lift, energy, outdoor, era, orientation, amenities — every "
 "multiplier lives in"
@@ -3404,15 +3450,15 @@ msgstr ""
 "Piano, ascensore, energia, esterno, epoca, orientamento, servizi — ogni "
 "moltiplicatore vive in"
 
-#: src/stimmo/web/templates/result.html:327
+#: src/stimmo/web/templates/result.html:338
 msgid "No black box, nothing learned, nothing hidden."
 msgstr "Nessuna scatola nera, nulla appreso, nulla nascosto."
 
-#: src/stimmo/web/templates/result.html:331
+#: src/stimmo/web/templates/result.html:342
 msgid "Ask-shifted, not rogito"
 msgstr "Spostato sulla richiesta, non rogito"
 
-#: src/stimmo/web/templates/result.html:332
+#: src/stimmo/web/templates/result.html:343
 msgid ""
 "Verdicts compare the asking price to an ask-shifted band (rogito +6 %) — "
 "a normal-market premium from listing to closing. ±5 % around it is "
@@ -3422,30 +3468,30 @@ msgstr ""
 "richiesta (rogito +6 %) — un premio di mercato normale dall'inserzione "
 "alla chiusura. ±5 % intorno è \"giusto\"."
 
-#: src/stimmo/web/templates/result.html:352
-#: src/stimmo/web/templates/result.html:367
+#: src/stimmo/web/templates/result.html:383
+#: src/stimmo/web/templates/result.html:398
 msgid "Copied!"
 msgstr "Copiato!"
 
-#: src/stimmo/web/templates/result.html:367
+#: src/stimmo/web/templates/result.html:398
 msgid "Copy this link:"
 msgstr "Copia questo link:"
 
-#: src/stimmo/web/templates/result.html:384
+#: src/stimmo/web/templates/result.html:415
 msgid "Retrying amenity lookup…"
 msgstr "Riprovo ricerca servizi…"
 
-#: src/stimmo/web/templates/result.html:397
+#: src/stimmo/web/templates/result.html:428
 msgid "Recompute estimate with amenity data"
 msgstr "Ricalcola stima con dati servizi"
 
-#: src/stimmo/web/templates/result.html:408
-#: src/stimmo/web/templates/result.html:415
+#: src/stimmo/web/templates/result.html:439
+#: src/stimmo/web/templates/result.html:446
 #, python-format
 msgid "Still unavailable after %(n)s attempts."
 msgstr "Ancora non disponibile dopo %(n)s tentativi."
 
-#: src/stimmo/web/templates/result.html:437
+#: src/stimmo/web/templates/result.html:468
 msgid "Property"
 msgstr "Immobile"
 

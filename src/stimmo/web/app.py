@@ -86,6 +86,7 @@ templates.env.globals["render_cost_note"] = _labels.render_cost_note
 templates.env.globals["cost_status_label"] = _labels.status_label
 templates.env.globals["cost_stale_label"] = _labels.stale_label
 templates.env.globals["cost_pct"] = _labels.pct_str
+templates.env.globals["dossier_interest_price_eur"] = _costs_view.INTEREST_PRICE_EUR
 
 
 @lru_cache(maxsize=256)
@@ -1473,6 +1474,9 @@ def estimate(
         amenity_status=amenity_status,
         amenity_error=amenity_error,
     )
+    if _costs_view.interest_enabled():
+        ctx["dossier_interest"] = True
+        _metrics.DOSSIER_INTEREST.labels(event="view", lang=lang).inc()
     return _tpl(request, "result.html", ctx)
 
 
@@ -1597,6 +1601,23 @@ def og_image(token: str) -> Response:
         media_type="image/png",
         headers={"Cache-Control": "public, max-age=86400, immutable"},
     )
+
+
+@app.post("/{lang}/dossier-interest", status_code=204)
+def dossier_interest(request: Request, lang: str = FPath(pattern=_LANG_RE)) -> Response:
+    """Anonymous interest counter for a feature that is not available yet.
+
+    Counts one click and returns 204 — no body in, no body out, no cookie, no identifier
+    read or stored. Inert unless STIMMO_DOSSIER_INTEREST is set (404 otherwise, so a stray
+    POST cannot move the counter). Same-origin only: a browser that marks the request
+    cross-site is refused.
+    """
+    if not _costs_view.interest_enabled():
+        raise HTTPException(status_code=404)
+    if request.headers.get("sec-fetch-site") == "cross-site":
+        raise HTTPException(status_code=403)
+    _metrics.DOSSIER_INTEREST.labels(event="click", lang=lang).inc()
+    return Response(status_code=204, headers={"Cache-Control": "no-store"})
 
 
 @app.get("/{lang}/api/amenities")
