@@ -107,6 +107,16 @@ def _cf_beacon_token() -> str | None:
 templates.env.globals["cf_beacon_token"] = _cf_beacon_token
 
 
+def _carto_api_key() -> str:
+    """Carto basemap API key, read lazily like the beacon token. Carto's tile servers
+    return an "API KEY REQUIRED" watermark without it. The key ships to the browser by
+    design, so restrict it by referrer in the Carto dashboard. Empty = no key param."""
+    return os.environ.get("STIMMO_CARTO_API_KEY", "")
+
+
+templates.env.globals["carto_api_key"] = _carto_api_key
+
+
 def _fmt_num(n: float) -> str:
     from babel.numbers import format_decimal
 
