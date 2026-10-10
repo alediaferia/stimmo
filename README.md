@@ -57,7 +57,7 @@ stimmo speaks the [Model Context Protocol](https://modelcontextprotocol.io) at *
 }
 ```
 
-Tools: `estimate_property`, `lookup_omi_quote`, `geocode_milan_address`, `omi_zone_for_point`, `amenity_score`, `omi_history`. See [docs/mcp-server.md](docs/mcp-server.md) for the full surface, resources, prompts, and rate-limit tiers.
+Tools: `estimate_property`, `estimate_purchase_costs`, `lookup_omi_quote`, `geocode_milan_address`, `omi_zone_for_point`, `amenity_score`, `omi_history`. See [docs/mcp-server.md](docs/mcp-server.md) for the full surface, resources, prompts, and rate-limit tiers.
 
 ## Sharing estimates
 

@@ -13,6 +13,7 @@ mcp = FastMCP(
     instructions=(
         "Milan property valuation via OMI quotations. "
         "Use estimate_property for a full appraisal or the partial tools for individual steps. "
+        "Use estimate_purchase_costs for the taxes, fees and renovation on top of the price. "
         "Consult stimmo://vocab/* resources for valid enum values before calling tools."
     ),
     stateless_http=True,
@@ -48,6 +49,17 @@ mcp.tool(
 mcp.tool(description="Return the 8-semester OMI €/m² history series for a zone and property type.")(
     _tools.omi_history
 )
+mcp.tool(
+    description=(
+        "What buying a Milan home costs on top of the price: purchase taxes, notary, agency, "
+        "mortgage costs and an optional renovation, as low/central/high lines with sources. "
+        "The mortgage is an amount (mortgage_eur) or a percentage of the price "
+        "(mortgage_ltv_pct), with notes on the general LTV rules. With mortgage_rate_pct (TAN) "
+        "and mortgage_years it also returns the monthly payment (French amortisation), the total "
+        "interest and the total cost of the mortgage. "
+        "Pure calculation (no network); a missing rendita_eur yields a bounded registro tax."
+    )
+)(_tools.estimate_purchase_costs)
 
 # ── Resources ──────────────────────────────────────────────────────────────
 
@@ -90,6 +102,21 @@ def orientation_vocab() -> str:
 @mcp.resource("stimmo://vocab/exposure")
 def exposure_vocab() -> str:
     return _res.exposure_vocab()
+
+
+@mcp.resource("stimmo://vocab/seller-type")
+def seller_type_vocab() -> str:
+    return _res.seller_type_vocab()
+
+
+@mcp.resource("stimmo://vocab/cadastral-category")
+def cadastral_category_vocab() -> str:
+    return _res.cadastral_category_vocab()
+
+
+@mcp.resource("stimmo://vocab/renovation-tier")
+def renovation_tier_vocab() -> str:
+    return _res.renovation_tier_vocab()
 
 
 @mcp.resource("stimmo://omi-zones")

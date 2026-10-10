@@ -2,8 +2,13 @@ from __future__ import annotations
 
 import asyncio
 import json
+from datetime import date
 from typing import Any, Literal
 
+from pydantic import ValidationError
+
+from stimmo.costs import calculator as costs_calculator
+from stimmo.costs import rates as costs_rates
 from stimmo.data import amenities as amenities_mod
 from stimmo.data import geocode as geocode_mod
 from stimmo.data import history as history_mod
@@ -12,6 +17,7 @@ from stimmo.data import zones as zones_mod
 from stimmo.i18n import LANG_TO_LOCALE, use_locale
 from stimmo.models import (
     AmenityScore,
+    CadastralCategory,
     ConstructionEra,
     EnergyClass,
     Exposure,
@@ -21,6 +27,9 @@ from stimmo.models import (
     Outdoor,
     Property,
     PropertyType,
+    PurchaseScenario,
+    RenovationTier,
+    SellerType,
     derive_omi_condition,
 )
 from stimmo.valuation import engine
@@ -234,3 +243,67 @@ async def omi_history(
         {"semester": p.semester, "eur_m2_min": p.eur_m2_min, "eur_m2_max": p.eur_m2_max}
         for p in points
     ]
+
+
+def _today() -> date:
+    """The date the cost tool reads its figures at (which ranges are past their review date).
+    The one clock the tool uses, so tests can freeze it."""
+    return date.today()
+
+
+async def estimate_purchase_costs(
+    price_eur: float,
+    prima_casa: bool,
+    surface_m2: float = 0,
+    seller: SellerType = SellerType.PRIVATE,
+    category: CadastralCategory = CadastralCategory.A2,
+    rendita_eur: float | None = None,
+    agency_pct: float | None = None,
+    mortgage_eur: float = 0,
+    mortgage_ltv_pct: float | None = None,
+    mortgage_years: int | None = None,
+    mortgage_rate_pct: float | None = None,
+    renovation_tier: RenovationTier | None = None,
+    fine_condition: FineCondition | None = None,
+    lang: Literal["it", "en"] = "it",
+) -> dict[str, Any]:
+    """What buying costs on top of the price. A pure calculation: no network, no geocoding.
+
+    The renovation tier is `renovation_tier` when given, else the default for
+    `fine_condition`, else none. The mortgage is `mortgage_eur` (an amount) or
+    `mortgage_ltv_pct` (0-100, a percentage of the price), not both. With a mortgage and a
+    `mortgage_rate_pct` (the nominal annual rate, TAN, in percent) the result carries
+    `mortgage_payment`: the monthly payment under French amortisation over `mortgage_years`
+    (default 25), the total interest, the total repaid and the total cost of the mortgage
+    (interest + the mortgage-related costs). Without a rate there is no payment and a
+    `mortgage_rate_missing` note; the tool never picks a rate. The payment is computed at the
+    rate given, today: a variable rate will move it. All figures come from
+    costs/rates.py via costs/calculator.py; the lines and notes carry `code` + `params` for
+    client-side rendering. A line whose benchmark range is past its review date has
+    `stale: true` (and `due`, the date it was due), and one note counts them.
+    """
+    if renovation_tier is None:
+        renovation_tier = (
+            costs_rates.default_renovation_tier(fine_condition)
+            if fine_condition is not None
+            else RenovationTier.NONE
+        )
+    try:
+        scenario = PurchaseScenario(
+            price_eur=price_eur,
+            surface_m2=surface_m2,
+            prima_casa=prima_casa,
+            seller=seller,
+            category=category,
+            rendita_eur=rendita_eur,
+            agency_pct=agency_pct,
+            mortgage_eur=mortgage_eur,
+            mortgage_ltv_pct=mortgage_ltv_pct,
+            mortgage_years=mortgage_years,
+            mortgage_rate_pct=mortgage_rate_pct,
+            renovation_tier=renovation_tier,
+            as_of=_today(),
+        )
+    except ValidationError as exc:
+        raise ToolError("invalid_input", str(exc)) from exc
+    return costs_calculator.compute(scenario).model_dump(mode="json")

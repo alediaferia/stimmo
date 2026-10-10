@@ -4,7 +4,8 @@ stimmo exposes its Milan valuation pipeline as a remote [Model Context Protocol]
 
 1. Run a full Milan listing appraisal (`estimate_property`) in one call.
 2. Run partial steps (geocode, zone lookup, OMI quote, amenity score, OMI history) without committing to a full estimate.
-3. Discover controlled vocabularies (property type, fine condition, energy class, etc.) and the current OMI semester as MCP resources, so an LLM doesn't have to guess valid enum values.
+3. Estimate what buying costs on top of the price (`estimate_purchase_costs`): purchase taxes, notary, agency, mortgage costs and renovation, as sourced low/central/high lines.
+4. Discover controlled vocabularies (property type, fine condition, energy class, etc.) and the current OMI semester as MCP resources, so an LLM doesn't have to guess valid enum values.
 
 There is **no local stdio binary** — no `stimmo-mcp` script, no per-user install, no secrets. The server is the same uvicorn process that serves the web UI; the MCP transport is mounted at `/mcp`.
 
@@ -66,7 +67,7 @@ The FastMCP session manager requires `.run()` from an async context, so it is st
 ```
 src/stimmo/mcp/
 ├── server.py       # FastMCP() instance, build_mcp_app() factory
-├── tools.py        # async tool functions; thin wrappers over engine/data
+├── tools.py        # async tool functions; thin wrappers over engine/data/costs
 ├── resources.py    # enum vocab + semester + zones resources
 ├── prompts.py      # appraise_listing prompt template
 ├── ratelimit.py    # per-IP token-bucket ASGI middleware
@@ -114,6 +115,33 @@ Input: `lat`, `lon`. Output: `AmenityScore` (counts within 500 m / 500–1000 m,
 
 Input: `zone_code`, `property_type`, optionally `condition`. Output: 8-semester `[{semester, eur_m2_min, eur_m2_max}]` from bundled [data/history.py](../src/stimmo/data/history.py) — no network calls.
 
+### `estimate_purchase_costs`
+
+What buying costs on top of the price. A pure calculation — no network, no geocoding — and a thin wrapper over [`costs/calculator.py`](../src/stimmo/costs/calculator.py); every rate lives in [`costs/rates.py`](../src/stimmo/costs/rates.py), not in the tool.
+
+| Field | Required? | Default |
+|---|---|---|
+| `price_eur`, `prima_casa` | yes | — |
+| `surface_m2` | no (required to price a renovation) | `0` |
+| `seller` | no | `private` (`private` \| `builder_vat`) |
+| `category` | no | `A/2` (A/1, A/8, A/9 cannot use the prima-casa regime) |
+| `rendita_eur` | no | `None` — registro tax is then bounded, not estimated |
+| `agency_pct` | no | `None` → 3 % + IVA (`0` = no agency) |
+| `mortgage_eur` | no | `0` (an amount in €) |
+| `mortgage_ltv_pct` | no | `None` — the mortgage as a percentage of the price, `0`–`100`; an alternative to `mortgage_eur` |
+| `mortgage_years` | no | `None` → 25 (any whole number of years from 1 to 40; the web form offers 10, 15, 20, 25, 30) |
+| `mortgage_rate_pct` | no | `None` — the nominal annual rate (TAN) in percent, `0`–`20`. Without it no payment is computed |
+| `renovation_tier` | no | `None` → the default for `fine_condition`, else `none` |
+| `fine_condition` | no | `None` |
+
+Give the mortgage as `mortgage_eur` **or** `mortgage_ltv_pct`, not both (`mortgage_eur` left at `0` counts as not given). A percentage is turned into whole euros in one place (half-up, never above the price) and everything downstream — imposta sostitutiva, the mortgage-deed notary band, the down payment — uses that amount, so the two forms give the same breakdown. The percentage is computed on the **price**; the bank applies its limits to its own appraised value, which can be lower, so treat it as an approximation.
+
+Output: a `CostBreakdown` — `lines[]` (each `{code, params, group, status, low_eur, central_eur, high_eur, source_url, as_of, due, stale}`; `group` is `closing`, `renovation` or `offset`), `notes[]` (each `{code, params, source_url}`; e.g. `rendita_missing`), `mortgage_eur` (the normalised amount), `mortgage_ltv_pct` (that amount as a share of the price), `down_payment_eur` (price − mortgage), and the `closing`, `renovation`, `total_on_top` and `cash_needed` ranges. `cash_needed` is `down_payment_eur` + `total_on_top`, so the cash splits into those two parts. The renovation-bonus lines are `offset` and are **not** subtracted from any total. `status` says how firm a line is: `statutory`, `contractual`, `benchmark`, `indicative` (not confirmed current, or no public source) or `needs_input`. `stale` is true when the line's benchmark range is past its review date (`due`, the date it was due; null on statutory and derived lines, which have no interval); it is independent of `status`, and one `ranges_overdue` note counts the stale lines. Lines carry `code` + `params` for client-side rendering, like the `Estimate` breakdown. Invalid input (e.g. a mortgage above the price, `mortgage_ltv_pct` above 100, or both `mortgage_eur` and `mortgage_ltv_pct`) returns `invalid_input`.
+
+With a mortgage **and** a `mortgage_rate_pct`, the output also has `mortgage_payment` (otherwise it is `null`): `{years, months, rate_pct, monthly_payment_eur, total_interest_eur, total_repaid_eur, mortgage_costs, total_cost}`. The payment is the standard French amortisation, `P · i / (1 − (1 + i)^−n)` with `i = rate / 12` and `n = years × 12` (`P / n` at a 0 % rate): equal monthly instalments of principal and interest at a constant rate. `total_repaid_eur` is the exact instalment × `n` and `total_interest_eur` is that minus the loan. `mortgage_costs` is the range sum of the mortgage-related lines already in `closing` (imposta sostitutiva, mortgage-deed notary, istruttoria, perizia, insurance) and `total_cost` is the interest plus that range; the price is not in it. It is a generic calculation on the amount, term and rate the caller chooses: there is no affordability or income test, and no lender or product. The rate is never guessed — without one the note `mortgage_rate_missing` is returned instead (its `params` point at Banca d'Italia's current market average as a reference, not a default) — and with one, the note `mortgage_variable_rate` says the payment is computed at today's rate and will change if the rate is variable.
+
+With a mortgage, `notes[]` also carries general information about the loan-to-value rules, never an assessment of the caller: `ltv_above_limit` (above the 80 % mutuo-fondiario limit of art. 38 TUB / CICR 22 April 1995, up to 100 % only with integrative guarantees), `consap_fund` (only for a prima-casa scenario, a loan up to €250,000, a category other than A/1, A/8, A/9, and an LTV above 80 %; the Consap Fondo Garanzia prima casa: reserved to priority categories, 50 % ordinary guarantee, and the two separate rules that raise it to 80 % (disability categories, ISEE up to €40,000; other categories, a loan above 80 % of the price including accessory costs and the same ISEE limit, for applications until 31/12/2027); the large families' ISEE figures are access limits and are not in `params`), `ltv_full_financing` (a loan equal to the price still leaves the taxes, notary, agency and other costs to be paid in cash) and `ltv_on_price_not_appraisal`.
+
 ### Error shape
 
 Tools return `isError: true` with a structured payload — never raw Python exceptions:
@@ -135,6 +163,9 @@ Tools return `isError: true` with a structured payload — never raw Python exce
 | `stimmo://vocab/construction-era` | `ConstructionEra` values + localised labels. |
 | `stimmo://vocab/orientation` | `Orientation` values + localised labels. |
 | `stimmo://vocab/exposure` | `Exposure` values + localised labels. |
+| `stimmo://vocab/seller-type` | `SellerType` values + localised labels (for `estimate_purchase_costs`). |
+| `stimmo://vocab/cadastral-category` | `CadastralCategory` values + localised labels. |
+| `stimmo://vocab/renovation-tier` | `RenovationTier` values + localised labels. |
 | `stimmo://omi-zones` | `[{code, descr}]` for every Milano OMI zone. |
 
 ## Prompts
@@ -147,7 +178,7 @@ Per-IP token bucket, enforced as ASGI middleware wrapping the MCP sub-app. Two t
 
 | Tier | Tools | Quota |
 |---|---|---|
-| Cheap | `geocode_milan_address`, `omi_zone_for_point`, `lookup_omi_quote`, `omi_history`, all resources | 60 req/min/IP |
+| Cheap | `geocode_milan_address`, `omi_zone_for_point`, `lookup_omi_quote`, `omi_history`, `estimate_purchase_costs`, all resources | 60 req/min/IP |
 | Expensive | `estimate_property`, `amenity_score` | 10 req/min/IP |
 
 Tier is determined by **peeking at the JSON-RPC body**: a `tools/call` whose `params.name` is in the expensive set draws from the expensive bucket. The body is buffered into memory and replayed to the downstream app via a wrapped `receive` callable (chunks reassembled, single `http.request` event with `more_body=False`).
@@ -204,6 +235,7 @@ The suite is structured as:
 - `test_mcp_protocol.py` — drives the mounted app via `httpx.ASGITransport` + a real `mcp.client` session. Catches schema-generation bugs that pure unit tests miss (`tools/list`, `resources/list`, `prompts/get`, structured errors).
 - `test_mcp_estimate_route.py` — one full happy-path end-to-end through the ASGI dispatcher with monkeypatched Nominatim + Overpass.
 - `test_mcp_i18n.py` — `lang` argument, `Accept-Language` fallback, unsupported lang falls back to `it`.
+- `test_mcp_costs.py` — `estimate_purchase_costs` through the endpoint (worked example, bounded registro, default renovation tier, the mortgage payment fields and their rate/term validation, structured errors), its vocab resources and its cheap rate-limit tier.
 
 Upstream calls (Nominatim, Overpass) are monkeypatched in tests; OMI / zone / history lookups hit the bundled deterministic data.
 

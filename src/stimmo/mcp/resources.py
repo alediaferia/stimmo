@@ -6,11 +6,15 @@ from typing import Any
 from stimmo.data import omi as omi_mod
 from stimmo.data.zones import list_zones
 from stimmo.models import (
+    CADASTRAL_CATEGORY_LABELS,
     CONSTRUCTION_ERA_LABELS,
     EXPOSURE_LABELS,
     ORIENTATION_LABELS,
     OUTDOOR_LABELS,
     PROPERTY_TYPE_HINTS,
+    RENOVATION_TIER_LABELS,
+    SELLER_TYPE_LABELS,
+    CadastralCategory,
     ConstructionEra,
     EnergyClass,
     Exposure,
@@ -18,6 +22,8 @@ from stimmo.models import (
     Orientation,
     Outdoor,
     PropertyType,
+    RenovationTier,
+    SellerType,
 )
 
 _FINE_CONDITION_LABELS: dict[FineCondition, str] = {
@@ -66,6 +72,23 @@ def orientation_vocab() -> str:
 
 def exposure_vocab() -> str:
     items = [{"value": e.value, "label": str(EXPOSURE_LABELS[e])} for e in Exposure]
+    return json.dumps(items, ensure_ascii=False)
+
+
+def seller_type_vocab() -> str:
+    items = [{"value": e.value, "label": str(SELLER_TYPE_LABELS[e])} for e in SellerType]
+    return json.dumps(items, ensure_ascii=False)
+
+
+def cadastral_category_vocab() -> str:
+    items = [
+        {"value": e.value, "label": str(CADASTRAL_CATEGORY_LABELS[e])} for e in CadastralCategory
+    ]
+    return json.dumps(items, ensure_ascii=False)
+
+
+def renovation_tier_vocab() -> str:
+    items = [{"value": e.value, "label": str(RENOVATION_TIER_LABELS[e])} for e in RenovationTier]
     return json.dumps(items, ensure_ascii=False)
 
 
