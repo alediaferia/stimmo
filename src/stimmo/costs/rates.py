@@ -573,6 +573,17 @@ RENOVATION_AS_OF = RENOVATION_TIERS_REVIEW.as_of
 # significativi"); from 2027 D.Lgs. 10/2026 (TU IVA) art. 35 c. 4 and Tabella A parte IV n. 121,
 # which still refers to the same DM (art. 169 lett. zz).
 # Source: AGENZIA_ENTRATE_RENOVATION_GUIDE_URL, §2.
+# Applied flat to works plus contingency. The rule is more granular and the calculator can only
+# understate it (the ex-IVA assumption on the €/m² bands, below, is a separate matter). On ordinary
+# and extraordinary maintenance, beni significativi supplied under the contract (lifts, windows and
+# doors, boilers, video door-entry systems, air conditioning, sanitaryware and bathroom taps,
+# security systems) are at 10 % only up to the value of the contract net of those goods; the excess
+# is at the ordinary rate, which also applies to materials the client buys directly, goods supplied
+# by someone else, professional services and subcontracts invoiced to the contractor. Restauro,
+# risanamento conservativo and ristrutturazione edilizia are at 10 % in full. Modelling it needs
+# the value of the beni significativi and the regime of the works, neither of which exists in the
+# input, and a default split would be an invented coefficient: it is disclosed instead (the
+# renovation_vat_partial note).
 RENOVATION_IVA = 0.10
 # Agenzia delle Entrate, "Ristrutturazioni edilizie: le agevolazioni fiscali" (October 2025), §2
 # "L'agevolazione IVA": the 10 % and the beni-significativi limit.
@@ -581,7 +592,10 @@ AGENZIA_ENTRATE_RENOVATION_GUIDE_URL = (
     "ristrutturazioni_edilizie_le_agevolazioni_fiscali"
 )
 
-# Technical fees and filings, €3–6k, central €4,000: NO PUBLIC SOURCE, so source_url is None and
+# Technical fees and filings, €3–6k, central €4,000, taken as ALL-IN (IVA included): professional
+# services carry IVA at the ordinary rate (not the 10 % of the works), but the range is an unsourced
+# placeholder for the technician's quote, so no IVA is added on top of it.
+# NO PUBLIC SOURCE, so source_url is None and
 # the range is indicative (a Benchmark without a source must be). It used to cite the ghle.it page
 # above, which gives the CILA's €75 diritti di segreteria (Comune di Milano, from 2026-05-01) but
 # no figure for the professional's fee. Searched 2026-10-09 for a published fee survey for a

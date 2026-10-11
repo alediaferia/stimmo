@@ -386,6 +386,64 @@ class TestRenovation:
         )
 
 
+_RENOVATION_TIERS = [t for t in RenovationTier if t is not RenovationTier.NONE]
+
+
+class TestRenovationVatDisclosure:
+    """The 10 % is flat and the rule is finer (beni significativi, materials bought directly):
+    the calculator can only understate, so it says so instead of modelling a split it has no input
+    for. Disclosed, not modelled: the figures do not move."""
+
+    @pytest.mark.parametrize("tier", _RENOVATION_TIERS)
+    def test_every_renovation_tier_carries_the_note(self, tier):
+        b = compute(_scenario(surface_m2=70, renovation_tier=tier))
+        note = _note(b, "renovation_vat_partial")
+        assert note.params == {"rate_pct": 10, "ordinary_rate_pct": 22}
+        assert note.source_url == rates.AGENZIA_ENTRATE_RENOVATION_GUIDE_URL
+
+    def test_no_renovation_no_note(self):
+        for s in (
+            _scenario(surface_m2=70, renovation_tier=RenovationTier.NONE),
+            _scenario(),
+            _scenario(mortgage_eur=300_000, rendita_eur=None),
+        ):
+            assert "renovation_vat_partial" not in _codes(compute(s))
+
+    def test_the_rates_come_from_rates_py(self, monkeypatch):
+        monkeypatch.setattr(rates, "RENOVATION_IVA", 0.04)
+        monkeypatch.setattr(rates, "IVA_ORDINARY", 0.23)
+        b = compute(_scenario(surface_m2=70, renovation_tier=RenovationTier.MEDIUM))
+        assert _note(b, "renovation_vat_partial").params == {
+            "rate_pct": 4,
+            "ordinary_rate_pct": 23,
+        }
+
+    def test_the_vat_line_stays_a_flat_rate_on_works_and_contingency(self):
+        b = compute(_scenario(surface_m2=70, renovation_tier=RenovationTier.MEDIUM))
+        works, contingency = _line(b, "renovation_works"), _line(b, "renovation_contingency")
+        vat = _line(b, "renovation_vat")
+        for got, w, k in (
+            (vat.low_eur, works.low_eur, contingency.low_eur),
+            (vat.central_eur, works.central_eur, contingency.central_eur),
+            (vat.high_eur, works.high_eur, contingency.high_eur),
+        ):
+            assert got == pytest.approx((w + k) * rates.RENOVATION_IVA)
+
+    def test_the_vat_line_cites_the_rule_not_the_price_page(self):
+        b = compute(_scenario(surface_m2=70, renovation_tier=RenovationTier.MEDIUM))
+        vat = _line(b, "renovation_vat")
+        assert vat.source_url == rates.AGENZIA_ENTRATE_RENOVATION_GUIDE_URL
+        assert vat.source_url != rates.RENOVATION_SOURCE_URL
+        assert _line(b, "renovation_works").source_url == rates.RENOVATION_SOURCE_URL
+
+    def test_the_technical_fees_are_budgeted_as_given_with_no_vat_on_top(self):
+        # The range is an all-in placeholder for the technician's quote (rates.py): the line is
+        # the benchmark itself, not the benchmark plus IVA.
+        b = compute(_scenario(surface_m2=70, renovation_tier=RenovationTier.MEDIUM))
+        fees = _line(b, "renovation_fees")
+        assert (fees.low_eur, fees.central_eur, fees.high_eur) == (3_000, 4_000, 6_000)
+
+
 class TestBonus:
     def _bonus(self, **kw) -> dict[int, CostLine]:
         b = compute(_scenario(surface_m2=70, renovation_tier=RenovationTier.MEDIUM, **kw))

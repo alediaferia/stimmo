@@ -51,6 +51,8 @@ Rules the file follows, because the figures are advice-adjacent and some are not
 
 A line built from a benchmark past its `due` date carries `stale=True` (and `due`), separate from its `CostStatus` because a line can be both indicative and stale; one `ranges_overdue` note counts them and gives the oldest review date, and the web layer renders the "to be checked" badge and the note through `web/labels.py`. The web layer and the MCP tool supply today's date; `scripts/check_rates.py` lists what is overdue or due soon (exit 1 when something is overdue). Staleness is presentational: it never changes a figure or a total.
 
+Renovation IVA is a flat 10 % on works plus contingency (`rates.RENOVATION_IVA`). The rule is finer: "beni significativi" beyond the contract value net of those goods, and materials the client buys directly, are at the ordinary rate, so the line can only understate. It is disclosed, not modelled: the input (value of the beni significativi, regime of the works) does not exist and a default split would be an invented coefficient. Every renovation scenario carries a `renovation_vat_partial` note, the Not included list names it, and the technical-fees range is declared IVA-included.
+
 Totals are closing costs, renovation, total on top of the price and cash needed. The renovation-bonus deduction is a separate `offset` group: it is shown per payment year and never subtracted from the totals, because it is spread over ten years and depends on the buyer's income.
 
 ### Missing inputs are bounded, not estimated

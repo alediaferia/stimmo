@@ -92,6 +92,7 @@
   </div>
   <div class="costs-method">
     <p>{% trans %}Condominium arrears and works already approved, IMU and TARI, and anything a conformity check might call for (such as a late CILA or a sanatoria fee) are not included.{% endtrans %}</p>
+    <p>{% trans iva_ordinary=costs.method.iva_ordinary %}IVA at the standard rate of %(iva_ordinary)s on part of the renovation works (significant goods beyond the reduced-rate limit, materials you buy yourself) is not included either.{% endtrans %}</p>
   </div>
 </div>
 
@@ -141,6 +142,9 @@
         </tbody>
       </table>
     </div>
+
+    <p>{% trans renovation_iva=m.renovation_iva, iva_ordinary=m.iva_ordinary %}Renovation works on homes carry a reduced IVA of %(renovation_iva)s (art. 7, paragraph 1, letter b of law 488/1999; from 1 January 2027, art. 35, paragraph 4 and table A, part IV, no. 121 of Legislative Decree 10/2026, the IVA consolidated text). For ordinary and extraordinary maintenance, “significant goods” (beni significativi: lifts, windows and doors, boilers, video door-entry systems, air-conditioning equipment, sanitaryware and bathroom taps, security systems, as listed in the ministerial decree of 29 December 1999) supplied under the works contract get the reduced rate only up to the value of the contract net of those goods, and the excess is taxed at %(iva_ordinary)s. Materials bought directly by the client, goods supplied by someone other than the contractor and professional services are at %(iva_ordinary)s too. For restoration, conservative rehabilitation and rebuilding works the reduced rate applies in full.{% endtrans %}</p>
+    <p>{% trans renovation_iva=m.renovation_iva %}This calculator applies a flat %(renovation_iva)s to the works and the contingency. The share of significant goods in a contract, and which of those regimes the works fall under (a technician's call), cannot be read from a listing and are not guessed: the IVA shown can therefore be an underestimate. The technical fees range is taken as including IVA.{% endtrans %}</p>
 
     <h3>{% trans %}Bonus ristrutturazione{% endtrans %}</h3>
     <p>{% trans bonus_cap=m.bonus_cap, bonus_years=m.bonus_years %}A deduction from income tax on renovation spend, up to %(bonus_cap)s per home and spread over %(bonus_years)s years. The rate depends on the year the works are paid. It is shown apart and never subtracted from the totals. Light works (paint, overlay floors, internal doors) are ordinary maintenance and do not qualify on their own, but can become eligible when they are part of a larger extraordinary-maintenance intervention.{% endtrans %}</p>

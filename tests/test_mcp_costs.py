@@ -548,3 +548,16 @@ def test_tool_is_in_the_cheap_rate_limit_tier():
         }
     ).encode()
     assert ratelimit._is_expensive_call(body) is False
+
+
+async def test_a_renovation_carries_the_vat_note_and_no_renovation_does_not():
+    base = dict(price_eur=450_000, prima_casa=True, rendita_eur=1_100, surface_m2=70)
+    with_works = await tools.estimate_purchase_costs(**base, renovation_tier=RenovationTier.MEDIUM)
+    (note,) = [n for n in with_works["notes"] if n["code"] == "renovation_vat_partial"]
+    assert note["params"] == {"rate_pct": 10, "ordinary_rate_pct": 22}
+    assert note["source_url"] == costs_rates.AGENZIA_ENTRATE_RENOVATION_GUIDE_URL
+    vat = next(ln for ln in with_works["lines"] if ln["code"] == "renovation_vat")
+    assert vat["source_url"] == costs_rates.AGENZIA_ENTRATE_RENOVATION_GUIDE_URL
+
+    without = await tools.estimate_purchase_costs(**base, renovation_tier=RenovationTier.NONE)
+    assert "renovation_vat_partial" not in {n["code"] for n in without["notes"]}

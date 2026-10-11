@@ -568,6 +568,20 @@ def _renovation(s: PurchaseScenario) -> list[CostLine]:
     ]
 
 
+def _renovation_vat_note() -> CostNote:
+    """The renovation IVA is a flat reduced rate here; part of a renovation can be at the ordinary
+    one (beni significativi beyond the limit, materials bought directly). Disclosed, not modelled:
+    see ``rates.RENOVATION_IVA``."""
+    return CostNote(
+        code="renovation_vat_partial",
+        params={
+            "rate_pct": _pct(rates.RENOVATION_IVA),
+            "ordinary_rate_pct": _pct(rates.IVA_ORDINARY),
+        },
+        source_url=rates.AGENZIA_ENTRATE_RENOVATION_GUIDE_URL,
+    )
+
+
 def _bonus(s: PurchaseScenario, prima: bool, renovation: list[CostLine]) -> list[CostLine]:
     """Bonus ristrutturazione per payment year — an offset, reported apart from the totals."""
     if not renovation or s.renovation_tier not in rates.BONUS_ELIGIBLE_TIERS:
@@ -672,6 +686,8 @@ def compute(s: PurchaseScenario) -> CostBreakdown:
     total = _sum([*closing, *renovation])
     notes.extend(_ltv_notes(s, mortgage, prima))
     payment = _mortgage_payment(s, mortgage, mortgage_lines, notes)
+    if renovation:
+        notes.append(_renovation_vat_note())
     notes.extend(_overdue_notes([*closing, *renovation]))
     down_payment = _r(s.price_eur - mortgage)
     return CostBreakdown(

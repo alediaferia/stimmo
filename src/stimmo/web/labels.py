@@ -241,7 +241,7 @@ def _render_cost_line_impl(line: CostLine) -> str:
                 "rate": pct_str(p.get("rate_pct")),
             }
         case "renovation_fees":
-            return _("Technical fees and filings (incl. CILA)")
+            return _("Technical fees and filings (incl. CILA, IVA included)")
         case "renovation_bonus":
             who = _("main residence") if p.get("main_residence") else _("other homes")
             label = _(
@@ -367,6 +367,17 @@ def _render_cost_note_impl(note: CostNote) -> str:
             ) % {
                 "rate": pct_str(p.get("reference_pct"), 2),
                 "month": month_str(p.get("data_month")),
+            }
+        case "renovation_vat_partial":
+            return _(
+                "IVA on the works and the contingency is applied at a flat %(rate)s. Part of a "
+                "renovation can be at %(ordinary)s: significant goods (windows, boilers, "
+                "sanitaryware and similar) get the reduced rate only up to the value of the "
+                "contract net of those goods, and materials you buy yourself are at %(ordinary)s. "
+                "The IVA shown can therefore be an underestimate."
+            ) % {
+                "rate": pct_str(p.get("rate_pct")),
+                "ordinary": pct_str(p.get("ordinary_rate_pct")),
             }
         case "ltv_on_price_not_appraisal":
             return _(

@@ -468,6 +468,7 @@ def methodology() -> dict[str, Any]:
                 )
             ),
             "renovation_iva": frac(rates.RENOVATION_IVA),
+            "iva_ordinary": frac(rates.IVA_ORDINARY),
             "bonus_cap": fmt_eur(rates.BONUS_SPEND_CAP_EUR),
             "bonus_years": rates.BONUS_INSTALMENT_YEARS,
             "agency_range": f"{pct_str(rates.AGENCY_LOW_PCT)}–{pct_str(rates.AGENCY_DEFAULT_PCT)}",

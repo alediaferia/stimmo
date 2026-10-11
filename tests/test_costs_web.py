@@ -972,7 +972,7 @@ class TestLabels:
     @needs_italian("Notary fee — purchase deed, incl. IVA")
     @needs_italian("Agency fee (%(pct)s + IVA %(vat)s)")
     @needs_italian("Cadastral and planning conformity check")
-    @needs_italian("Technical fees and filings (incl. CILA)")
+    @needs_italian("Technical fees and filings (incl. CILA, IVA included)")
     def test_italian_labels_are_translated(self):
         lines, _ = _rich_lines()
         by_code = {ln.code: ln for ln in lines}
@@ -1619,6 +1619,99 @@ class TestRenovationIvaBasis:
         )
         assert "assumed to exclude IVA" not in works
         assert "does not say whether" not in works
+
+
+class TestRenovationVatDisclosure:
+    """Renovation IVA is a flat 10 %: the page says part of it can be at the ordinary rate and
+    that the figure can therefore be an underestimate (disclosed, not modelled)."""
+
+    NOTE = "IVA on the works and the contingency is applied at a flat 10%"
+
+    def _vat_notes(self, body: str) -> list[str]:
+        return [n for n in _notes(body) if self.NOTE in n]
+
+    def test_a_renovation_scenario_shows_the_note_with_its_source(self, client: TestClient):
+        body = client.get(f"{EN_URL}?{_BIG}").text
+        (note,) = self._vat_notes(body)
+        assert "can be at 22%" in note
+        assert "significant goods" in note and "materials you buy yourself" in note
+        assert "can therefore be an underestimate" in note
+        assert rates.AGENZIA_ENTRATE_RENOVATION_GUIDE_URL in note
+
+    @pytest.mark.parametrize("tier", ["light", "medium", "full", "premium"])
+    def test_every_tier_but_none_has_it(self, client: TestClient, tier):
+        body = client.get(f"{EN_URL}?price=450000&surface=70&tier={tier}").text
+        assert len(self._vat_notes(body)) == 1
+
+    def test_no_renovation_no_note(self, client: TestClient):
+        body = client.get(f"{EN_URL}?price=450000&surface=70&tier=none").text
+        assert 'id="costs-result"' in body
+        assert self._vat_notes(body) == []
+        assert "can therefore be an underestimate" not in " ".join(_notes(body))
+
+    def test_the_italian_page_has_it_too(self, client: TestClient):
+        body = client.get(f"{IT_URL}?{_BIG}").text
+        assert [n for n in _notes(body) if rates.AGENZIA_ENTRATE_RENOVATION_GUIDE_URL in n]
+
+    def test_the_result_page_section_carries_it(self, client, estimate_env):
+        body = client.post(
+            "/en/estimate",
+            data=_form(fine_condition="da ristrutturare", omi_condition_override="NORMALE"),
+        ).text
+        assert len(self._vat_notes(_costs_section(body))) == 1
+        plain = client.post("/en/estimate", data=_form(fine_condition="abitabile")).text
+        assert self._vat_notes(_costs_section(plain)) == []
+
+    def test_the_vat_row_links_to_the_rule_not_the_price_page(self, client: TestClient):
+        body = client.get(f"{EN_URL}?{_BIG}").text
+        row = next(r for r in re.findall(r"<tr>.*?</tr>", body, re.S) if "IVA on works and" in r)
+        assert rates.AGENZIA_ENTRATE_RENOVATION_GUIDE_URL in row
+        assert rates.RENOVATION_SOURCE_URL not in row
+
+    def test_the_methodology_states_the_rule_its_norms_and_the_limit_of_the_model(self, client):
+        body = client.get(EN_URL).text
+        method = body[body.index('id="method"') :]
+        for text in (
+            "reduced IVA of 10%",
+            "law 488/1999",
+            "Legislative Decree 10/2026",
+            "beni significativi",
+            "ministerial decree of 29 December 1999",
+            "only up to the value of the contract net of those goods",
+            "excess is taxed at 22%",
+            "This calculator applies a flat 10% to the works and the contingency",
+            "can therefore be an underestimate",
+        ):
+            assert text in method, text
+
+    def test_the_methodology_figures_come_from_rates(self, client, monkeypatch):
+        monkeypatch.setattr(rates, "IVA_ORDINARY", 0.23)
+        body = client.get(EN_URL).text
+        assert "excess is taxed at 23%" in body
+        assert "standard rate of 23%" in body
+
+    def test_the_not_included_list_names_it(self, client: TestClient):
+        body = client.get(EN_URL).text
+        line = re.search(r'<p class="costs-assume costs-excluded">(.*?)</p>', body, re.S).group(1)
+        assert "IVA at the standard rate on part of the renovation works" in line
+        section = body[body.index('id="not-included"') : body.index('id="method"')]
+        assert "IVA at the standard rate of 22% on part of the renovation works" in section
+        assert "significant goods" in section and "materials you buy yourself" in section
+
+    @needs_italian(
+        "IVA at the standard rate of %(iva_ordinary)s on part of the renovation works "
+        "(significant goods beyond the reduced-rate limit, materials you buy yourself) is not "
+        "included either."
+    )
+    def test_the_italian_not_included_list_names_it(self, client: TestClient):
+        body = client.get(IT_URL).text
+        section = body[body.index('id="not-included"') : body.index('id="method"')]
+        assert "22%" in section
+        assert "significant goods" not in section  # the sentence is translated, not the English
+
+    def test_the_technical_fees_label_says_iva_is_included(self, client: TestClient):
+        body = client.get(f"{EN_URL}?{_BIG}").text
+        assert "Technical fees and filings (incl. CILA, IVA included)" in body
 
 
 class TestBonusCitations:

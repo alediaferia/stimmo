@@ -49,7 +49,7 @@
 <p class="costs-assume"><b>{% trans %}Assumes{% endtrans %}:</b> {{ costs.assumptions | join(" · ") }}</p>
 
 {# What the figures leave out, up front; the full list is the "Not included" section of the calculator page. On the calculator page itself the including template passes a bare #fragment so a visitor's scenario in the URL is kept. #}
-<p class="costs-assume costs-excluded"><b>{% trans %}Not included{% endtrans %}:</b> {% trans %}condominium arrears and works already approved, IMU and TARI, a late CILA or sanatoria fees.{% endtrans %} <a href="{{ not_included_href or (costs.calculator_url ~ '#not-included') }}">{% trans %}The full list{% endtrans %} →</a></p>
+<p class="costs-assume costs-excluded"><b>{% trans %}Not included{% endtrans %}:</b> {% trans %}condominium arrears and works already approved, IMU and TARI, a late CILA or sanatoria fees, IVA at the standard rate on part of the renovation works.{% endtrans %} <a href="{{ not_included_href or (costs.calculator_url ~ '#not-included') }}">{% trans %}The full list{% endtrans %} →</a></p>
 
 {% set mp = cb.mortgage_payment %}
 {% if mp %}
