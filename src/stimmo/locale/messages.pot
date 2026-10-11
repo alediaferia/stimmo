@@ -315,57 +315,57 @@ msgstr ""
 msgid "Rate set for over 1 year at the outset (typically fixed)"
 msgstr ""
 
-#: src/stimmo/web/costs_view.py:352
+#: src/stimmo/web/costs_view.py:354
 msgid "prima casa"
 msgstr ""
 
-#: src/stimmo/web/costs_view.py:352
+#: src/stimmo/web/costs_view.py:354
 msgid "not prima casa"
 msgstr ""
 
-#: src/stimmo/web/costs_view.py:354
+#: src/stimmo/web/costs_view.py:356
 #, python-format
 msgid "category %(category)s"
 msgstr ""
 
-#: src/stimmo/web/costs_view.py:357
+#: src/stimmo/web/costs_view.py:359
 #, python-format
 msgid "rendita %(value)s"
 msgstr ""
 
-#: src/stimmo/web/costs_view.py:359
+#: src/stimmo/web/costs_view.py:361
 msgid "rendita unknown"
 msgstr ""
 
-#: src/stimmo/web/costs_view.py:362
+#: src/stimmo/web/costs_view.py:364
 #, python-format
 msgid "agency %(pct)s + IVA"
 msgstr ""
 
-#: src/stimmo/web/costs_view.py:362
+#: src/stimmo/web/costs_view.py:364
 msgid "no agency fee"
 msgstr ""
 
-#: src/stimmo/web/costs_view.py:365
+#: src/stimmo/web/costs_view.py:367
 #, python-format
 msgid "mortgage %(amount)s (%(pct)s of the price)"
 msgstr ""
 
-#: src/stimmo/web/costs_view.py:368
+#: src/stimmo/web/costs_view.py:370
 msgid "no mortgage"
 msgstr ""
 
-#: src/stimmo/web/costs_view.py:372
+#: src/stimmo/web/costs_view.py:374
 #, python-format
 msgid "%(years)s-year term at %(rate)s TAN"
 msgstr ""
 
-#: src/stimmo/web/costs_view.py:379
+#: src/stimmo/web/costs_view.py:381
 #, python-format
 msgid "%(tier)s renovation"
 msgstr ""
 
-#: src/stimmo/web/costs_view.py:381
+#: src/stimmo/web/costs_view.py:383
 msgid "no renovation"
 msgstr ""
 
@@ -373,7 +373,7 @@ msgstr ""
 msgid "yes"
 msgstr ""
 
-#: src/stimmo/web/labels.py:43 src/stimmo/web/labels.py:414
+#: src/stimmo/web/labels.py:43 src/stimmo/web/labels.py:425
 msgid "no"
 msgstr ""
 
@@ -560,7 +560,7 @@ msgid "IVA on works and contingency (%(rate)s)"
 msgstr ""
 
 #: src/stimmo/web/labels.py:244
-msgid "Technical fees and filings (incl. CILA)"
+msgid "Technical fees and filings (incl. CILA, IVA included)"
 msgstr ""
 
 #: src/stimmo/web/labels.py:246
@@ -578,7 +578,7 @@ msgid ""
 "%(years)s years (%(who)s)"
 msgstr ""
 
-#: src/stimmo/web/labels.py:257 src/stimmo/web/templates/costs.html:153
+#: src/stimmo/web/labels.py:257 src/stimmo/web/templates/costs.html:157
 #, python-format
 msgid "subject to the %(year)s budget law"
 msgstr ""
@@ -684,25 +684,35 @@ msgstr ""
 #: src/stimmo/web/labels.py:373
 #, python-format
 msgid ""
+"IVA on the works and the contingency is applied at a flat %(rate)s. Part "
+"of a renovation can be at %(ordinary)s: significant goods (windows, "
+"boilers, sanitaryware and similar) get the reduced rate only up to the "
+"value of the contract net of those goods, and materials you buy yourself "
+"are at %(ordinary)s. The IVA shown can therefore be an underestimate."
+msgstr ""
+
+#: src/stimmo/web/labels.py:384
+#, python-format
+msgid ""
 "The loan-to-value ratio (%(ltv)s) is computed on the price. The bank "
 "applies its limits to the value it assigns the property in its own "
 "appraisal (perizia), which can be lower than the price, so the real ratio"
 " may be higher: treat this figure as an approximation."
 msgstr ""
 
-#: src/stimmo/web/labels.py:416
+#: src/stimmo/web/labels.py:427
 msgid "light"
 msgstr ""
 
-#: src/stimmo/web/labels.py:418
+#: src/stimmo/web/labels.py:429
 msgid "medium"
 msgstr ""
 
-#: src/stimmo/web/labels.py:420
+#: src/stimmo/web/labels.py:431
 msgid "full"
 msgstr ""
 
-#: src/stimmo/web/labels.py:422
+#: src/stimmo/web/labels.py:433
 msgid "premium"
 msgstr ""
 
@@ -791,7 +801,8 @@ msgstr ""
 #: src/stimmo/web/templates/_costs_breakdown.html:52
 msgid ""
 "condominium arrears and works already approved, IMU and TARI, a late CILA"
-" or sanatoria fees."
+" or sanatoria fees, IVA at the standard rate on part of the renovation "
+"works."
 msgstr ""
 
 #: src/stimmo/web/templates/_costs_breakdown.html:52
@@ -887,7 +898,8 @@ msgstr ""
 #: src/stimmo/web/templates/_costs_breakdown.html:146
 msgid ""
 "A deduction from your income tax, spread over ten years. The cap on total"
-" deductions for higher incomes (art. 16-ter TUIR) is not modelled."
+" deductions for higher incomes (art. 16-ter TUIR; from 2027, art. 18 of "
+"D.Lgs. 117/2026) is not modelled."
 msgstr ""
 
 #: src/stimmo/web/templates/_costs_breakdown.html:150
@@ -1096,7 +1108,7 @@ msgid ""
 msgstr ""
 
 #: src/stimmo/web/templates/about.html:39
-#: src/stimmo/web/templates/costs.html:102
+#: src/stimmo/web/templates/costs.html:103
 #: src/stimmo/web/templates/form.html:244
 #: src/stimmo/web/templates/neighborhood_detail.html:66
 msgid "Methodology"
@@ -1801,16 +1813,24 @@ msgid ""
 "sanatoria fee) are not included."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:101
+#: src/stimmo/web/templates/costs.html:95
+#, python-format
+msgid ""
+"IVA at the standard rate of %(iva_ordinary)s on part of the renovation "
+"works (significant goods beyond the reduced-rate limit, materials you buy"
+" yourself) is not included either."
+msgstr ""
+
+#: src/stimmo/web/templates/costs.html:102
 #: src/stimmo/web/templates/result.html:153
 msgid "How this is calculated"
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:106
+#: src/stimmo/web/templates/costs.html:107
 msgid "Purchase taxes — statute"
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:107
+#: src/stimmo/web/templates/costs.html:108
 #, python-format
 msgid ""
 "On a purchase from a private seller, registro tax is %(registro_prima)s "
@@ -1821,7 +1841,7 @@ msgid ""
 " when the buyer asks for the prezzo-valore rule in the deed."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:108
+#: src/stimmo/web/templates/costs.html:109
 #, python-format
 msgid ""
 "On a purchase from a builder who sells under IVA, IVA applies to the "
@@ -1831,7 +1851,7 @@ msgid ""
 "(%(sostitutiva)s for a prima casa, otherwise)."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:109
+#: src/stimmo/web/templates/costs.html:110
 msgid ""
 "Listings rarely state the rendita catastale, and it is not guessed here. "
 "Without it, registro tax is shown as a range: from the per-deed minimum "
@@ -1840,11 +1860,11 @@ msgid ""
 "enter the rendita."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:111
+#: src/stimmo/web/templates/costs.html:112
 msgid "Mortgage — loan-to-value limits"
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:113
+#: src/stimmo/web/templates/costs.html:114
 #, python-format
 msgid ""
 "A mutuo fondiario is a medium- or long-term loan secured by a first-"
@@ -1858,7 +1878,7 @@ msgid ""
 " guarantees."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:114
+#: src/stimmo/web/templates/costs.html:115
 msgid ""
 "The limit is measured on the value of the mortgaged property, which the "
 "bank assesses in its own appraisal (perizia) and which can be lower than "
@@ -1868,7 +1888,7 @@ msgid ""
 "costs to be paid in cash."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:115
+#: src/stimmo/web/templates/costs.html:116
 #, python-format
 msgid ""
 "The Fondo di garanzia per la prima casa, managed by Consap, is a public "
@@ -1882,7 +1902,7 @@ msgid ""
 "listing, so it is not applied here."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:116
+#: src/stimmo/web/templates/costs.html:117
 #, python-format
 msgid ""
 "Access is reserved to priority categories: married or cohabiting young "
@@ -1897,7 +1917,7 @@ msgid ""
 "cohabiting child or sibling of the applicant with such a disability."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:117
+#: src/stimmo/web/templates/costs.html:118
 #, python-format
 msgid ""
 "The guarantee can be raised to %(consap_high)s of the principal under two"
@@ -1911,18 +1931,18 @@ msgid ""
 "be mentioned for a loan that does not exceed the threshold."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:118
+#: src/stimmo/web/templates/costs.html:119
 msgid ""
 "This is general information about the rules, not an assessment of any "
 "buyer: whether a loan can be granted, for how much and on what guarantees"
 " is for the bank to decide. Check with the bank."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:120
+#: src/stimmo/web/templates/costs.html:121
 msgid "Mortgage — monthly payment"
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:121
+#: src/stimmo/web/templates/costs.html:122
 msgid ""
 "The monthly payment is the standard French amortisation: equal monthly "
 "instalments of principal and interest at a constant rate, payment = P × i"
@@ -1934,7 +1954,7 @@ msgid ""
 " not modelled."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:122
+#: src/stimmo/web/templates/costs.html:123
 #, python-format
 msgid ""
 "The rate is the one you enter. The market averages beside the field are "
@@ -1948,7 +1968,7 @@ msgid ""
 "cannot stand in for a TAN. They are averages, not an offer."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:123
+#: src/stimmo/web/templates/costs.html:124
 msgid ""
 "This is a calculation on the amount, term and rate you choose. It does "
 "not say whether a loan can be granted or sustained: that is for the bank "
@@ -1956,11 +1976,11 @@ msgid ""
 " figure is computed at the rate you entered, today."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:125
+#: src/stimmo/web/templates/costs.html:126
 msgid "Fees — published ranges"
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:126
+#: src/stimmo/web/templates/costs.html:127
 #, python-format
 msgid ""
 "Notary, bank and insurance figures are typical published ranges, shown "
@@ -1970,7 +1990,7 @@ msgid ""
 "current, or that cite no public source, are labelled indicative."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:128
+#: src/stimmo/web/templates/costs.html:129
 #, python-format
 msgid ""
 "Each published range is re-checked against its source on a fixed "
@@ -1979,11 +1999,11 @@ msgid ""
 "current."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:130
+#: src/stimmo/web/templates/costs.html:131
 msgid "Renovation — Milan prices, indicative"
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:131
+#: src/stimmo/web/templates/costs.html:132
 #, python-format
 msgid ""
 "Works are priced per m² by tier, assumed to exclude IVA, then IVA at "
@@ -1993,13 +2013,13 @@ msgid ""
 "follows its stated condition and can always be changed."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:132
+#: src/stimmo/web/templates/costs.html:133
 msgid ""
 "The € per m² figures are Milan prices. This calculator is for homes in "
 "Milan: the same works would cost a different amount elsewhere."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:133
+#: src/stimmo/web/templates/costs.html:134
 msgid ""
 "The source of the € per m² figures does not say whether they include IVA."
 " They are assumed to exclude it, since IVA is added separately here: if "
@@ -2011,19 +2031,48 @@ msgid ""
 "the basis of these figures."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:136
+#: src/stimmo/web/templates/costs.html:137
 msgid "Tier"
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:136
+#: src/stimmo/web/templates/costs.html:137
 msgid "€ per m², Milan, ex IVA (assumed)"
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:145
+#: src/stimmo/web/templates/costs.html:146
+#, python-format
+msgid ""
+"Renovation works on homes carry a reduced IVA of %(renovation_iva)s (art."
+" 7, paragraph 1, letter b of law 488/1999; from 1 January 2027, art. 35, "
+"paragraph 4 and table A, part IV, no. 121 of Legislative Decree 10/2026, "
+"the IVA consolidated text). For ordinary and extraordinary maintenance, "
+"“significant goods” (beni significativi: lifts, windows and doors, "
+"boilers, video door-entry systems, air-conditioning equipment, "
+"sanitaryware and bathroom taps, security systems, as listed in the "
+"ministerial decree of 29 December 1999) supplied under the works contract"
+" get the reduced rate only up to the value of the contract net of those "
+"goods, and the excess is taxed at %(iva_ordinary)s. Materials bought "
+"directly by the client, goods supplied by someone other than the "
+"contractor and professional services are at %(iva_ordinary)s too. For "
+"restoration, conservative rehabilitation and rebuilding works the reduced"
+" rate applies in full."
+msgstr ""
+
+#: src/stimmo/web/templates/costs.html:147
+#, python-format
+msgid ""
+"This calculator applies a flat %(renovation_iva)s to the works and the "
+"contingency. The share of significant goods in a contract, and which of "
+"those regimes the works fall under (a technician's call), cannot be read "
+"from a listing and are not guessed: the IVA shown can therefore be an "
+"underestimate. The technical fees range is taken as including IVA."
+msgstr ""
+
+#: src/stimmo/web/templates/costs.html:149
 msgid "Bonus ristrutturazione"
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:146
+#: src/stimmo/web/templates/costs.html:150
 #, python-format
 msgid ""
 "A deduction from income tax on renovation spend, up to %(bonus_cap)s per "
@@ -2034,41 +2083,41 @@ msgid ""
 " they are part of a larger extraordinary-maintenance intervention."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:149
+#: src/stimmo/web/templates/costs.html:153
 msgid "Paid in"
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:149
+#: src/stimmo/web/templates/costs.html:153
 msgid "Main residence"
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:149
+#: src/stimmo/web/templates/costs.html:153
 msgid "Other homes"
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:162
+#: src/stimmo/web/templates/costs.html:166
 msgid "Sources"
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:168
+#: src/stimmo/web/templates/costs.html:172
 msgid "Found an error, or want something added?"
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:168
+#: src/stimmo/web/templates/costs.html:172
 msgid "Open an issue on GitHub"
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:173
+#: src/stimmo/web/templates/costs.html:177
 msgid "Not advice."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:173
+#: src/stimmo/web/templates/costs.html:177
 msgid ""
 "stimmo is not a notary, tax adviser or estate agent. Use these figures to"
 " plan and to ask better questions, not to sign anything."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:174
+#: src/stimmo/web/templates/costs.html:178
 msgid "Check whether an asking price is fair"
 msgstr ""
 
