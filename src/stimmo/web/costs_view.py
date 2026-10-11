@@ -336,12 +336,14 @@ SOURCES: tuple[tuple[str, str], ...] = (
         rates.RENOVATION_IVA_CROSSCHECK_URL,
     ),
     (
-        "Edotto — ristrutturazioni edilizie 2026 e detrazione",
-        rates.BONUS_RISTRUTTURAZIONE[2026].source_url,
+        "Agenzia delle Entrate — Ristrutturazioni edilizie: le agevolazioni fiscali "
+        "(ottobre 2025), IVA e detrazione",
+        rates.AGENZIA_ENTRATE_RENOVATION_GUIDE_URL,
     ),
     (
-        "Idealista — bonus edilizi 50% e 36%, proroga 2027",
-        rates.BONUS_RISTRUTTURAZIONE[2027].source_url,
+        "Normattiva — D.L. 63/2013, art. 16 (detrazione per le ristrutturazioni edilizie, "
+        "testo vigente al 31 dicembre 2026)",
+        rates.BONUS_SOURCE_URL,
     ),
 )
 

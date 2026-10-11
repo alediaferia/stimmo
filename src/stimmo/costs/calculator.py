@@ -556,7 +556,8 @@ def _renovation(s: PurchaseScenario) -> list[CostLine]:
             ind,
             *iva,
             params={"rate_pct": _pct(rates.RENOVATION_IVA)},
-            source_url=src,
+            # The rule, not the price page: the 10 % is statutory.
+            source_url=rates.AGENZIA_ENTRATE_RENOVATION_GUIDE_URL,
             as_of=asof,
         ),
         *(

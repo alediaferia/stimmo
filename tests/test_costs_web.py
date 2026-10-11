@@ -1621,6 +1621,58 @@ class TestRenovationIvaBasis:
         assert "does not say whether" not in works
 
 
+class TestBonusCitations:
+    """The bonus cites the statute in force and its 2027 testo-unico successor, and no source of
+    it is a property portal."""
+
+    def test_the_cap_on_total_deductions_cites_both_articles(self, client: TestClient):
+        body = client.get(f"{EN_URL}?{_BIG}").text
+        assert "art. 16-ter TUIR; from 2027, art. 18 of D.Lgs. 117/2026" in body
+        assert "16-ter TUIR)" not in body  # never the repealed article alone
+
+    @needs_italian(
+        "A deduction from your income tax, spread over ten years. The cap on total deductions "
+        "for higher incomes (art. 16-ter TUIR; from 2027, art. 18 of D.Lgs. 117/2026) is not "
+        "modelled."
+    )
+    def test_the_italian_string_cites_both_too(self, client: TestClient):
+        body = client.get(f"{IT_URL}?{_BIG}").text
+        assert "16-ter" in body and "117/2026" in body
+        assert "from 2027" not in body
+
+    def test_the_bonus_sources_are_the_statute_and_the_ade_guide(self):
+        titles = dict((url, title) for title, url in costs_view.SOURCES)
+        assert rates.BONUS_SOURCE_URL in titles
+        assert rates.AGENZIA_ENTRATE_RENOVATION_GUIDE_URL in titles
+        assert titles[rates.BONUS_SOURCE_URL].startswith("Normattiva")
+        assert titles[rates.AGENZIA_ENTRATE_RENOVATION_GUIDE_URL].startswith(
+            "Agenzia delle Entrate"
+        )
+
+    def test_no_listed_source_is_a_property_portal_or_a_blog(self):
+        for title, url in costs_view.SOURCES:
+            host = url.split("/")[2]
+            for banned in (
+                "idealista",
+                "immobiliare.it",
+                "casa.it",
+                "borsinoimmobiliare",
+                "wikicasa",
+            ):
+                assert banned not in host, (title, url)
+            assert "edotto" not in host, (title, url)
+        body_urls = {url for _title, url in costs_view.SOURCES}
+        for rule in rates.BONUS_RISTRUTTURAZIONE.values():
+            assert rule.source_url in body_urls
+
+    def test_the_bonus_row_links_to_the_statute(self, client: TestClient):
+        body = client.get(f"{EN_URL}?{_BIG}").text
+        rows = [r for r in re.findall(r"<tr>.*?</tr>", body, re.S) if "Bonus ristrutturazione" in r]
+        assert len(rows) == 2  # works paid in 2026 and in 2027
+        for row in rows:
+            assert rates.BONUS_SOURCE_URL in row
+
+
 class TestNotIncludedLine:
     def test_the_estimate_names_what_is_excluded_and_links_to_the_full_section(self, client):
         body = client.get(EN_URL).text

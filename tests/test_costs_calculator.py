@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 from datetime import date, timedelta
+from urllib.parse import urlsplit
 
 import pytest
 from pydantic import ValidationError
@@ -539,6 +540,114 @@ class TestRatesContract:
     def test_compute_is_deterministic(self):
         s = _scenario(mortgage_eur=300_000, surface_m2=70, renovation_tier=RenovationTier.MEDIUM)
         assert compute(s) == compute(s)
+
+
+# ---------------------------------------------------------------------------
+# Where the sources point
+# ---------------------------------------------------------------------------
+
+# Property portals are not a source for a statutory or published figure.
+_PORTAL_DOMAINS = (
+    "idealista.it",
+    "immobiliare.it",
+    "casa.it",
+    "borsinoimmobiliare.it",
+    "wikicasa.it",
+)
+# The only hosts a statutory line may cite.
+_PRIMARY_DOMAINS = ("normattiva.it", "agenziaentrate.gov.it", "bancaditalia.it")
+
+
+def _on(url: str, domains: tuple[str, ...]) -> bool:
+    host = urlsplit(url).hostname or ""
+    return any(host == d or host.endswith("." + d) for d in domains)
+
+
+def _rates_source_urls() -> dict[str, str]:
+    """Every source URL declared in rates.py: URL constants, benchmarks, price bands, bonus rules
+    and review items."""
+    found: dict[str, str] = {}
+    for name, value in vars(rates).items():
+        if isinstance(value, str) and value.startswith("http"):
+            found[name] = value
+        elif isinstance(value, rates.Benchmark | rates.BonusRule) and value.source_url:
+            found[name] = value.source_url
+        elif isinstance(value, dict):
+            for key, rule in value.items():
+                if isinstance(rule, rates.BonusRule):
+                    found[f"{name}[{key}]"] = rule.source_url
+        elif (
+            isinstance(value, tuple)
+            and value
+            and all(isinstance(v, rates.PriceBand) for v in value)
+        ):
+            for band in value:
+                if band.benchmark.source_url:
+                    found[f"{name}[<= {band.max_eur:,.0f}]"] = band.benchmark.source_url
+    for item in rates.review_schedule():
+        if item.source_url:
+            found[item.name] = item.source_url
+    return found
+
+
+class TestSourceHygiene:
+    def test_the_guard_recognises_a_portal_host(self):
+        assert _on("https://www.idealista.it/news/x", _PORTAL_DOMAINS)
+        assert _on("https://immobiliare.it/", _PORTAL_DOMAINS)
+        assert not _on("https://www.normattiva.it/uri-res/N2Ls", _PORTAL_DOMAINS)
+        assert not _on("https://notidealista.it.example/", _PORTAL_DOMAINS[:1])
+
+    def test_the_helper_finds_the_urls_the_guard_is_about(self):
+        found = _rates_source_urls()
+        assert len(found) >= 15
+        assert found["BONUS_RISTRUTTURAZIONE[2027]"] == rates.BONUS_SOURCE_URL
+        assert found["MORTGAGE_RATE_AVERAGE"] == rates.MORTGAGE_RATE_SOURCE_URL
+
+    def test_no_source_in_rates_py_is_a_property_portal(self):
+        offenders = {n: u for n, u in _rates_source_urls().items() if _on(u, _PORTAL_DOMAINS)}
+        assert offenders == {}
+
+    def test_the_bonus_cites_the_statute_pinned_to_its_last_day_in_force(self):
+        assert rates.BONUS_RISTRUTTURAZIONE.keys() == {2026, 2027}
+        for rule in rates.BONUS_RISTRUTTURAZIONE.values():
+            assert rule.source_url == rates.BONUS_SOURCE_URL
+        url = rates.BONUS_SOURCE_URL
+        assert _on(url, ("normattiva.it",))
+        assert "decreto.legge:2013-06-04;63~art16" in url
+        assert url.endswith("!vig=2026-12-31")  # keeps showing the 2025-2027 text after repeal
+
+    def test_statutory_and_renovation_tax_lines_cite_a_primary_source(self):
+        b = compute(
+            _scenario(
+                mortgage_eur=300_000,
+                surface_m2=70,
+                renovation_tier=RenovationTier.FULL,
+                as_of=date(2026, 10, 8),
+            )
+        )
+        checked = [
+            ln
+            for ln in b.lines
+            if ln.status is CostStatus.STATUTORY
+            or ln.code in ("renovation_vat", "renovation_bonus")
+        ]
+        assert {ln.code for ln in checked} >= {"registro_tax", "renovation_vat", "renovation_bonus"}
+        for ln in checked:
+            assert ln.source_url and _on(ln.source_url, _PRIMARY_DOMAINS), ln.code
+        # The 2026 and 2027 bonus rows both cite the statute.
+        assert {ln.params["year"] for ln in b.lines if ln.code == "renovation_bonus"} == {
+            2026,
+            2027,
+        }
+
+    def test_no_line_or_note_of_a_full_scenario_links_to_a_portal(self):
+        b = compute(
+            _scenario(mortgage_eur=400_000, surface_m2=70, renovation_tier=RenovationTier.MEDIUM)
+        )
+        urls = [ln.source_url for ln in b.lines if ln.source_url]
+        urls += [n.source_url for n in b.notes if n.source_url]
+        assert urls
+        assert not [u for u in urls if _on(u, _PORTAL_DOMAINS)]
 
 
 # ---------------------------------------------------------------------------

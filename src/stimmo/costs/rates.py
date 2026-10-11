@@ -16,13 +16,16 @@ Rules for this file:
   always rendered as an indicative range, never as a firm number;
 * a figure that is not backed by a cited source is left out rather than guessed.
 
-Re-verify the tax figures after the 2027 budget law and again at year end: the Testo Unico
-dell'imposta di registro (D.Lgs. 123/2025) takes effect on 2027-01-01 and is believed, but not
-confirmed, to leave the rates below unchanged, and the 2027 renovation-bonus rates are
-provisional until that budget law is passed. Statutory figures have no review interval and are
-never "to be checked" on a line: they change by law, so they are tracked by that re-verification
-(``STATUTORY_AS_OF``). The schedule carries one annual reminder for it, due on 15 January of the
-year after ``STATUTORY_AS_OF`` (``statutory_review()``): it only notifies the maintainer.
+Re-verify the tax figures after the 2027 budget law and again at year end. Four testi unici
+take effect on 2027-01-01 and repeal the provisions they consolidate: D.Lgs. 117/2026 (imposte sui
+redditi), D.Lgs. 10/2026 (IVA), D.Lgs. 123/2025 (registro) and D.Lgs. 141/2026 (adempimenti e
+accertamento). The rules used below read the same in the new texts, renumbered, so no figure
+changes; each comment cites the provision in force until 2026-12-31 and, after "from 2027", its
+successor. The 2027 renovation-bonus rates are provisional until the 2027 budget law is passed.
+Statutory figures have no review interval and are never "to be checked" on a line: they change by
+law, so they are tracked by that re-verification (``STATUTORY_AS_OF``). The schedule carries one
+annual reminder for it, due on 15 January of the year after ``STATUTORY_AS_OF``
+(``statutory_review()``): it only notifies the maintainer.
 """
 
 from __future__ import annotations
@@ -158,6 +161,8 @@ class ReviewItem:
 
 # Imposta di registro on a purchase from a private (or otherwise non-IVA) seller:
 # 2 % prima casa, 9 % otherwise, never less than the minimum per deed.
+# Statute: DPR 131/1986, Tariffa parte I; from 2027 D.Lgs. 123/2025 (TU registro), Tariffa parte I
+# artt. 1 and 11.
 # Source: AGENZIA_ENTRATE_GUIDE_URL.
 REGISTRO_RATE_PRIMA_CASA = 0.02
 REGISTRO_RATE_OTHER = 0.09
@@ -166,7 +171,8 @@ REGISTRO_MIN_EUR = 1_000.0
 # "Prezzo-valore": on request in the deed, the registro base is the cadastral value rather than
 # the price — rendita catastale × 1.05 × 110 (prima casa) or × 120 (other). Without the request
 # the base is the declared price, which is therefore the ceiling used when the rendita is
-# unknown. Source: AGENZIA_ENTRATE_GUIDE_URL.
+# unknown. Statute: L. 266/2005 art. 1 c. 497; from 2027 D.Lgs. 141/2026 (TU adempimenti e
+# accertamento) art. 299 cc. 5 and 10. Source: AGENZIA_ENTRATE_GUIDE_URL.
 CADASTRAL_REVALUATION = 1.05
 CADASTRAL_MULTIPLIER_PRIMA_CASA = 110
 CADASTRAL_MULTIPLIER_OTHER = 120
@@ -563,8 +569,17 @@ RENOVATION_TIERS_REVIEW = ReviewItem(
 )
 RENOVATION_AS_OF = RENOVATION_TIERS_REVIEW.as_of
 
-# IVA on renovation works: 10 % (L. 488/1999).
+# IVA on renovation works: 10 % (L. 488/1999 art. 7 c. 1 lett. b, with DM 29/12/1999 for the "beni
+# significativi"); from 2027 D.Lgs. 10/2026 (TU IVA) art. 35 c. 4 and Tabella A parte IV n. 121,
+# which still refers to the same DM (art. 169 lett. zz).
+# Source: AGENZIA_ENTRATE_RENOVATION_GUIDE_URL, §2.
 RENOVATION_IVA = 0.10
+# Agenzia delle Entrate, "Ristrutturazioni edilizie: le agevolazioni fiscali" (October 2025), §2
+# "L'agevolazione IVA": the 10 % and the beni-significativi limit.
+AGENZIA_ENTRATE_RENOVATION_GUIDE_URL = (
+    "https://www.agenziaentrate.gov.it/portale/documents/d/guest/"
+    "ristrutturazioni_edilizie_le_agevolazioni_fiscali"
+)
 
 # Technical fees and filings, €3–6k, central €4,000: NO PUBLIC SOURCE, so source_url is None and
 # the range is indicative (a Benchmark without a source must be). It used to cite the ghle.it page
@@ -628,32 +643,35 @@ class BonusRule:
     as_of: date = STATUTORY_AS_OF
 
 
-_BONUS_2026_URL = (
-    "https://www.edotto.com/articolo/ristrutturazioni-edilizie-2026-guida-aggiornata-e-"
-    "proroga-detrazione-50"
-)
-_BONUS_2027_URL = (
-    "https://www.idealista.it/news/finanza/fisco/2026/05/20/375990-bonus-edilizi-50-e-36-"
-    "possibile-proroga-nel-2027"
+# The statute itself, as in force on 2026-12-31: DL 63/2013 art. 16 c. 1 as amended by L. 199/2025
+# states the rates of both years (50 / 36 % in 2026, 36 / 30 % in 2027) and the spend cap. The
+# link is pinned to that date (!vig=) so it keeps showing this text after the testo unico repeals
+# the article on 2027-01-01. Re-point it at the act that sets the 2027 rates once the 2027 budget
+# law is known.
+BONUS_SOURCE_URL = (
+    "https://www.normattiva.it/uri-res/N2Ls?"
+    "urn:nir:stato:decreto.legge:2013-06-04;63~art16!vig=2026-12-31"
 )
 
-# 2026: 50 % abitazione principale / 36 % other (L. 199/2025). 2027 under current law: 36 % /
-# 30 %; a selective 50 % extension is possible but unfunded ⚠, so the year is provisional and
-# is labelled as subject to the 2027 budget law.
+# 2026: 50 % abitazione principale / 36 % other. 2027 under current law: 36 % / 30 %. Statute: DL
+# 63/2013 art. 16 c. 1 as amended by L. 199/2025; from 2027 D.Lgs. 117/2026 (TU imposte sui redditi)
+# art. 373. A selective 50 % extension of the 2027 rates is possible but unfunded ⚠, so that year
+# is provisional and is labelled as subject to the 2027 budget law.
 BONUS_RISTRUTTURAZIONE: dict[int, BonusRule] = {
-    2026: BonusRule(50, 36, provisional=False, source_url=_BONUS_2026_URL),
-    2027: BonusRule(36, 30, provisional=True, source_url=_BONUS_2027_URL),
+    2026: BonusRule(50, 36, provisional=False, source_url=BONUS_SOURCE_URL),
+    2027: BonusRule(36, 30, provisional=True, source_url=BONUS_SOURCE_URL),
 }
-# Spend cap per unit, deducted in equal annual instalments over 10 years (L. 199/2025). The
-# art. 16-ter TUIR cap on total deductions for incomes above €75k is not modelled: it depends
-# on the buyer's income.
+# Spend cap per unit, deducted in equal annual instalments over 10 years. Statute: DL 63/2013
+# art. 16 c. 1 as amended by L. 199/2025; from 2027 D.Lgs. 117/2026 art. 373. The cap on total
+# deductions for incomes above €75k (art. 16-ter TUIR; art. 18 D.Lgs. 117/2026 from 2027) is not
+# modelled: it depends on the buyer's income.
 BONUS_SPEND_CAP_EUR = 96_000.0
 BONUS_INSTALMENT_YEARS = 10
 
-# Tiers whose works qualify for the bonus. On a single dwelling, art. 16-bis c.1 TUIR covers
-# manutenzione ordinaria only on condominium common parts (lett. a); the unit itself qualifies
-# from manutenzione straordinaria upwards (lett. b) — see the Agenzia delle Entrate guide
-# "Ristrutturazioni edilizie: le agevolazioni fiscali". Light works (paint, overlay floors,
+# Tiers whose works qualify for the bonus. On a single dwelling, art. 16-bis c.1 TUIR (art. 17 c.1
+# D.Lgs. 117/2026 from 2027, same letters) covers manutenzione ordinaria only on condominium
+# common parts (lett. a); the unit itself qualifies from manutenzione straordinaria upwards
+# (lett. b) — see AGENZIA_ENTRATE_RENOVATION_GUIDE_URL. Light works (paint, overlay floors,
 # internal doors) are ordinaria, so the light tier carries no bonus on its own (it can become
 # eligible as part of a larger straordinaria intervention, which is a different tier).
 # Same tier set as RENOVATION_TIERS_WITH_TECHNICAL_FEES, kept as its own constant because the
