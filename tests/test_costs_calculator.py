@@ -1223,7 +1223,7 @@ class TestStatutoryReview:
                 assert ln.stale is False and ln.due is None, ln.code
 
     def test_the_overdue_note_never_counts_it(self):
-        # 2027-01-16: the reminder (01-15) and the reference rates (01-09) are overdue; only
+        # 2027-01-16: the reminder (01-15) and the reference rates (01-11) are overdue; only
         # ranges that back a line can be counted, and the 6-month ones are not due until April.
         b = compute(_full(as_of=date(2027, 1, 16)))
         assert rates.statutory_review().overdue(date(2027, 1, 16))

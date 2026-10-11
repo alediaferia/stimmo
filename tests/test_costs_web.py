@@ -1860,9 +1860,9 @@ class TestMortgagePaymentBlock:
 
     def test_the_worked_example_shows_it_with_the_reference_rate_and_25_years(self, client):
         body = client.get(EN_URL).text  # 300,000 mortgage, defaults
-        assert "25 years at 3.4% TAN" in _payment_block(body)
+        assert "25 years at 3.55% TAN" in _payment_block(body)
         assert _selected(body, "cost-mortgage-years") == "25"
-        assert re.search(r'name="mortgage_rate"[^>]*value="3.4"', body)
+        assert re.search(r'name="mortgage_rate"[^>]*value="3.55"', body)
 
     def test_the_term_options_are_the_five_documented_ones(self, client: TestClient):
         body = client.get(EN_URL).text
@@ -1882,7 +1882,7 @@ class TestMortgagePaymentBlock:
         body = client.get(f"{EN_URL}?price=450000&mortgage=300000&mortgage_rate=").text
         assert 'id="mortgage-payment"' not in body
         note = next(n for n in _notes(body) if "Enter an interest rate (TAN)" in n)
-        assert "3.40%" in note and "July 2026" in note and "not an offer" in note
+        assert "3.55%" in note and "August 2026" in note and "not an offer" in note
 
     def test_a_link_without_the_new_fields_still_works(self, client: TestClient):
         body = client.get(f"{EN_URL}?price=450000&mortgage=300000").text
@@ -1931,7 +1931,7 @@ class TestMortgagePaymentBlock:
         section = _costs_section(body)
         assert 'name="mortgage_years"' in section and 'name="mortgage_rate"' in section
         assert _selected(section, "cost-mortgage-years") == "25"
-        assert re.search(r'name="mortgage_rate"[^>]*value="3.4"', section)
+        assert re.search(r'name="mortgage_rate"[^>]*value="3.55"', section)
         assert 'id="mortgage-payment"' not in section  # no mortgage until the visitor sets one
 
     def test_the_payment_does_not_change_the_verdict(self, client, estimate_env):
@@ -1945,10 +1945,10 @@ class TestRateReference:
         ref = body[body.index('id="cost-rate-ref"') :]
         ref = ref[: ref.index("</div>")]
         assert "Market averages" in ref
-        assert "Banca d'Italia, July 2026" in ref
+        assert "Banca d'Italia, August 2026" in ref
         assert "provisional" in ref
         assert rates.MORTGAGE_RATE_SOURCE_URL in ref
-        for value in ("3.40%", "2.99%", "3.56%"):
+        for value in ("3.55%", "3.37%", "3.61%"):
             assert value in ref, value
         assert "up to 1 year" in ref and "over 1 year" in ref
 
@@ -1956,12 +1956,12 @@ class TestRateReference:
         body = client.get(EN_URL).text
         ref = body[body.index('id="cost-rate-ref"') :]
         ref = ref[: ref.index("</div>")]
-        assert "TAEG (3.81% on average)" in ref
+        assert "TAEG (3.99% on average)" in ref
         assert "also counts fees and mandatory insurance" in ref
         assert "is not a TAN" in ref
         # The TAEG is not among the TAN-comparable values listed.
         listed = re.findall(r"<li>.*?</li>", ref, re.S)
-        assert not any("3.81" in li for li in listed)
+        assert not any("3.99" in li for li in listed)
 
     def test_they_are_labelled_as_averages_not_an_offer(self, client: TestClient):
         body = client.get(EN_URL).text
@@ -1982,8 +1982,8 @@ class TestRateReference:
         body = client.get(IT_URL).text
         ref = body[body.index('id="cost-rate-ref"') :]
         ref = ref[: ref.index("</div>")]
-        assert "3,40%" in ref and "2,99%" in ref and "3,56%" in ref and "3,81%" in ref
-        assert "luglio 2026" in ref
+        assert "3,55%" in ref and "3,37%" in ref and "3,61%" in ref and "3,99%" in ref
+        assert "agosto 2026" in ref
 
     def test_the_source_is_on_the_calculators_list_of_sources(self):
         urls = {url for _title, url in costs_view.SOURCES}
@@ -1991,7 +1991,7 @@ class TestRateReference:
 
     @pytest.mark.parametrize("path", [IT_URL, EN_URL])
     def test_it_is_in_date_until_its_review_and_flagged_after(self, client, monkeypatch, path):
-        due = rates.MORTGAGE_RATE_AVERAGE.due  # 2027-01-09
+        due = rates.MORTGAGE_RATE_AVERAGE.due  # 2027-01-11
         monkeypatch.setattr(app_module, "_today", lambda: due)
         assert "ref-stale" not in client.get(path).text
         monkeypatch.setattr(app_module, "_today", lambda: due + timedelta(days=1))

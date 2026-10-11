@@ -443,7 +443,7 @@ MONTHS_PER_YEAR = 12
 # Reference rates shown beside the rate field, so a visitor has an official market average to
 # start from. Source: Banca d'Italia, "Banche e moneta: serie nazionali", Tavola 2.4 (MIR0400),
 # "Tassi di interesse bancari sui prestiti in euro alle famiglie: nuove operazioni", block
-# "Prestiti per l'acquisto di abitazioni" (page 25 of the July 2026 issue, published 2026-09-09).
+# "Prestiti per l'acquisto di abitazioni" (page 25 of the August 2026 issue, published 2026-10-09).
 # The table is the harmonised euro-area MIR survey, a sample of Italian banks scaled to the whole
 # system; Banca d'Italia's own guide ("I tassi di interesse bancari. Guida ai dati pubblicati
 # dalla Banca d'Italia", 2023-03-03) says it collects *nominal* rates — the rate agreed between
@@ -458,29 +458,29 @@ MONTHS_PER_YEAR = 12
 #     the TAEG, never as a TAN, and never fed to the payment calculation.
 # These are market averages over a month of new loans, not an offer and not a rate any lender
 # would quote a given buyer. The latest month is flagged provisional by Banca d'Italia
-# (figures in parentheses in the table); MORTGAGE_RATE_PROVISIONAL records that.
+# (figures in parentheses in the table: "I dati riportati fra parentesi sono provvisori");
+# MORTGAGE_RATE_PROVISIONAL records that.
 # Re-read the newest issue every quarter (review_months=3): the index page
-# https://www.bancaditalia.it/pubblicazioni/moneta-banche/2026-moneta/index.html lists them
-# (the issue with August data is scheduled for 2026-10-09 in Banca d'Italia's 2026 calendar).
+# https://www.bancaditalia.it/pubblicazioni/moneta-banche/2026-moneta/index.html lists them.
 MORTGAGE_RATE_SOURCE_URL = (
     "https://www.bancaditalia.it/pubblicazioni/moneta-banche/2026-moneta/"
-    "statistiche_BAM_20260909.pdf"
+    "statistiche_BAM_20261009.pdf"
 )
-# First day of the month the figures below describe (July 2026).
-MORTGAGE_RATE_DATA_MONTH = date(2026, 7, 1)
+# First day of the month the figures below describe (August 2026, provisional).
+MORTGAGE_RATE_DATA_MONTH = date(2026, 8, 1)
 MORTGAGE_RATE_PROVISIONAL = True
 # A single published figure, so low = central = high.
 MORTGAGE_RATE_AVERAGE = Benchmark(
-    3.40, 3.40, 3.40, MORTGAGE_RATE_SOURCE_URL, as_of=date(2026, 10, 9), review_months=3
+    3.55, 3.55, 3.55, MORTGAGE_RATE_SOURCE_URL, as_of=date(2026, 10, 11), review_months=3
 )
 MORTGAGE_RATE_INITIAL_UP_TO_1Y = Benchmark(
-    2.99, 2.99, 2.99, MORTGAGE_RATE_SOURCE_URL, as_of=date(2026, 10, 9), review_months=3
+    3.37, 3.37, 3.37, MORTGAGE_RATE_SOURCE_URL, as_of=date(2026, 10, 11), review_months=3
 )
 MORTGAGE_RATE_INITIAL_OVER_1Y = Benchmark(
-    3.56, 3.56, 3.56, MORTGAGE_RATE_SOURCE_URL, as_of=date(2026, 10, 9), review_months=3
+    3.61, 3.61, 3.61, MORTGAGE_RATE_SOURCE_URL, as_of=date(2026, 10, 11), review_months=3
 )
 MORTGAGE_TAEG_AVERAGE = Benchmark(
-    3.81, 3.81, 3.81, MORTGAGE_RATE_SOURCE_URL, as_of=date(2026, 10, 9), review_months=3
+    3.99, 3.99, 3.99, MORTGAGE_RATE_SOURCE_URL, as_of=date(2026, 10, 11), review_months=3
 )
 # What a mortgage's rate field starts at: the all-loans average, shown and editable.
 MORTGAGE_RATE_DEFAULT_PCT = MORTGAGE_RATE_AVERAGE.central

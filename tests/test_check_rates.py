@@ -30,7 +30,7 @@ def _load_script():
 
 check_rates = _load_script()
 
-# The Banca d'Italia reference rates: reviewed 2026-10-09, due 2027-01-09.
+# The Banca d'Italia reference rates: reviewed 2026-10-11, due 2027-01-11.
 _THREE_MONTH_NAMES = {
     "MORTGAGE_RATE_AVERAGE",
     "MORTGAGE_RATE_INITIAL_UP_TO_1Y",
@@ -56,7 +56,7 @@ _TWELVE_MONTH_NAMES = {
 # The yearly statutory reminder: STATUTORY_AS_OF 2026-10-06 is due 15 January of the next year.
 _STATUTORY = "STATUTORY_AS_OF"
 _STATUTORY_DUE = "2027-01-15"
-_JUST_BEFORE_3M = "2027-01-09"  # the day the 3-month ranges fall due: still in time
+_JUST_BEFORE_3M = "2027-01-11"  # the day the 3-month ranges fall due: still in time
 _JUST_BEFORE = "2027-04-06"  # the day the 6-month ranges fall due: still in time
 _OVERDUE = "2027-04-07"
 
@@ -75,7 +75,7 @@ class TestExitCode:
         code, out = _run(capsys, "--today", COSTS_TODAY.isoformat())
         assert code == 0
         assert "Nothing is overdue" in out
-        assert "Next due: MORTGAGE_RATE_AVERAGE on 2027-01-09" in out
+        assert "Next due: MORTGAGE_RATE_AVERAGE on 2027-01-11" in out
 
     def test_one_when_something_is_overdue(self, capsys):
         code, out = _run(capsys, "--today", _OVERDUE)
@@ -92,7 +92,7 @@ class TestExitCode:
         assert _mentioned(out, _THREE_MONTH_NAMES) == _THREE_MONTH_NAMES  # listed as due today
 
     def test_the_day_after_the_due_date_the_reference_rates_are_overdue(self, capsys):
-        code, out = _run(capsys, "--today", "2027-01-10")
+        code, out = _run(capsys, "--today", "2027-01-12")
         assert code == 1
         assert "OVERDUE (4)" in out
         assert _mentioned(out, _THREE_MONTH_NAMES) == _THREE_MONTH_NAMES
@@ -169,7 +169,7 @@ class TestOutput:
         _, out = _run(capsys, "--today", _OVERDUE)
         assert "MORTGAGE_APPRAISAL" in out
         assert "as_of 2026-10-06  due 2027-04-06  indicative=no" in out
-        assert "as_of 2026-10-09  due 2027-01-09  indicative=no" in out  # a reference rate
+        assert "as_of 2026-10-11  due 2027-01-11  indicative=no" in out  # a reference rate
         assert rates.MORTGAGE_RATE_AVERAGE.source_url in out
         assert "indicative=yes" in out  # the renovation ranges
         assert rates.MORTGAGE_APPRAISAL.source_url in out
@@ -301,7 +301,7 @@ class TestStatutoryReminder:
         assert code == 0  # due soon alone never fails the run
 
     def test_it_is_listed_on_the_due_date_and_is_not_overdue_yet(self, capsys):
-        # (The reference rates fell due on 2027-01-09, so by the 15th they are overdue.)
+        # (The reference rates fell due on 2027-01-11, so by the 15th they are overdue.)
         _, out = _run(capsys, "--today", _STATUTORY_DUE, "--within", "0")
         overdue, _, today = out.partition("DUE WITHIN")
         assert self._listed(today) and not self._listed(overdue)
@@ -341,8 +341,8 @@ class TestStatutoryReminder:
         assert "stimmo-growth" not in out  # the private repo is not named
 
     def test_the_markdown_instructions_appear_only_when_the_reminder_is_listed(self, capsys):
-        # Only the reference rates are due soon: the reminder is 36 days off.
-        _, out = _run(capsys, "--today", "2026-12-10", "--format", "markdown")
+        # Only the reference rates are due soon: the reminder is 34 days off.
+        _, out = _run(capsys, "--today", "2026-12-12", "--format", "markdown")
         assert "budget law" not in out
         assert "How to refresh a range" in out
 
