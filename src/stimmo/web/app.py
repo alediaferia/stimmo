@@ -6,13 +6,13 @@ import hashlib
 import json
 import os
 import re
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Collection, Iterable, Mapping
 from dataclasses import dataclass
 from datetime import date
 from functools import lru_cache
 from importlib.metadata import version as _pkg_version
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 
 from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi import Path as FPath
@@ -22,7 +22,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import ValidationError
 
-from stimmo.data import amenities, geocode, history, neighborhoods, ntn, omi, zones
+from stimmo.data import amenities, geocode, guides, history, neighborhoods, ntn, omi, zones
 from stimmo.data.importers import immobiliare
 from stimmo.i18n import (
     LANG_TO_LOCALE,
@@ -60,6 +60,7 @@ from stimmo.models import (
 from stimmo.valuation import engine
 from stimmo.valuation.verdict import HIGH_TOL
 from stimmo.web import costs_view as _costs_view
+from stimmo.web import guide_view as _guide_view
 from stimmo.web import labels as _labels
 from stimmo.web import metrics as _metrics
 from stimmo.web import ogimage as _ogimage
@@ -272,6 +273,9 @@ async def _lifespan(_app):
     # aborts the deploy instead of quietly 500-ing the sitemap and every neighborhood
     # page while the process still passes its health check.
     neighborhoods.list_neighborhoods()
+    # Same for the guides: a malformed file in STIMMO_CONTENT_DIR/guides raises here, at startup.
+    # (scripts/check_guides.py keeps one from reaching an image in the first place.)
+    guides.list_guides()
     async with _get_mcp_sm().run():
         yield
 
@@ -604,6 +608,13 @@ def _neighborhood_lastmod(params: Mapping[str, str]) -> date | None:
         return None
 
 
+def _guide_lastmod(params: Mapping[str, str]) -> date | None:
+    """The guide's own `updated` front-matter date (data/guides.py): the one thing an editor
+    sets when the text changes, never the release or deploy date."""
+    guide = guides.guide_for_slug(params["slug"])
+    return guide.updated if guide else None
+
+
 def _sitemap_url_block(route: SeoRoute, params: Mapping[str, str]) -> str:
     langs = sorted(route.suffixes)
     locs = {lg: f"{SITE_ORIGIN}/{lg}{route.suffixes[lg].format(**params)}" for lg in langs}
@@ -621,6 +632,19 @@ def _sitemap_url_block(route: SeoRoute, params: Mapping[str, str]) -> str:
         )
         blocks.append(f"  <url>\n    <loc>{locs[lg]}</loc>{lastmod_tag}\n{alt_links}\n  </url>")
     return "\n".join(blocks)
+
+
+def sitemap_paths(exclude: Collection[str] = ()) -> frozenset[str]:
+    """Every URL path the sitemap lists (`/{lang}{suffix}`), expanded from the registry, minus
+    the routes named in `exclude`. Unlike `_sitemap_xml` it is not cached, so
+    scripts/check_guides.py can read it after pointing STIMMO_CONTENT_DIR somewhere else."""
+    return frozenset(
+        f"/{lang}{suffix.format(**params)}"
+        for key, route in _SEO_ROUTES.items()
+        if key not in exclude
+        for params in route.expand()
+        for lang, suffix in route.suffixes.items()
+    )
 
 
 @lru_cache(maxsize=1)
@@ -713,6 +737,44 @@ def neighborhood_url(n: neighborhoods.Neighborhood, lang: str) -> str:
 
 
 templates.env.globals["neighborhood_url"] = neighborhood_url
+
+# Editorial guides: Italian only, so no "en" key. _seo_urls then emits hreflang="it" and
+# x-default and nothing else, and the sitemap carries the IT <loc> alone: an IT-only page must
+# not advertise an alternate that 404s. Membership is the file's existence (data/guides.py): a
+# guide file is published content by definition, so there is no blurb-style gate.
+_register_seo_route(
+    "guide_detail",
+    "guide_detail",
+    {"it": "/guide/{slug}"},
+    expand=lambda: ({"slug": g.slug} for g in guides.list_guides()),
+    lastmod=_guide_lastmod,
+)
+
+
+def _guide_path(slug: str) -> str:
+    """Canonical path of a guide, from the registered suffix (like neighborhood_url) so a link
+    can never drift from the route. Guides are Italian only, hence no `lang` argument."""
+    return f"/it{_SEO_ROUTES['guide_detail'].suffixes['it'].format(slug=slug)}"
+
+
+def guide_url(slug: str) -> str | None:
+    """Canonical path of a published guide, or None while its file does not exist, so a
+    template links to a guide only once it is really there."""
+    return _guide_path(slug) if guides.guide_for_slug(slug) is not None else None
+
+
+def costs_guide_link(lang: str) -> dict[str, str] | None:
+    """The costs guide as `{"url", "h1"}` for the calculator and the result page, or None: in
+    English (no EN guide exists), and while the guide file does not exist. The anchor text is
+    the guide's own h1, which is content, so it needs no UI string."""
+    if lang != "it":
+        return None
+    guide = guides.guide_for_slug(_costs_view.COSTS_GUIDE_SLUG)
+    return {"url": _guide_path(guide.slug), "h1": guide.h1} if guide else None
+
+
+templates.env.globals["guide_url"] = guide_url
+templates.env.globals["costs_guide_link"] = costs_guide_link
 
 
 def _fmt_share_pct(pct: float) -> str:
@@ -1160,6 +1222,58 @@ def neighborhood_detail(
 ) -> HTMLResponse:
     lang = "it" if request.url.path.startswith("/it/") else "en"
     return _render_neighborhood_detail(request, lang, slug)
+
+
+# ---------------------------------------------------------------------------
+# Editorial guides (data/guides.py): Markdown from the content directory, Italian only.
+#
+# One literal route, no {lang} placeholder, because there is no English guide: /en/guide/{slug},
+# /it/guide and /it/guide/ fall through to bare_path_redirect, which 404s a lang-prefixed path
+# no route claims. A slug with no file is a plain 404 too: never an empty page and never a
+# noindex placeholder (a crawlable thin page gets indexed anyway). The slug is only ever looked
+# up among the loaded guides, never turned into a path.
+# ---------------------------------------------------------------------------
+
+
+def _absolute_url(request: Request, path: str) -> str:
+    """`path` on the request's own scheme and host, as _seo_urls builds its canonicals."""
+    return f"{request.url.scheme}://{request.url.netloc}{path}"
+
+
+@app.get("/it/guide/{slug}", response_class=HTMLResponse)
+def guide_detail(request: Request, slug: str) -> HTMLResponse:
+    guide = guides.guide_for_slug(slug)
+    if guide is None:
+        raise HTTPException(status_code=404, detail="Unknown guide")
+    _set_locale(request, "it")
+
+    canonical = _absolute_url(request, _guide_path(slug))
+    trail = [("stimmo", _absolute_url(request, "/it/"))]
+    # The pillar joins the trail only while its file exists, so it never points at a 404.
+    pillar = guides.guide_for_slug(guides.PILLAR_SLUG)
+    if pillar is not None and pillar.slug != guide.slug:
+        trail.append((pillar.h1, _absolute_url(request, _guide_path(pillar.slug))))
+    trail.append((guide.h1, canonical))
+
+    return _tpl(
+        request,
+        "guide.html",
+        {
+            "guide": guide,
+            "body_html": _guide_view.render_body(guide),
+            "updated_display": _labels.date_str(guide.updated),
+            "article_ld": _guide_view.article_json_ld(
+                guide, canonical, str(request.base_url) + "#organization"
+            ),
+            "breadcrumb_ld": _guide_view.breadcrumb_json_ld(trail),
+            # The calculator page carries the same note and the same issue form.
+            "report_issue_url": (
+                f"{_costs_view.REPORT_ISSUE_URL}&title={quote('[Correzione] ' + slug, safe='[]')}"
+            ),
+        },
+        seo_route="guide_detail",
+        seo_params={"slug": slug},
+    )
 
 
 @app.get("/{lang}/", response_class=HTMLResponse)

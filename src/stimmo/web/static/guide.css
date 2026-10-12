@@ -1,0 +1,121 @@
+/* Editorial guides (templates/guide.html). Uses the design tokens base.html defines on :root. */
+
+.guide { max-width: 760px; margin: 0 auto; }
+
+.guide-head {
+  border-bottom: 1px solid var(--paper-rule);
+  padding-bottom: 18px;
+  margin-bottom: 28px;
+}
+.guide-head h1 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 48px;
+  line-height: 1.02;
+  letter-spacing: -0.015em;
+  margin: 0 0 14px;
+}
+.guide-meta {
+  display: flex; flex-wrap: wrap; gap: 4px 20px;
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  line-height: 1.6;
+}
+.guide-meta a { color: var(--ink-2); }
+
+/* ------------ Body ------------ */
+.guide-body {
+  font-size: 16.5px;
+  line-height: 1.7;
+  color: var(--ink-2);
+  overflow-wrap: break-word;
+}
+.guide-body > :first-child { margin-top: 0; }
+.guide-body p { margin: 0 0 1em; }
+.guide-body a { color: var(--ink); }
+.guide-body a:hover { color: var(--accent); }
+.guide-body strong { color: var(--ink); font-weight: 600; }
+.guide-body h2, .guide-body h3 {
+  font-family: var(--serif);
+  font-weight: 400;
+  color: var(--ink);
+  line-height: 1.15;
+  scroll-margin-top: 84px;  /* clear the sticky top bar when an #anchor is followed */
+}
+.guide-body h2 { font-size: 30px; margin: 1.9em 0 0.5em; }
+.guide-body h3 { font-size: 22px; margin: 1.6em 0 0.4em; }
+.guide-body ul, .guide-body ol { margin: 0 0 1em; padding-left: 1.4em; }
+.guide-body li + li { margin-top: 0.35em; }
+.guide-body blockquote {
+  margin: 1.2em 0;
+  padding: 10px 18px;
+  background: var(--paper-2);
+  border-left: 3px solid var(--accent);
+  border-radius: 2px;
+}
+.guide-body blockquote > :last-child { margin-bottom: 0; }
+.guide-body hr { border: 0; border-top: 1px solid var(--paper-rule); margin: 2em 0; }
+.guide-body code {
+  font-family: var(--mono);
+  font-size: 0.88em;
+  background: var(--paper-2);
+  padding: 1px 5px;
+  border-radius: 2px;
+}
+.guide-body pre {
+  margin: 1.2em 0;
+  padding: 12px 16px;
+  overflow-x: auto;
+  background: var(--paper-2);
+  border: 1px solid var(--paper-rule);
+  border-radius: 2px;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.guide-body pre code { background: none; padding: 0; font-size: inherit; }
+
+/* Tables scroll inside .table-scroll (base.html: overflow-x: auto), so a wide table never
+   widens the page; min-width keeps the columns from being squeezed instead. */
+.guide-body .table-scroll {
+  margin: 1.4em 0;
+  border: 1px solid var(--paper-rule);
+  border-radius: 2px;
+}
+.guide-body table {
+  width: 100%;
+  min-width: 560px;
+  border-collapse: collapse;
+  font-size: 13.5px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+.guide-body th, .guide-body td {
+  padding: 9px 12px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--paper-rule);
+}
+.guide-body thead th {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  font-weight: 500;
+  background: var(--paper-2);
+  border-bottom: 1px solid var(--paper-rule-2);
+}
+.guide-body tbody tr:last-child td { border-bottom: 0; }
+
+.guide-note { margin-top: 36px; }
+
+@media (max-width: 620px) {
+  .guide-head h1 { font-size: 34px; }
+  .guide-body { font-size: 16px; }
+  .guide-body h2 { font-size: 25px; }
+  .guide-body h3 { font-size: 20px; }
+}

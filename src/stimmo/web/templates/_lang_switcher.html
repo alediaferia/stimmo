@@ -4,12 +4,12 @@
 <div class="lang-switcher">
   <form method="post" action="/set-lang" style="display:inline">
     <input type="hidden" name="lang" value="it">
-    <input type="hidden" name="next" value="{{ "/" + "it" + "/" + _cur_path.split("/")[2:] | join("/") if _cur_path.startswith("/" + lang + "/") else "/it/" }}">
+    <input type="hidden" name="next" value="{{ "/it/" if "it" not in hreflang_alternates else ("/" + "it" + "/" + _cur_path.split("/")[2:] | join("/") if _cur_path.startswith("/" + lang + "/") else "/it/") }}">
     <button type="submit" class="lang-pill{% if lang == 'it' %} active{% endif %}">IT</button>
   </form>
   <form method="post" action="/set-lang" style="display:inline">
     <input type="hidden" name="lang" value="en">
-    <input type="hidden" name="next" value="{{ "/" + "en" + "/" + _cur_path.split("/")[2:] | join("/") if _cur_path.startswith("/" + lang + "/") else "/en/" }}">
+    <input type="hidden" name="next" value="{{ "/en/" if "en" not in hreflang_alternates else ("/" + "en" + "/" + _cur_path.split("/")[2:] | join("/") if _cur_path.startswith("/" + lang + "/") else "/en/") }}">
     <button type="submit" class="lang-pill{% if lang == 'en' %} active{% endif %}">EN</button>
   </form>
 </div>
