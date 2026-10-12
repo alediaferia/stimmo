@@ -293,6 +293,10 @@ REPORT_ISSUE_URL = (
     "https://github.com/alediaferia/stimmo/issues/new?template=correzione-contenuti.yml"
 )
 
+# The editorial guide the Italian calculator and result page link to (see web/app.py's
+# costs_guide_link): linked only once the guide's file exists in the content directory.
+COSTS_GUIDE_SLUG = "spese-nascoste-acquisto-casa-milano"
+
 # Proper-noun titles of the cited sources: shown as written, never translated.
 SOURCES: tuple[tuple[str, str], ...] = (
     (

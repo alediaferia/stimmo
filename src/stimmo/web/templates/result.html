@@ -150,7 +150,9 @@
     {% set form_action = costs.calculator_url %}
     {% include "_costs_form.html" %}
   </details>
-  <p class="costs-assume" style="margin:12px 0 0"><a href="{{ costs.calculator_url }}#method">{% trans %}How this is calculated{% endtrans %} →</a></p>
+  {# Italian only, and only once the guide's file exists; the anchor text is the guide's own h1 (content, not a UI string). #}
+  {% set guide_link = costs_guide_link(lang) %}
+  <p class="costs-assume" style="margin:12px 0 0"><a href="{{ costs.calculator_url }}#method">{% trans %}How this is calculated{% endtrans %} →</a>{% if guide_link %} · <a href="{{ guide_link.url }}">{{ guide_link.h1 }} →</a>{% endif %}</p>
 </div>
 {% endif %}
 
