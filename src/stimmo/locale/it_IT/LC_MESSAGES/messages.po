@@ -581,9 +581,8 @@ msgid "IVA on works and contingency (%(rate)s)"
 msgstr "IVA su lavori e imprevisti (%(rate)s)"
 
 #: src/stimmo/web/labels.py:244
-#, fuzzy
 msgid "Technical fees and filings (incl. CILA, IVA included)"
-msgstr "Spese tecniche e pratiche edilizie (CILA inclusa)"
+msgstr "Spese tecniche e pratiche (CILA compresa, IVA inclusa)"
 
 #: src/stimmo/web/labels.py:246
 msgid "main residence"
@@ -770,6 +769,12 @@ msgid ""
 "value of the contract net of those goods, and materials you buy yourself "
 "are at %(ordinary)s. The IVA shown can therefore be an underestimate."
 msgstr ""
+"Su lavori e imprevisti l'IVA è applicata in misura fissa al %(rate)s. "
+"Però una parte della ristrutturazione può essere al %(ordinary)s. I beni "
+"significativi (infissi, caldaie, sanitari e simili) hanno l'aliquota "
+"agevolata solo fino al valore dei lavori al netto dei beni stessi. I "
+"materiali che acquisti direttamente sono al %(ordinary)s. L'IVA indicata "
+"può quindi essere sottostimata."
 
 #: src/stimmo/web/labels.py:384
 #, python-format
@@ -884,14 +889,14 @@ msgid "Not included"
 msgstr "Non incluso"
 
 #: src/stimmo/web/templates/_costs_breakdown.html:52
-#, fuzzy
 msgid ""
 "condominium arrears and works already approved, IMU and TARI, a late CILA"
 " or sanatoria fees, IVA at the standard rate on part of the renovation "
 "works."
 msgstr ""
-"arretrati condominiali e lavori già deliberati, IMU e TARI, una CILA "
-"tardiva o gli oneri di sanatoria."
+"arretrati condominiali e lavori già deliberati, IMU e TARI, sanzioni per "
+"CILA tardiva o oneri di sanatoria, IVA ad aliquota ordinaria su parte dei"
+" lavori di ristrutturazione."
 
 #: src/stimmo/web/templates/_costs_breakdown.html:52
 msgid "The full list"
@@ -990,14 +995,14 @@ msgid "Per year"
 msgstr "All'anno"
 
 #: src/stimmo/web/templates/_costs_breakdown.html:146
-#, fuzzy
 msgid ""
 "A deduction from your income tax, spread over ten years. The cap on total"
 " deductions for higher incomes (art. 16-ter TUIR; from 2027, art. 18 of "
 "D.Lgs. 117/2026) is not modelled."
 msgstr ""
-"È una detrazione IRPEF, ripartita in dieci anni. Il tetto alle detrazioni"
-" complessive per i redditi più alti (art. 16-ter TUIR) non è considerato."
+"Una detrazione IRPEF, ripartita in dieci anni. Il calcolo non considera "
+"il tetto alle detrazioni complessive per i redditi più alti (art. 16-ter "
+"TUIR; dal 2027, art. 18 del D.Lgs. 117/2026)."
 
 #: src/stimmo/web/templates/_costs_breakdown.html:150
 msgid ""
@@ -2080,6 +2085,10 @@ msgid ""
 "works (significant goods beyond the reduced-rate limit, materials you buy"
 " yourself) is not included either."
 msgstr ""
+"Non è inclusa nemmeno l'IVA ad aliquota ordinaria del %(iva_ordinary)s su"
+" parte dei lavori di ristrutturazione. Si tratta dei beni significativi "
+"oltre il limite dell'aliquota agevolata e dei materiali che acquisti "
+"direttamente."
 
 #: src/stimmo/web/templates/costs.html:102
 #: src/stimmo/web/templates/result.html:153
@@ -2444,6 +2453,21 @@ msgid ""
 "restoration, conservative rehabilitation and rebuilding works the reduced"
 " rate applies in full."
 msgstr ""
+"I lavori di ristrutturazione sulle abitazioni hanno l'IVA agevolata al "
+"%(renovation_iva)s. La norma è l'art. 7, comma 1, lettera b della legge "
+"488/1999. Dal 1° gennaio 2027 è l'art. 35, comma 4 e tabella A, parte IV,"
+" n. 121 del D.Lgs. 10/2026, testo unico IVA. Per la manutenzione "
+"ordinaria e straordinaria vale una regola sui «beni significativi». Sono "
+"quelli elencati nel decreto ministeriale del 29 dicembre 1999: ascensori,"
+" infissi, caldaie, videocitofoni, apparecchiature di condizionamento, "
+"sanitari e rubinetteria da bagno, impianti di sicurezza. Se forniti "
+"nell'ambito dell'appalto, hanno l'aliquota agevolata solo fino al valore "
+"complessivo della prestazione al netto dei beni stessi. L'eccedenza è "
+"soggetta al %(iva_ordinary)s. Sono al %(iva_ordinary)s anche i materiali "
+"acquistati direttamente dal committente e i beni forniti da un soggetto "
+"diverso dall'impresa esecutrice. Lo stesso vale per le prestazioni "
+"professionali. Per gli interventi di restauro, risanamento conservativo e"
+" ristrutturazione edilizia l'aliquota agevolata si applica per intero."
 
 #: src/stimmo/web/templates/costs.html:147
 #, python-format
@@ -2454,6 +2478,12 @@ msgid ""
 "from a listing and are not guessed: the IVA shown can therefore be an "
 "underestimate. The technical fees range is taken as including IVA."
 msgstr ""
+"Questo calcolo applica in misura fissa il %(renovation_iva)s a lavori e "
+"imprevisti. Da un annuncio non si possono ricavare la quota di beni "
+"significativi nell'appalto né il regime in cui ricadono i lavori. "
+"Quest'ultima è una valutazione che spetta a un tecnico. Il calcolo non fa"
+" ipotesi su questi due aspetti, quindi l'IVA indicata può essere "
+"sottostimata. La forbice delle spese tecniche si intende IVA inclusa."
 
 #: src/stimmo/web/templates/costs.html:149
 msgid "Bonus ristrutturazione"
