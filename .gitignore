@@ -29,10 +29,15 @@ src/stimmo/data/assets/omi-*/
 # exception is var/content/.gitkeep: tracked only so the directory — and the
 # Dockerfile's optional COPY of neighborhoods.json alongside it — exist for a
 # plain `docker build .` with no content present.
+# The guides (data/guides.py) are licensed editorial content too: var/content/guides/ is
+# tracked as an empty directory (.gitkeep) for the same reason, and its Markdown files never are.
 var/*
 !var/content/
 var/content/*
 !var/content/.gitkeep
+!var/content/guides/
+var/content/guides/*
+!var/content/guides/.gitkeep
 
 # Claude Code (and other agent CLIs) — session-scoped or personal, never share.
 # Shared, portable config lives in .claude/settings.json and .claude/agents/ (committed).
