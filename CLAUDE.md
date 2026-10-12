@@ -148,6 +148,30 @@ translate colloquial Milan neighbourhood names — which do not appear anywhere 
   why a "staggered launch" measured through this gate does not produce a clean experiment.
   `chiaravalle` is gated today: zone R2 has no OMI quotations, so its price band renders empty.
 
+- **Guides.** `/it/guide/{slug}` serves Markdown from `$STIMMO_CONTENT_DIR/guides/{slug}.md`, in the
+  same private `stimmo-content` repo and baked into the image at release like the blurbs
+  (`var/content/guides/` is tracked only for its `.gitkeep`; the Markdown is git-ignored).
+  - `data/guides.py` parses the file (front-matter rules and stable error codes in its docstring;
+    line 1 must be `---`, an unknown key is an error, a malformed file raises). `web/guide_view.py`
+    renders it with `markdown-it-py`: raw HTML is escaped, only `#anchor`, `/it/…` and `https://`
+    links keep their `<a>`, and a link to a guide whose file does not exist is plain text, so
+    publishing order does not matter. `guide.html` adds the Article/BreadcrumbList JSON-LD and a
+    correction note linking to the `correzione-contenuti.yml` issue form.
+  - **No file, no page.** An absent file is a plain 404 and sitemap membership is the file's
+    existence; there is no blurb-style gate. With no content directory (a public clone) there are
+    no guides at all.
+  - **IT only by construction.** The route is registered with no `en` suffix, so there is no EN
+    alternate and the sitemap carries the IT `<loc>` alone; `/en/guide/…`, `/it/guide` and
+    `/it/guide/` are 404.
+  - `scripts/check_guides.py DIR` runs in the release workflow over the content repo's
+    `content/guides/` before it is staged (and nothing else is staged). It reuses the runtime parser
+    and also fails on an `updated` date more than a day ahead and on an internal link that is not
+    `/it/`, a sitemap path or `/it/guide/{slug}`. It prints only `<file>: <CODE> (line N)`, never
+    source text, because run logs are public.
+  - `costs_guide_link()` (`web/app.py`) links the IT calculator and result page to the guide named
+    by `costs_view.COSTS_GUIDE_SLUG` once its file exists. No neighbourhood page links to a guide;
+    `tests/test_guides.py` enforces it.
+
 SEO strategy, Search Console tooling and competitive research live in the private
 `stimmo-growth` repo — deliberately not here. Keep strategy, keyword research and traffic data out
 of this repository.
