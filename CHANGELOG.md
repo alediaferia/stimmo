@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 First public release. Milan-only OMI fair-price estimator with FastAPI + Jinja
 front end, OSM amenity counting via Overpass, and Nominatim geocoding.
 
+## v0.23.0 (2026-10-13)
+
+### Feat
+
+- **web**: disclose AI assistance on guides
+- **web**: link IT calculator to its guide
+- **web**: serve guides at /it/guide/{slug}
+- **data**: parse guides from the content dir
+- **costs**: disclose partial renovation VAT
+- **web**: add env-gated interest button
+- **web**: add purchase-cost calculator pages
+- **mcp**: add estimate_purchase_costs tool
+- **costs**: add purchase-cost calculator core
+
+### Fix
+
+- **costs**: cite primary law for the bonus
+- **ci**: set up uv before the overlay is applied
+
 ## v0.22.2 (2026-10-11)
 
 ### Fix
