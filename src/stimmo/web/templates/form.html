@@ -261,10 +261,10 @@
   const map = L.map('zone-map', { zoomControl: true, scrollWheelZoom: false, attributionControl: false })
     .setView([45.4642, 9.19], 12);
 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png{% if carto_api_key() %}?key={{ carto_api_key() }}{% endif %}', {
     subdomains: 'abcd', maxZoom: 19,
   }).addTo(map);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png{% if carto_api_key() %}?key={{ carto_api_key() }}{% endif %}', {
     subdomains: 'abcd', maxZoom: 19, opacity: 0.85,
   }).addTo(map);
 
