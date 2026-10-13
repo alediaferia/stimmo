@@ -162,83 +162,83 @@ msgstr ""
 msgid "Premium — high-end or structural"
 msgstr ""
 
-#: src/stimmo/web/app.py:1200
+#: src/stimmo/web/app.py:1314
 msgid "Invalid import request"
 msgstr ""
 
-#: src/stimmo/web/app.py:1206
+#: src/stimmo/web/app.py:1320
 msgid "Payload too large"
 msgstr ""
 
-#: src/stimmo/web/app.py:1209
+#: src/stimmo/web/app.py:1323
 msgid "Malformed import payload"
 msgstr ""
 
-#: src/stimmo/web/app.py:1225
+#: src/stimmo/web/app.py:1339
 msgid "Missing source or HTML content"
 msgstr ""
 
-#: src/stimmo/web/app.py:1228
+#: src/stimmo/web/app.py:1342
 msgid "Pasted HTML too large"
 msgstr ""
 
-#: src/stimmo/web/app.py:1236
+#: src/stimmo/web/app.py:1350
 msgid "Could not find listing data in pasted HTML"
 msgstr ""
 
-#: src/stimmo/web/app.py:1241
+#: src/stimmo/web/app.py:1355
 msgid "Could not parse listing data"
 msgstr ""
 
-#: src/stimmo/web/app.py:1245
+#: src/stimmo/web/app.py:1359
 msgid "Could not locate listing fields in pasted data"
 msgstr ""
 
-#: src/stimmo/web/app.py:1257
+#: src/stimmo/web/app.py:1371
 msgid "Bookmarklet not available"
 msgstr ""
 
-#: src/stimmo/web/app.py:1261
+#: src/stimmo/web/app.py:1375
 msgid "stimmo: could not find listing data on this page"
 msgstr ""
 
-#: src/stimmo/web/app.py:1315
+#: src/stimmo/web/app.py:1429
 msgid "OMI low"
 msgstr ""
 
-#: src/stimmo/web/app.py:1316
+#: src/stimmo/web/app.py:1430
 msgid "Ask low"
 msgstr ""
 
-#: src/stimmo/web/app.py:1317
+#: src/stimmo/web/app.py:1431
 msgid "Ask mid"
 msgstr ""
 
-#: src/stimmo/web/app.py:1318
+#: src/stimmo/web/app.py:1432
 msgid "OMI high"
 msgstr ""
 
-#: src/stimmo/web/app.py:1319
+#: src/stimmo/web/app.py:1433
 msgid "Ask high"
 msgstr ""
 
-#: src/stimmo/web/app.py:1410
+#: src/stimmo/web/app.py:1524
 #, python-format
 msgid "Geocoding failed: %(e)s"
 msgstr ""
 
-#: src/stimmo/web/app.py:1414 src/stimmo/web/app.py:1503
-#: src/stimmo/web/app.py:1548
+#: src/stimmo/web/app.py:1528 src/stimmo/web/app.py:1617
+#: src/stimmo/web/app.py:1662
 msgid "Address is outside the Milano comune — no OMI zone."
 msgstr ""
 
-#: src/stimmo/web/app.py:1453 src/stimmo/web/app.py:1510
-#: src/stimmo/web/app.py:1555
+#: src/stimmo/web/app.py:1567 src/stimmo/web/app.py:1624
+#: src/stimmo/web/app.py:1669
 #, python-format
 msgid "OMI lookup failed: %(e)s"
 msgstr ""
 
-#: src/stimmo/web/app.py:1498 src/stimmo/web/app.py:1541
+#: src/stimmo/web/app.py:1612 src/stimmo/web/app.py:1655
 msgid "Invalid or expired share link."
 msgstr ""
 
@@ -315,57 +315,57 @@ msgstr ""
 msgid "Rate set for over 1 year at the outset (typically fixed)"
 msgstr ""
 
-#: src/stimmo/web/costs_view.py:354
+#: src/stimmo/web/costs_view.py:358
 msgid "prima casa"
 msgstr ""
 
-#: src/stimmo/web/costs_view.py:354
+#: src/stimmo/web/costs_view.py:358
 msgid "not prima casa"
 msgstr ""
 
-#: src/stimmo/web/costs_view.py:356
+#: src/stimmo/web/costs_view.py:360
 #, python-format
 msgid "category %(category)s"
 msgstr ""
 
-#: src/stimmo/web/costs_view.py:359
+#: src/stimmo/web/costs_view.py:363
 #, python-format
 msgid "rendita %(value)s"
 msgstr ""
 
-#: src/stimmo/web/costs_view.py:361
+#: src/stimmo/web/costs_view.py:365
 msgid "rendita unknown"
 msgstr ""
 
-#: src/stimmo/web/costs_view.py:364
+#: src/stimmo/web/costs_view.py:368
 #, python-format
 msgid "agency %(pct)s + IVA"
 msgstr ""
 
-#: src/stimmo/web/costs_view.py:364
+#: src/stimmo/web/costs_view.py:368
 msgid "no agency fee"
 msgstr ""
 
-#: src/stimmo/web/costs_view.py:367
+#: src/stimmo/web/costs_view.py:371
 #, python-format
 msgid "mortgage %(amount)s (%(pct)s of the price)"
 msgstr ""
 
-#: src/stimmo/web/costs_view.py:370
+#: src/stimmo/web/costs_view.py:374
 msgid "no mortgage"
 msgstr ""
 
-#: src/stimmo/web/costs_view.py:374
+#: src/stimmo/web/costs_view.py:378
 #, python-format
 msgid "%(years)s-year term at %(rate)s TAN"
 msgstr ""
 
-#: src/stimmo/web/costs_view.py:381
+#: src/stimmo/web/costs_view.py:385
 #, python-format
 msgid "%(tier)s renovation"
 msgstr ""
 
-#: src/stimmo/web/costs_view.py:383
+#: src/stimmo/web/costs_view.py:387
 msgid "no renovation"
 msgstr ""
 
@@ -578,7 +578,7 @@ msgid ""
 "%(years)s years (%(who)s)"
 msgstr ""
 
-#: src/stimmo/web/labels.py:257 src/stimmo/web/templates/costs.html:157
+#: src/stimmo/web/labels.py:257 src/stimmo/web/templates/costs.html:162
 #, python-format
 msgid "subject to the %(year)s budget law"
 msgstr ""
@@ -920,7 +920,7 @@ msgstr ""
 
 #: src/stimmo/web/templates/_costs_form.html:19
 #: src/stimmo/web/templates/form.html:70
-#: src/stimmo/web/templates/result.html:257
+#: src/stimmo/web/templates/result.html:259
 msgid "Surface"
 msgstr ""
 
@@ -1108,7 +1108,7 @@ msgid ""
 msgstr ""
 
 #: src/stimmo/web/templates/about.html:39
-#: src/stimmo/web/templates/costs.html:103
+#: src/stimmo/web/templates/costs.html:108
 #: src/stimmo/web/templates/form.html:244
 #: src/stimmo/web/templates/neighborhood_detail.html:66
 msgid "Methodology"
@@ -1524,6 +1524,7 @@ msgid "Bookmarklet"
 msgstr ""
 
 #: src/stimmo/web/templates/base.html:1175
+#: src/stimmo/web/templates/guide.html:33
 msgid "By"
 msgstr ""
 
@@ -1821,16 +1822,16 @@ msgid ""
 " yourself) is not included either."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:102
-#: src/stimmo/web/templates/result.html:153
+#: src/stimmo/web/templates/costs.html:107
+#: src/stimmo/web/templates/result.html:155
 msgid "How this is calculated"
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:107
+#: src/stimmo/web/templates/costs.html:112
 msgid "Purchase taxes — statute"
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:108
+#: src/stimmo/web/templates/costs.html:113
 #, python-format
 msgid ""
 "On a purchase from a private seller, registro tax is %(registro_prima)s "
@@ -1841,7 +1842,7 @@ msgid ""
 " when the buyer asks for the prezzo-valore rule in the deed."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:109
+#: src/stimmo/web/templates/costs.html:114
 #, python-format
 msgid ""
 "On a purchase from a builder who sells under IVA, IVA applies to the "
@@ -1851,7 +1852,7 @@ msgid ""
 "(%(sostitutiva)s for a prima casa, otherwise)."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:110
+#: src/stimmo/web/templates/costs.html:115
 msgid ""
 "Listings rarely state the rendita catastale, and it is not guessed here. "
 "Without it, registro tax is shown as a range: from the per-deed minimum "
@@ -1860,11 +1861,11 @@ msgid ""
 "enter the rendita."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:112
+#: src/stimmo/web/templates/costs.html:117
 msgid "Mortgage — loan-to-value limits"
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:114
+#: src/stimmo/web/templates/costs.html:119
 #, python-format
 msgid ""
 "A mutuo fondiario is a medium- or long-term loan secured by a first-"
@@ -1878,7 +1879,7 @@ msgid ""
 " guarantees."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:115
+#: src/stimmo/web/templates/costs.html:120
 msgid ""
 "The limit is measured on the value of the mortgaged property, which the "
 "bank assesses in its own appraisal (perizia) and which can be lower than "
@@ -1888,7 +1889,7 @@ msgid ""
 "costs to be paid in cash."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:116
+#: src/stimmo/web/templates/costs.html:121
 #, python-format
 msgid ""
 "The Fondo di garanzia per la prima casa, managed by Consap, is a public "
@@ -1902,7 +1903,7 @@ msgid ""
 "listing, so it is not applied here."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:117
+#: src/stimmo/web/templates/costs.html:122
 #, python-format
 msgid ""
 "Access is reserved to priority categories: married or cohabiting young "
@@ -1917,7 +1918,7 @@ msgid ""
 "cohabiting child or sibling of the applicant with such a disability."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:118
+#: src/stimmo/web/templates/costs.html:123
 #, python-format
 msgid ""
 "The guarantee can be raised to %(consap_high)s of the principal under two"
@@ -1931,18 +1932,18 @@ msgid ""
 "be mentioned for a loan that does not exceed the threshold."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:119
+#: src/stimmo/web/templates/costs.html:124
 msgid ""
 "This is general information about the rules, not an assessment of any "
 "buyer: whether a loan can be granted, for how much and on what guarantees"
 " is for the bank to decide. Check with the bank."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:121
+#: src/stimmo/web/templates/costs.html:126
 msgid "Mortgage — monthly payment"
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:122
+#: src/stimmo/web/templates/costs.html:127
 msgid ""
 "The monthly payment is the standard French amortisation: equal monthly "
 "instalments of principal and interest at a constant rate, payment = P × i"
@@ -1954,7 +1955,7 @@ msgid ""
 " not modelled."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:123
+#: src/stimmo/web/templates/costs.html:128
 #, python-format
 msgid ""
 "The rate is the one you enter. The market averages beside the field are "
@@ -1968,7 +1969,7 @@ msgid ""
 "cannot stand in for a TAN. They are averages, not an offer."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:124
+#: src/stimmo/web/templates/costs.html:129
 msgid ""
 "This is a calculation on the amount, term and rate you choose. It does "
 "not say whether a loan can be granted or sustained: that is for the bank "
@@ -1976,11 +1977,11 @@ msgid ""
 " figure is computed at the rate you entered, today."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:126
+#: src/stimmo/web/templates/costs.html:131
 msgid "Fees — published ranges"
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:127
+#: src/stimmo/web/templates/costs.html:132
 #, python-format
 msgid ""
 "Notary, bank and insurance figures are typical published ranges, shown "
@@ -1990,7 +1991,7 @@ msgid ""
 "current, or that cite no public source, are labelled indicative."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:129
+#: src/stimmo/web/templates/costs.html:134
 #, python-format
 msgid ""
 "Each published range is re-checked against its source on a fixed "
@@ -1999,11 +2000,11 @@ msgid ""
 "current."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:131
+#: src/stimmo/web/templates/costs.html:136
 msgid "Renovation — Milan prices, indicative"
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:132
+#: src/stimmo/web/templates/costs.html:137
 #, python-format
 msgid ""
 "Works are priced per m² by tier, assumed to exclude IVA, then IVA at "
@@ -2013,13 +2014,13 @@ msgid ""
 "follows its stated condition and can always be changed."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:133
+#: src/stimmo/web/templates/costs.html:138
 msgid ""
 "The € per m² figures are Milan prices. This calculator is for homes in "
 "Milan: the same works would cost a different amount elsewhere."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:134
+#: src/stimmo/web/templates/costs.html:139
 msgid ""
 "The source of the € per m² figures does not say whether they include IVA."
 " They are assumed to exclude it, since IVA is added separately here: if "
@@ -2031,15 +2032,15 @@ msgid ""
 "the basis of these figures."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:137
+#: src/stimmo/web/templates/costs.html:142
 msgid "Tier"
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:137
+#: src/stimmo/web/templates/costs.html:142
 msgid "€ per m², Milan, ex IVA (assumed)"
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:146
+#: src/stimmo/web/templates/costs.html:151
 #, python-format
 msgid ""
 "Renovation works on homes carry a reduced IVA of %(renovation_iva)s (art."
@@ -2058,7 +2059,7 @@ msgid ""
 " rate applies in full."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:147
+#: src/stimmo/web/templates/costs.html:152
 #, python-format
 msgid ""
 "This calculator applies a flat %(renovation_iva)s to the works and the "
@@ -2068,11 +2069,11 @@ msgid ""
 "underestimate. The technical fees range is taken as including IVA."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:149
+#: src/stimmo/web/templates/costs.html:154
 msgid "Bonus ristrutturazione"
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:150
+#: src/stimmo/web/templates/costs.html:155
 #, python-format
 msgid ""
 "A deduction from income tax on renovation spend, up to %(bonus_cap)s per "
@@ -2083,41 +2084,43 @@ msgid ""
 " they are part of a larger extraordinary-maintenance intervention."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:153
+#: src/stimmo/web/templates/costs.html:158
 msgid "Paid in"
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:153
+#: src/stimmo/web/templates/costs.html:158
 msgid "Main residence"
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:153
+#: src/stimmo/web/templates/costs.html:158
 msgid "Other homes"
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:166
+#: src/stimmo/web/templates/costs.html:171
 msgid "Sources"
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:172
+#: src/stimmo/web/templates/costs.html:177
+#: src/stimmo/web/templates/guide.html:43
 msgid "Found an error, or want something added?"
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:172
+#: src/stimmo/web/templates/costs.html:177
+#: src/stimmo/web/templates/guide.html:43
 msgid "Open an issue on GitHub"
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:177
+#: src/stimmo/web/templates/costs.html:182
 msgid "Not advice."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:177
+#: src/stimmo/web/templates/costs.html:182
 msgid ""
 "stimmo is not a notary, tax adviser or estate agent. Use these figures to"
 " plan and to ask better questions, not to sign anything."
 msgstr ""
 
-#: src/stimmo/web/templates/costs.html:178
+#: src/stimmo/web/templates/costs.html:183
 msgid "Check whether an asking price is fair"
 msgstr ""
 
@@ -2189,7 +2192,7 @@ msgstr ""
 
 #: src/stimmo/web/templates/form.html:79
 #: src/stimmo/web/templates/result.html:113
-#: src/stimmo/web/templates/result.html:267
+#: src/stimmo/web/templates/result.html:269
 msgid "Asking price"
 msgstr ""
 
@@ -2203,7 +2206,7 @@ msgid "Building &amp; unit"
 msgstr ""
 
 #: src/stimmo/web/templates/form.html:108
-#: src/stimmo/web/templates/result.html:173
+#: src/stimmo/web/templates/result.html:175
 msgid "Adjustments"
 msgstr ""
 
@@ -2349,6 +2352,19 @@ msgstr ""
 
 #: src/stimmo/web/templates/form.html:385
 msgid "Estimating… (fetching amenities)"
+msgstr ""
+
+#: src/stimmo/web/templates/guide.html:32
+#, python-format
+msgid "Updated on %(date)s"
+msgstr ""
+
+#: src/stimmo/web/templates/guide.html:46
+msgid ""
+"This guide was written with significant help from an AI language model. "
+"We checked the sources it cites as carefully as we could, but "
+"inaccuracies may remain: confirm anything that matters with your notary, "
+"tax adviser or bank, and tell us if you find an error."
 msgstr ""
 
 #: src/stimmo/web/templates/neighborhood_detail.html:2
@@ -2805,7 +2821,7 @@ msgid "Adjusted €/m²"
 msgstr ""
 
 #: src/stimmo/web/templates/result.html:131
-#: src/stimmo/web/templates/result.html:255
+#: src/stimmo/web/templates/result.html:257
 msgid "Asking €/m²"
 msgstr ""
 
@@ -2825,192 +2841,192 @@ msgstr ""
 msgid "Adjust the assumptions"
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:159
+#: src/stimmo/web/templates/result.html:161
 #, python-format
 msgid "Negotiation dossier · %(price)s · coming soon"
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:159
+#: src/stimmo/web/templates/result.html:161
 msgid "not available yet"
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:160
+#: src/stimmo/web/templates/result.html:162
 msgid ""
 "Planned contents: a sensitivity table, the prices at which the verdict "
 "flips, an opening offer and a walk-away price, and a due-diligence "
 "checklist."
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:162
+#: src/stimmo/web/templates/result.html:164
 msgid "I'd want this"
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:163
+#: src/stimmo/web/templates/result.html:165
 msgid "A click only adds one to an anonymous counter."
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:165
+#: src/stimmo/web/templates/result.html:167
 msgid "Not available yet — we're measuring interest. No data collected."
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:174
+#: src/stimmo/web/templates/result.html:176
 msgid "One coefficients file · valuation/adjustments.py"
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:178
+#: src/stimmo/web/templates/result.html:180
 msgid "Factor"
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:194
+#: src/stimmo/web/templates/result.html:196
 msgid "Compound multiplier"
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:200
+#: src/stimmo/web/templates/result.html:202
 msgid "Box auto · flat extra"
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:219
+#: src/stimmo/web/templates/result.html:221
 msgid "Market activity"
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:220
+#: src/stimmo/web/templates/result.html:222
 msgid "context only · not a pricing input"
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:223
+#: src/stimmo/web/templates/result.html:225
 msgid "Milano total last 8 quarters"
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:245
+#: src/stimmo/web/templates/result.html:247
 msgid "Numbers"
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:246
+#: src/stimmo/web/templates/result.html:248
 msgid "The maths in plain sight"
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:249
+#: src/stimmo/web/templates/result.html:251
 msgid "OMI condition"
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:251
+#: src/stimmo/web/templates/result.html:253
 msgid "OMI base"
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:253
+#: src/stimmo/web/templates/result.html:255
 msgid "Adjusted"
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:259
+#: src/stimmo/web/templates/result.html:261
 msgid "OMI rogito range"
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:265
+#: src/stimmo/web/templates/result.html:267
 msgid "Typical ask range"
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:269
+#: src/stimmo/web/templates/result.html:271
 msgid "Δ vs ask mid"
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:278
+#: src/stimmo/web/templates/result.html:280
 msgid "Amenities"
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:283
+#: src/stimmo/web/templates/result.html:285
 msgid "Amenity data unavailable."
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:286
-#: src/stimmo/web/templates/result.html:437
-#: src/stimmo/web/templates/result.html:444
+#: src/stimmo/web/templates/result.html:288
+#: src/stimmo/web/templates/result.html:439
+#: src/stimmo/web/templates/result.html:446
 msgid "Retry amenity lookup"
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:318
+#: src/stimmo/web/templates/result.html:320
 msgid "What this estimate does not cover."
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:318
+#: src/stimmo/web/templates/result.html:320
 msgid ""
 "Spese condominiali, extraordinary works already deliberated, piano nobile"
 " premium, street noise, view, cortile vs giardino — these can drive ±5–10"
 " % within the same building and are invisible to OMI."
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:323
+#: src/stimmo/web/templates/result.html:325
 #, python-format
 msgid "OMI data is %(months)s months old."
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:323
+#: src/stimmo/web/templates/result.html:325
 msgid "Semester "
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:323
+#: src/stimmo/web/templates/result.html:325
 msgid "consider refreshing the bundled data with"
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:332
+#: src/stimmo/web/templates/result.html:334
 msgid "OMI band, not a model"
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:333
+#: src/stimmo/web/templates/result.html:335
 msgid ""
 "Italian per-transaction sale data isn't public. The €/m² Compr min–max "
 "band — built from observed sales by the Agenzia delle Entrate — is the "
 "spine of every estimate."
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:337
+#: src/stimmo/web/templates/result.html:339
 msgid "One file of coefficients"
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:338
+#: src/stimmo/web/templates/result.html:340
 msgid ""
 "Floor, lift, energy, outdoor, era, orientation, amenities — every "
 "multiplier lives in"
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:338
+#: src/stimmo/web/templates/result.html:340
 msgid "No black box, nothing learned, nothing hidden."
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:342
+#: src/stimmo/web/templates/result.html:344
 msgid "Ask-shifted, not rogito"
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:343
+#: src/stimmo/web/templates/result.html:345
 msgid ""
 "Verdicts compare the asking price to an ask-shifted band (rogito +6 %) — "
 "a normal-market premium from listing to closing. ±5 % around it is "
 "\"fair\"."
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:383
-#: src/stimmo/web/templates/result.html:398
+#: src/stimmo/web/templates/result.html:385
+#: src/stimmo/web/templates/result.html:400
 msgid "Copied!"
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:398
+#: src/stimmo/web/templates/result.html:400
 msgid "Copy this link:"
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:415
+#: src/stimmo/web/templates/result.html:417
 msgid "Retrying amenity lookup…"
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:428
+#: src/stimmo/web/templates/result.html:430
 msgid "Recompute estimate with amenity data"
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:439
-#: src/stimmo/web/templates/result.html:446
+#: src/stimmo/web/templates/result.html:441
+#: src/stimmo/web/templates/result.html:448
 #, python-format
 msgid "Still unavailable after %(n)s attempts."
 msgstr ""
 
-#: src/stimmo/web/templates/result.html:468
+#: src/stimmo/web/templates/result.html:470
 msgid "Property"
 msgstr ""
 

@@ -43,6 +43,13 @@ RUN useradd -r -s /bin/false stimmo
 # can read the result without a separate chmod step.
 COPY --chown=stimmo:stimmo var/content/.gitkeep var/content/neighborhoods.jso[n] /app/var/content/
 
+# The editorial guides (src/stimmo/data/guides.py) travel the same way, as a directory of
+# Markdown files. A directory source needs no optional-glob idiom: var/content/guides/ always
+# exists, because its .gitkeep is tracked, and the release workflow stages the validated
+# *.md files into it. It is a COPY of its own, not folded into the line above, so that line
+# stays exactly as it was.
+COPY --chown=stimmo:stimmo var/content/guides/ /app/var/content/guides/
+
 USER stimmo
 
 ENV PATH="/app/.venv/bin:$PATH"

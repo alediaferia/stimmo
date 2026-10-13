@@ -16,6 +16,7 @@ from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
 from starlette.requests import Request
 
+from stimmo.data import guides as guides_module
 from stimmo.data import neighborhoods as nb_module
 from stimmo.data import omi, zones
 from stimmo.web import app as app_module
@@ -462,9 +463,11 @@ def empty_content_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """
     monkeypatch.setenv("STIMMO_CONTENT_DIR", str(tmp_path))
     nb_module._neighborhoods_with_content.cache_clear()
+    guides_module.clear_cache()
     _sitemap_xml.cache_clear()
     yield tmp_path
     nb_module._neighborhoods_with_content.cache_clear()
+    guides_module.clear_cache()
     _sitemap_xml.cache_clear()
 
 
@@ -513,6 +516,27 @@ class TestSitemapRegressionSnapshot:
         assert len(locs) == 100
         assert f"https://stimmo.it/it/milano/{n.slug_it}-prezzi-al-mq" in locs
         assert f"https://stimmo.it/en/milan/{n.slug_en}-property-prices" in locs
+
+    def test_a_guide_adds_exactly_its_italian_url(
+        self, client: TestClient, empty_content_dir: Path
+    ):
+        # Guides are Italian only: one URL each, never an English twin, and none without a file.
+        guides_dir = empty_content_dir / "guides"
+        guides_dir.mkdir()
+        (guides_dir / "una-guida.md").write_text(
+            "---\ntitle: Una guida\n"
+            "description: Una descrizione di prova, lunga abbastanza da superare il minimo.\n"
+            "updated: 2026-10-01\n---\nTesto.\n",
+            encoding="utf-8",
+        )
+        guides_module.clear_cache()
+        _sitemap_xml.cache_clear()
+
+        locs = set(re.findall(r"<loc>(.*?)</loc>", client.get("/sitemap.xml").text))
+
+        assert len(locs) == 99
+        assert "https://stimmo.it/it/guide/una-guida" in locs
+        assert not any("/en/" in loc and "guide" in loc for loc in locs)
 
 
 class TestSeoRouteRegistryContract:
@@ -598,3 +622,12 @@ class TestEveryHtmlEndpointHasASeoDecision:
         registered = {r.endpoint for r in app_module._SEO_ROUTES.values()}
         decided = registered | app_module._SEO_MIRRORED_ENDPOINTS
         assert html_endpoints == decided
+
+    def test_the_guide_page_is_a_registered_italian_only_route(self):
+        # A real SEO decision, not a mirrored fallback: an IT-only page must not advertise an
+        # alternate that 404s (no "en" key), and it needs a sitemap expansion and a lastmod.
+        route = app_module._SEO_ROUTES["guide_detail"]
+        assert route.endpoint == "guide_detail"
+        assert "guide_detail" not in app_module._SEO_MIRRORED_ENDPOINTS
+        assert set(route.suffixes) == {"it"}
+        assert route.lastmod is not None

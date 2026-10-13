@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}{{ guide.title }} — stimmo{% endblock %}
+
+{% block og_meta %}
+<meta name="description" content="{{ guide.description }}">
+<meta property="og:type" content="article">
+{# og:title is the <title> text, character for character. #}
+<meta property="og:title" content="{{ guide.title }} — stimmo">
+<meta property="og:description" content="{{ guide.description }}">
+<meta property="og:image" content="{{ request.base_url }}{{ static_url('og-image.png').lstrip('/') }}">
+<meta property="og:url" content="{{ canonical_url }}">
+<meta property="og:locale" content="{{ locale }}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ guide.title }} — stimmo">
+<meta name="twitter:description" content="{{ guide.description }}">
+<meta name="twitter:image" content="{{ request.base_url }}{{ static_url('og-image.png').lstrip('/') }}">
+{# The guide's own rules live in a static file: base.html carries every other page's CSS inline, and a shared template is not edited for a page family it does not render. #}
+<link rel="stylesheet" href="{{ static_url('guide.css') }}">
+{% endblock %}
+
+{% block json_ld %}
+<script type="application/ld+json">{{ article_ld | tojson }}</script>
+<script type="application/ld+json">{{ breadcrumb_ld | tojson }}</script>
+{% endblock %}
+
+{% block content %}
+<div class="guide">
+  <header class="guide-head">
+    <h1>{{ guide.h1 }}</h1>
+    <p class="guide-meta">
+      {% set _updated %}<time datetime="{{ guide.updated.isoformat() }}">{{ updated_display }}</time>{% endset %}
+      <span>{% trans date=_updated %}Updated on %(date)s{% endtrans %}</span>
+      <span>{% trans %}By{% endtrans %} <a href="https://github.com/alediaferia" target="_blank" rel="noopener">Alessandro Diaferia</a></span>
+    </p>
+  </header>
+
+  <article class="guide-body">
+    {{ body_html }}
+  </article>
+
+  {# On every guide, so a correction can be reported from any of them; the calculator page carries the same note. #}
+  <div class="note guide-note">
+    {% trans %}Found an error, or want something added?{% endtrans %} <a href="{{ report_issue_url }}" target="_blank" rel="noopener">{% trans %}Open an issue on GitHub{% endtrans %} →</a>
+    {# The AI-assistance disclosure: on unless the guide's front-matter says `ai_assisted: false` (data/guides.py). #}
+    {% if guide.ai_assisted %}
+    <p class="guide-ai-note">{% trans %}This guide was written with significant help from an AI language model. We checked the sources it cites as carefully as we could, but inaccuracies may remain: confirm anything that matters with your notary, tax adviser or bank, and tell us if you find an error.{% endtrans %}</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

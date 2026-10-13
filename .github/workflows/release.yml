@@ -82,6 +82,40 @@ jobs:
             cp "$f" "var/content/$(basename "$f")"
           done
 
+      # uv has to be on the PATH here, unconditionally: the guides step below runs the project's
+      # own parser through it. (The overlay-only setup further down is then redundant, which is
+      # harmless.)
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v8.1.0
+
+      # Editorial guides (src/stimmo/data/guides.py) are Markdown files in the same private
+      # repository, under content/guides/. Only that directory is ever staged; nothing else in
+      # the content repository (drafts included) is. Moving a file into it is what publishes it.
+      # scripts/check_guides.py runs the runtime parser over the directory and resolves every
+      # internal link, so a malformed guide fails the release here, before an image exists, and
+      # not as a startup crash. It prints only `<file>: <ERROR_CODE> (line N)`, never source
+      # text: this repository's run logs are public. A content repository without a guides
+      # directory is the normal case until the first guide is published, and is a no-op.
+      - name: Validate and stage private guides for the image build
+        run: |
+          set -euo pipefail
+          src=stimmo-content/content/guides
+          if [ ! -d "$src" ]; then
+            echo "No guides directory in the content repository; nothing to stage."
+            exit 0
+          fi
+          uv sync --frozen
+          # --frozen: never rewrite uv.lock, which would dirty the tree the overlay step below
+          # insists on being clean.
+          uv run --frozen python scripts/check_guides.py "$src"
+          mkdir -p var/content/guides
+          shopt -s nullglob
+          for f in "$src"/*.md; do
+            # var/content/guides/*.md is never committed (see .gitignore); like
+            # neighborhoods.json this lands in the working copy that `context: .` below sends.
+            cp "$f" "var/content/guides/$(basename "$f")"
+          done
+
       # An optional private overlay may extend the app at release time - a
       # patch series maintained outside this repo, applied to the working tree
       # before the image is built. It is entirely optional: a fork, an

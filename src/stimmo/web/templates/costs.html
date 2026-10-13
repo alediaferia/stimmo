@@ -93,6 +93,11 @@
   <div class="costs-method">
     <p>{% trans %}Condominium arrears and works already approved, IMU and TARI, and anything a conformity check might call for (such as a late CILA or a sanatoria fee) are not included.{% endtrans %}</p>
     <p>{% trans iva_ordinary=costs.method.iva_ordinary %}IVA at the standard rate of %(iva_ordinary)s on part of the renovation works (significant goods beyond the reduced-rate limit, materials you buy yourself) is not included either.{% endtrans %}</p>
+    {# Italian only, and only once the guide's file exists; the anchor text is the guide's own h1 (content, not a UI string). #}
+    {% set guide_link = costs_guide_link(lang) %}
+    {% if guide_link %}
+    <p><a href="{{ guide_link.url }}">{{ guide_link.h1 }} →</a></p>
+    {% endif %}
   </div>
 </div>
 
