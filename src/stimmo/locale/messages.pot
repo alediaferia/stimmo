@@ -2310,6 +2310,14 @@ msgstr ""
 msgid "Updated on %(date)s"
 msgstr ""
 
+#: src/stimmo/web/templates/guide.html:46
+msgid ""
+"This guide was written with significant help from an AI language model. "
+"We checked the sources it cites as carefully as we could, but "
+"inaccuracies may remain: confirm anything that matters with your notary, "
+"tax adviser or bank, and tell us if you find an error."
+msgstr ""
+
 #: src/stimmo/web/templates/neighborhood_detail.html:2
 #: src/stimmo/web/templates/neighborhood_detail.html:4
 #, python-format

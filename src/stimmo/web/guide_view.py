@@ -145,11 +145,20 @@ AUTHOR: dict[str, str] = {
 }
 
 
+# schema.org's own IRI for the IPTC "composite with trained algorithmic media" digital source.
+AI_ASSISTED_SOURCE_TYPE = "https://schema.org/CompositeWithTrainedAlgorithmicMediaDigitalSource"
+
+
 def article_json_ld(guide: Guide, canonical_url: str, organization_id: str) -> dict:
     """schema.org `Article` for a guide. `organization_id` is the `@id` of the Organization
     node that base.html emits on every page. No FAQPage: Google shows FAQ rich results only for
-    authoritative government and health sites."""
-    return {
+    authoritative government and health sites.
+
+    A guide with `ai_assisted` also carries `digitalSourceType`, the CreativeWork property for
+    the nature of a work's source, set to the IPTC value "composite with trained algorithmic
+    media". Fields such as `creativeWorkStatus` say nothing about a work's origin: not used.
+    """
+    article: dict = {
         "@context": "https://schema.org",
         "@type": "Article",
         "headline": guide.title,
@@ -162,6 +171,9 @@ def article_json_ld(guide: Guide, canonical_url: str, organization_id: str) -> d
         "inLanguage": "it-IT",
         "isAccessibleForFree": True,
     }
+    if guide.ai_assisted:
+        article["digitalSourceType"] = AI_ASSISTED_SOURCE_TYPE
+    return article
 
 
 def breadcrumb_json_ld(trail: list[tuple[str, str]]) -> dict:

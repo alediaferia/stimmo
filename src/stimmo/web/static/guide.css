@@ -112,6 +112,7 @@
 .guide-body tbody tr:last-child td { border-bottom: 0; }
 
 .guide-note { margin-top: 36px; }
+.guide-ai-note { margin: 10px 0 0; }
 
 @media (max-width: 620px) {
   .guide-head h1 { font-size: 34px; }

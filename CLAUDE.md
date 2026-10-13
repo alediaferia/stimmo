@@ -157,6 +157,11 @@ translate colloquial Milan neighbourhood names — which do not appear anywhere 
     links keep their `<a>`, and a link to a guide whose file does not exist is plain text, so
     publishing order does not matter. `guide.html` adds the Article/BreadcrumbList JSON-LD and a
     correction note linking to the `correzione-contenuti.yml` issue form.
+  - **AI-assistance disclosure.** Front-matter key `ai_assisted` (optional, default `true`; only the
+    literals `true`/`false`, anything else is `BAD_BOOLEAN`). While true, `guide.html` renders a
+    disclosure under the correction note and the Article JSON-LD carries `digitalSourceType`
+    (`CompositeWithTrainedAlgorithmicMediaDigitalSource`). A human-written guide sets `false`: both
+    disappear. `scripts/check_guides.py` needs no change, it reuses the runtime parser.
   - **No file, no page.** An absent file is a plain 404 and sitemap membership is the file's
     existence; there is no blurb-style gate. With no content directory (a public clone) there are
     no guides at all.

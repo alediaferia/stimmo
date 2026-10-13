@@ -15,6 +15,7 @@ File format::
     description: "Meta description"                                  (50-170 characters)
     published: 2026-10-09                                            (optional; default: updated)
     updated: 2026-10-09
+    ai_assisted: false                                               (optional; default: true)
     ---
     <CommonMark body, no level-1 heading: the H1 comes from the front-matter>
 
@@ -26,6 +27,10 @@ Rules, each with a stable `GuideErrorCode`:
   double quotes, which are stripped. Nothing else from YAML is supported (no multi-line values,
   lists, anchors or comments), so the parser needs no YAML dependency.
 * An unknown key is an error, which catches typos such as `updatd`.
+* `ai_assisted` is `true` or `false` and nothing else (not `yes`, `no`, `True` or `1`), so a
+  value meant to switch the notice off can never be silently read as "on". It decides whether the
+  page shows the AI-assistance disclosure and the matching JSON-LD; a guide written by a human
+  sets it to `false`.
 
 A malformed file raises `GuideError`: it is an operator error, not "no content yet" (the same
 rule as `neighborhoods.json`). `scripts/check_guides.py` runs this same parser at release time,
@@ -56,7 +61,7 @@ DESCRIPTION_MAX = 170
 IGNORED_FILENAMES: frozenset[str] = frozenset({".gitkeep"})
 
 _REQUIRED_KEYS = ("title", "description", "updated")
-_OPTIONAL_KEYS = ("h1", "published")
+_OPTIONAL_KEYS = ("h1", "published", "ai_assisted")
 _KNOWN_KEYS = frozenset(_REQUIRED_KEYS) | frozenset(_OPTIONAL_KEYS)
 
 _KEY_LINE = re.compile(r"^([A-Za-z0-9_-]+):[ \t]*(.*)$")
@@ -85,6 +90,7 @@ class GuideErrorCode(StrEnum):
     BAD_TITLE_LENGTH = "BAD_TITLE_LENGTH"
     BAD_DESCRIPTION_LENGTH = "BAD_DESCRIPTION_LENGTH"
     BAD_DATE = "BAD_DATE"  # `updated` / `published` is not a YYYY-MM-DD date
+    BAD_BOOLEAN = "BAD_BOOLEAN"  # `ai_assisted` is neither `true` nor `false`
     PUBLISHED_AFTER_UPDATED = "PUBLISHED_AFTER_UPDATED"
     EMPTY_BODY = "EMPTY_BODY"
     H1_IN_BODY = "H1_IN_BODY"
@@ -126,6 +132,8 @@ class Guide:
     body_md: str
     # 1-based line of the source file on which `body_md` starts, for diagnostics.
     body_line: int = 1
+    # Whether the page carries the AI-assistance disclosure. On unless the front-matter says no.
+    ai_assisted: bool = True
 
 
 def _unquote(value: str, line: int) -> str:
@@ -145,6 +153,13 @@ def _parse_date(value: str, line: int) -> date:
         return date.fromisoformat(value)
     except ValueError:
         raise GuideError(GuideErrorCode.BAD_DATE, line) from None
+
+
+def _parse_bool(value: str, line: int) -> bool:
+    # Exactly the two YAML spellings; YAML 1.1's yes/no/on/off are refused on purpose.
+    if value not in ("true", "false"):
+        raise GuideError(GuideErrorCode.BAD_BOOLEAN, line)
+    return value == "true"
 
 
 def _first_h1_line(lines: list[str], first_line_no: int) -> int | None:
@@ -228,6 +243,7 @@ def parse_guide(text: str, slug: str) -> Guide:
     if published > updated:
         raise GuideError(GuideErrorCode.PUBLISHED_AFTER_UPDATED, fields["published"][1])
     h1 = fields["h1"][0] if "h1" in fields else title
+    ai_assisted = _parse_bool(*fields["ai_assisted"]) if "ai_assisted" in fields else True
 
     body_lines = lines[closing + 1 :]
     first = next((i for i, line in enumerate(body_lines) if line.strip()), None)
@@ -248,6 +264,7 @@ def parse_guide(text: str, slug: str) -> Guide:
         updated=updated,
         body_md="\n".join(body_lines).rstrip(),
         body_line=body_line,
+        ai_assisted=ai_assisted,
     )
 
 

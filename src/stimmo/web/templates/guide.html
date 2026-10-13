@@ -41,6 +41,10 @@
   {# On every guide, so a correction can be reported from any of them; the calculator page carries the same note. #}
   <div class="note guide-note">
     {% trans %}Found an error, or want something added?{% endtrans %} <a href="{{ report_issue_url }}" target="_blank" rel="noopener">{% trans %}Open an issue on GitHub{% endtrans %} →</a>
+    {# The AI-assistance disclosure: on unless the guide's front-matter says `ai_assisted: false` (data/guides.py). #}
+    {% if guide.ai_assisted %}
+    <p class="guide-ai-note">{% trans %}This guide was written with significant help from an AI language model. We checked the sources it cites as carefully as we could, but inaccuracies may remain: confirm anything that matters with your notary, tax adviser or bank, and tell us if you find an error.{% endtrans %}</p>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

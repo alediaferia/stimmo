@@ -2720,6 +2720,20 @@ msgstr "Stima in corso… (recupero servizi)"
 msgid "Updated on %(date)s"
 msgstr "Aggiornato il %(date)s"
 
+#: src/stimmo/web/templates/guide.html:46
+msgid ""
+"This guide was written with significant help from an AI language model. "
+"We checked the sources it cites as carefully as we could, but "
+"inaccuracies may remain: confirm anything that matters with your notary, "
+"tax adviser or bank, and tell us if you find an error."
+msgstr ""
+"Questa guida è stata scritta con un contributo significativo di un "
+"modello linguistico di intelligenza artificiale. Abbiamo verificato le "
+"fonti citate con la massima cura possibile, ma potrebbero esserci ancora "
+"delle imprecisioni: verifica tutto ciò che è importante con il tuo "
+"notaio, il tuo commercialista o la tua banca, e segnalaci eventuali "
+"errori."
+
 #: src/stimmo/web/templates/neighborhood_detail.html:2
 #: src/stimmo/web/templates/neighborhood_detail.html:4
 #, python-format

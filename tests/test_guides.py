@@ -15,6 +15,7 @@ import re
 import subprocess
 import sys
 from datetime import date
+from html import unescape
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -42,6 +43,15 @@ def _load_script():
 
 
 check_guides = _load_script()
+
+AI_NOTICE = (
+    "This guide was written with significant help from an AI language model. "
+    "We checked the sources it cites as carefully as we could, but inaccuracies may remain: "
+    "confirm anything that matters with your notary, tax adviser or bank, and tell us if you "
+    "find an error."
+)
+AI_NOTICE_CLASS = "guide-ai-note"
+AI_SOURCE_TYPE = "https://schema.org/CompositeWithTrainedAlgorithmicMediaDigitalSource"
 
 IT_CALCULATOR = "/it/costi-acquisto-casa-milano"
 EN_CALCULATOR = "/en/milan/home-buying-costs"
@@ -185,6 +195,27 @@ class TestParser:
         assert g.h1 == g.title
         assert g.published == g.updated == date(2026, 10, 1)
 
+    def test_ai_assisted_defaults_to_true(self):
+        assert parse_guide(guide_text(), "una-guida").ai_assisted is True
+
+    @pytest.mark.parametrize(("value", "expected"), [("true", True), ("false", False)])
+    def test_ai_assisted_takes_a_boolean(self, value: str, expected: bool):
+        assert parse_guide(guide_text(ai_assisted=value), "g").ai_assisted is expected
+
+    @pytest.mark.parametrize(
+        "value", ["yes", "no", "True", "FALSE", "1", "0", "on", "maybe", '"si"', "false false"]
+    )
+    def test_ai_assisted_rejects_anything_but_true_and_false(self, value: str):
+        with pytest.raises(GuideError) as exc:
+            parse_guide(guide_text(ai_assisted=value), "g")
+        assert (exc.value.code, exc.value.line) == (GuideErrorCode.BAD_BOOLEAN, 5)
+
+    def test_ai_assisted_is_not_an_unknown_key_and_cannot_repeat(self):
+        parse_guide(guide_text(extra=("ai_assisted: false",)), "g")
+        with pytest.raises(GuideError) as exc:
+            parse_guide(guide_text(ai_assisted="true", extra=("ai_assisted: false",)), "g")
+        assert exc.value.code == GuideErrorCode.DUPLICATE_KEY
+
     def test_one_pair_of_quotes_is_stripped_and_unquoted_values_work(self):
         g = parse_guide(guide_text(title="Senza virgolette: due punti"), "una-guida")
         assert g.title == "Senza virgolette: due punti"
@@ -273,6 +304,7 @@ _BROKEN: dict[str, tuple[str, GuideErrorCode, int]] = {
         GuideErrorCode.PUBLISHED_AFTER_UPDATED,
         5,
     ),
+    "bad_boolean": (guide_text(ai_assisted="yes"), GuideErrorCode.BAD_BOOLEAN, 5),
     "h1_in_body": (guide_text(body="Intro.\n\n# Titolo\n"), GuideErrorCode.H1_IN_BODY, 8),
     "text_above_front_matter": (
         "NOTE\n\nqualche appunto\n\n" + guide_text(),
@@ -328,6 +360,7 @@ class TestParserErrors:
             "unknown_key",
             "bad_date",
             "published_after_updated",
+            "bad_boolean",
             "h1_in_body",
             "text_above_front_matter",
         )
@@ -521,6 +554,58 @@ class TestRoute:
             )
             assert expected in html
             assert html.index("guide-body") < html.index(expected)  # after the body
+
+    def test_the_ai_notice_is_shown_by_default(self, client: TestClient, content: Content):
+        content.write("x")
+        html = client.get("/it/guide/x").text
+        assert html.count(f'<p class="{AI_NOTICE_CLASS}">') == 1
+        # In the same callout as the correction note, after the body.
+        callout = html[html.index('<div class="note guide-note">') :]
+        assert "correzione-contenuti" in callout and AI_NOTICE_CLASS in callout
+        assert html.index("guide-body") < html.index(AI_NOTICE_CLASS)
+
+    def test_the_ai_notice_is_shown_with_an_explicit_true(
+        self, client: TestClient, content: Content
+    ):
+        content.write("x", ai_assisted="true")
+        assert AI_NOTICE_CLASS in client.get("/it/guide/x").text
+
+    def test_the_ai_notice_is_hidden_when_the_guide_says_so(
+        self, client: TestClient, content: Content
+    ):
+        content.write("x", ai_assisted="false")
+        response = client.get("/it/guide/x")
+        assert response.status_code == 200
+        html = unescape(response.text)
+        assert AI_NOTICE_CLASS not in html
+        with use_locale("it_IT"):
+            assert gettext(AI_NOTICE) not in html
+        assert AI_NOTICE not in html
+        # The correction note is unaffected.
+        assert "correzione-contenuti" in html
+
+    def test_the_ai_notice_is_per_guide(self, client: TestClient, content: Content):
+        content.write("ai")
+        content.write("human", ai_assisted="false")
+        assert AI_NOTICE_CLASS in client.get("/it/guide/ai").text
+        assert AI_NOTICE_CLASS not in client.get("/it/guide/human").text
+
+    def test_a_guide_with_a_bad_ai_assisted_value_is_not_served(
+        self, client: TestClient, content: Content
+    ):
+        content.write("x", ai_assisted="yes")
+        with pytest.raises(GuideError) as exc:
+            client.get("/it/guide/x")
+        assert exc.value.code == GuideErrorCode.BAD_BOOLEAN
+
+    def test_the_ai_notice_is_in_italian(self, client: TestClient, content: Content):
+        content.write("x")
+        with use_locale("it_IT"):
+            italian = gettext(AI_NOTICE)
+        assert italian != AI_NOTICE, "run scripts/translate_po.py: it_IT has no translation"
+        html = unescape(client.get("/it/guide/x").text)
+        assert italian in html
+        assert AI_NOTICE not in html
 
     def test_the_correction_note_is_not_in_the_markdown(self, content: Content):
         # The note is the template's: a guide's own text cannot be what carries it.
@@ -851,6 +936,18 @@ class TestJsonLd:
         assert article["mainEntityOfPage"] == _canonical(html) == "http://testserver/it/guide/x"
         assert article["inLanguage"] == "it-IT"
         assert article["isAccessibleForFree"] is True
+
+    def test_an_ai_assisted_guide_says_so_in_digital_source_type(
+        self, client: TestClient, content: Content
+    ):
+        content.write("x")
+        article = _ld_blocks(client.get("/it/guide/x").text)["Article"]
+        assert article["digitalSourceType"] == AI_SOURCE_TYPE
+
+    def test_a_human_guide_has_no_digital_source_type(self, client: TestClient, content: Content):
+        content.write("x", ai_assisted="false")
+        article = _ld_blocks(client.get("/it/guide/x").text)["Article"]
+        assert "digitalSourceType" not in article
 
     def test_the_author_is_the_one_the_calculator_page_names(
         self, client: TestClient, content: Content
