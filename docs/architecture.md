@@ -105,10 +105,10 @@ The `gauge` dict shape:
 
 ```python
 {
-    "omi_band": {"left": float, "width": float},   # % positions
+    "omi_band": {"left": float, "width": float},  # % positions
     "ask_band": {"left": float, "width": float},
     "ticks": [{"label": str, "value": float, "x": float}, ...],  # 5 ticks
-    "asking_x": float,                              # marker position
+    "asking_x": float,  # marker position
 }
 ```
 

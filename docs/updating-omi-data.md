@@ -54,7 +54,7 @@ It also logs any zone codes that appeared or disappeared vs. the previous semest
 Open [src/stimmo/data/omi.py](../src/stimmo/data/omi.py) and update line 17:
 
 ```python
-SEMESTER = "2025-2"   # ← new value
+SEMESTER = "2025-2"  # ← new value
 ```
 
 ## Step 5 — Verify

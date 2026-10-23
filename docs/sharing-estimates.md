@@ -87,11 +87,11 @@ It is incremented **in the `share_view` / `og_image` handlers**, not the dispatc
 ```python
 from stimmo.web import share
 
-token = share.encode(prop, lat, lon, amenity)   # prop: Property, amenity: AmenityScore
+token = share.encode(prop, lat, lon, amenity)  # prop: Property, amenity: AmenityScore
 print(f"http://127.0.0.1:8000/it/s/{token}")
 print(f"http://127.0.0.1:8000/og/{token}.png")
 
-prop2, lat2, lon2, amen2 = share.decode(token)   # round-trips; raises ShareTokenError if bad
+prop2, lat2, lon2, amen2 = share.decode(token)  # round-trips; raises ShareTokenError if bad
 ```
 
 To preview the card image directly, call `ogimage.render(est, prop)` with an `Estimate` from `engine.estimate(...)` and write the returned bytes to a `.png`.
