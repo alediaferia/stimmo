@@ -246,9 +246,10 @@ Reuse the legacy payload shape so one decoder serves both paths. Define a shared
 
 ```python
 # share.py — refactor the existing encode/decode into payload <-> blob primitives
-def _payload_dict(prop, lat, lon, amenity) -> dict: ...        # the dict at share.py:42
-def _compress_payload(payload: dict) -> bytes: ...             # zlib(level=9) of compact json
-def _decompress_payload(blob: bytes) -> dict: ...              # inverse, with size guard
+def _payload_dict(prop, lat, lon, amenity) -> dict: ...  # the dict at share.py:42
+def _compress_payload(payload: dict) -> bytes: ...  # zlib(level=9) of compact json
+def _decompress_payload(blob: bytes) -> dict: ...  # inverse, with size guard
+
 
 # Legacy token = b'\x01' + blob, base64url.  Store blob = the SAME `blob` (no version byte).
 ```
@@ -272,13 +273,15 @@ A narrow, swappable interface (mirrors the `Cache` protocol pattern).
 
 ```python
 class ShareStore(Protocol):
-    def put(self, blob: bytes) -> str: ...           # returns id; idempotent (D3)
-    def get(self, id: str) -> bytes | None: ...      # bumps last_seen; None if absent
+    def put(self, blob: bytes) -> str: ...  # returns id; idempotent (D3)
+    def get(self, id: str) -> bytes | None: ...  # bumps last_seen; None if absent
+
 
 class SqliteShareStore:
     def __init__(self, path: str | Path, *, id_len: int = 8, clock=time.time) -> None: ...
     def put(self, blob: bytes) -> str: ...
     def get(self, id: str) -> bytes | None: ...
+
     # internal: _connect() -> sqlite3.Connection with pragmas; _id_for(blob) -> str
 ```
 
@@ -321,10 +324,10 @@ def resolve(identifier: str, store: ShareStore) -> tuple[Property, float, float,
 - **Write path** (`_build_result_context`, lines 545–549):
   ```python
   blob = _share.encode_blob(prop, lat, lon, amen)
-  share_id = _share_store.put(blob)              # NEW
+  share_id = _share_store.put(blob)  # NEW
   base = str(request.base_url).rstrip("/")
-  share_url = f"{base}/s/{share_id}"             # NEW: no /{lang}/ (D4)
-  og_image_url = f"{base}/og/{share_id}.png"     # NEW: id, not token
+  share_url = f"{base}/s/{share_id}"  # NEW: no /{lang}/ (D4)
+  og_image_url = f"{base}/og/{share_id}.png"  # NEW: id, not token
   ```
   Keep returning `token`/`share_url`/`og_image_url` keys for the template.
 - **New route** `GET /s/{id}` (lang-free, D4):
@@ -389,11 +392,13 @@ class _AmenityCache:
     def get(self, key) -> AmenityScore | None: ...
     def put(self, key, value: AmenityScore) -> None: ...
 
+
 def fetch_amenities(lat: float, lon: float, *, _cache=_default_cache) -> AmenityScore:
-    key = (round(lat, 3), round(lon, 3))   # ~111 m grid -> coalesces near-identical opens
+    key = (round(lat, 3), round(lon, 3))  # ~111 m grid -> coalesces near-identical opens
     hit = _cache.get(key)
-    if hit is not None: return hit
-    score = _fetch_amenities_uncached(lat, lon)   # current body
+    if hit is not None:
+        return hit
+    score = _fetch_amenities_uncached(lat, lon)  # current body
     _cache.put(key, score)
     return score
 ```
