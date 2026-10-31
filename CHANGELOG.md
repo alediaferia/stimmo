@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 First public release. Milan-only OMI fair-price estimator with FastAPI + Jinja
 front end, OSM amenity counting via Overpass, and Nominatim geocoding.
 
+## v0.23.4 (2026-10-31)
+
 ## v0.23.3 (2026-10-24)
 
 ## v0.23.2 (2026-10-22)
