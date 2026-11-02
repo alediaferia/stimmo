@@ -5,6 +5,7 @@ import json
 from datetime import date
 from typing import Any, Literal
 
+from mcp.server.mcpserver.exceptions import ToolError as MCPToolError
 from pydantic import ValidationError
 
 from stimmo.costs import calculator as costs_calculator
@@ -43,7 +44,7 @@ _GEOCODE_TTL = 7 * 24 * 3600
 _AMENITY_TTL = 24 * 3600
 
 
-class ToolError(Exception):
+class ToolError(MCPToolError):
     """Produces isError:true with a structured {code, message} payload."""
 
     def __init__(self, code: str, message: str) -> None:

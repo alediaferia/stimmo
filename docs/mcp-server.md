@@ -44,7 +44,7 @@ npx @modelcontextprotocol/inspector
 │ uvicorn (stimmo-web → stimmo.web.app:application)           │
 │                                                             │
 │  Top-level ASGI dispatcher (web/app.py)                     │
-│   ├── exact /mcp    → RateLimitMiddleware → FastMCP app     │
+│   ├── exact /mcp    → RateLimitMiddleware → MCPServer app   │
 │   │                     └─ tools / resources / prompts      │
 │   └── everything else  → FastAPI app                        │
 │         ├── /{lang}/...      — existing HTML routes         │
@@ -52,7 +52,7 @@ npx @modelcontextprotocol/inspector
 └─────────────────────────────────────────────────────────────┘
 ```
 
-Transport: **Streamable HTTP** (MCP spec ≥ 2025-03-26). Not stdio, not the deprecated HTTP+SSE transport. FastMCP is configured with `stateless_http=True`.
+Transport: **Streamable HTTP** (MCP spec ≥ 2025-03-26). Not stdio, not the deprecated HTTP+SSE transport. `MCPServer` is configured with `stateless_http=True`.
 
 ### Why a custom ASGI dispatcher, not `app.mount("/mcp", ...)`
 
@@ -60,13 +60,13 @@ Streamable HTTP is a single endpoint (`GET` for SSE, `POST` for JSON-RPC) — th
 
 The reason we don't use `app.mount("/mcp", ...)`: Starlette's `Mount` is a prefix router that strips the matched prefix and forwards the remainder to the inner app. For a request to bare `/mcp`, the remainder is empty and Starlette issues a `307` redirect to `/mcp/`. Not every MCP client follows POST redirects (the spec doesn't require them to), so we'd be silently breaking some clients on session establishment. [web/app.py](../src/stimmo/web/app.py) sidesteps this with a 4-line top-level `application` callable that exact-matches `/mcp` and forwards the scope verbatim. The `stimmo-web` entry point ([web/server.py](../src/stimmo/web/server.py)) points uvicorn at `stimmo.web.app:application`.
 
-The FastMCP session manager requires `.run()` from an async context, so it is started/stopped from the FastAPI `lifespan` and the underlying streamable app is built **once** ([mcp/server.py](../src/stimmo/mcp/server.py)) — the session manager is a stable singleton across the process lifetime.
+The MCPServer session manager requires `.run()` from an async context, so it is started/stopped from the FastAPI `lifespan` and the underlying streamable app is built **once** ([mcp/server.py](../src/stimmo/mcp/server.py)) — the session manager is a stable singleton across the process lifetime.
 
 ## Module layout
 
 ```
 src/stimmo/mcp/
-├── server.py       # FastMCP() instance, build_mcp_app() factory
+├── server.py       # MCPServer() instance, build_mcp_app() factory
 ├── tools.py        # async tool functions; thin wrappers over engine/data/costs
 ├── resources.py    # enum vocab + semester + zones resources
 ├── prompts.py      # appraise_listing prompt template
@@ -76,7 +76,7 @@ src/stimmo/mcp/
 
 ## Tool surface
 
-All tool I/O reuses the pydantic models in [models.py](../src/stimmo/models.py) — FastMCP derives JSON schemas from the pydantic types automatically. Every tool accepts an optional `lang: Literal["it", "en"] = "it"` argument.
+All tool I/O reuses the pydantic models in [models.py](../src/stimmo/models.py) — MCPServer derives JSON schemas from the pydantic types automatically. Every tool accepts an optional `lang: Literal["it", "en"] = "it"` argument.
 
 ### `estimate_property`
 
@@ -217,7 +217,7 @@ Internet → Cloudflare edge (TLS, WAF) → Cloudflare Tunnel (cloudflared sidec
 
 - The tunnel routes all of `stimmo.it/*` to `stimmo:8000`, so `/mcp` is reachable with no tunnel/ingress edits.
 - One stimmo container, no horizontal scale. In-process rate-limit buckets and TTL caches are correct for this topology; a Redis-backed impl would be required before adding a second replica.
-- Cloudflare's idle timeout (~100 s) applies to streaming responses. FastMCP's Streamable HTTP transport keeps SSE connections alive with periodic events well below that bound — do not disable those keepalives.
+- Cloudflare's idle timeout (~100 s) applies to streaming responses. MCPServer's Streamable HTTP transport keeps SSE connections alive with periodic events well below that bound — do not disable those keepalives.
 
 ## CORS
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 from mcp.server.transport_security import TransportSecuritySettings
 
 from stimmo.mcp import resources as _res
@@ -8,7 +8,7 @@ from stimmo.mcp import tools as _tools
 from stimmo.mcp.prompts import appraise_listing as _appraise_fn
 from stimmo.mcp.ratelimit import RateLimitMiddleware
 
-mcp = FastMCP(
+mcp = MCPServer(
     "stimmo",
     instructions=(
         "Milan property valuation via OMI quotations. "
@@ -16,20 +16,9 @@ mcp = FastMCP(
         "Use estimate_purchase_costs for the taxes, fees and renovation on top of the price. "
         "Consult stimmo://vocab/* resources for valid enum values before calling tools."
     ),
-    stateless_http=True,
-    transport_security=TransportSecuritySettings(
-        enable_dns_rebinding_protection=True,
-        allowed_hosts=["stimmo.it", "localhost:*", "127.0.0.1:*"],
-        allowed_origins=[
-            "https://stimmo.it",
-            "https://claude.ai",
-            "http://localhost:*",
-            "http://127.0.0.1:*",
-        ],
-    ),
 )
 
-# ── Tools (register typed functions directly so FastMCP derives the schema) ─
+# ── Tools (register typed functions directly so MCPServer derives the schema) ─
 
 mcp.tool(description="Full Milan listing appraisal: geocode, OMI quote, amenity score, verdict.")(
     _tools.estimate_property
@@ -135,15 +124,26 @@ def appraise_listing(listing: str) -> str:
 # ── Factory ────────────────────────────────────────────────────────────────
 
 # Build once so the session manager is a stable singleton.
-_streamable_app = mcp.streamable_http_app()
-_session_manager = _streamable_app.routes[0].app.session_manager
+_streamable_app = mcp.streamable_http_app(
+    stateless_http=True,
+    transport_security=TransportSecuritySettings(
+        enable_dns_rebinding_protection=True,
+        allowed_hosts=["stimmo.it", "localhost:*", "127.0.0.1:*"],
+        allowed_origins=[
+            "https://stimmo.it",
+            "https://claude.ai",
+            "http://localhost:*",
+            "http://127.0.0.1:*",
+        ],
+    ),
+)
 
 
 def get_session_manager():
     """Return the MCP session manager (needs .run() via app lifespan)."""
-    return _session_manager
+    return mcp.session_manager
 
 
-def build_mcp_app():  # type: ignore[return]
+def build_mcp_app():
     """Return the Streamable-HTTP ASGI app wrapped in per-IP rate-limit middleware."""
     return RateLimitMiddleware(_streamable_app)
