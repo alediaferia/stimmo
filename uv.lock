@@ -1,5 +1,5 @@
 version = 1
-revision = 5
+revision = 3
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version >= '3.14' and sys_platform == 'win32'",
@@ -1675,7 +1675,7 @@ requires-dist = [
     { name = "httpx2", specifier = ">=2.5.0" },
     { name = "jinja2", specifier = ">=3.1.4" },
     { name = "markdown-it-py", specifier = ">=3" },
-    { name = "mcp", specifier = ">=1.28.1" },
+    { name = "mcp", specifier = ">=2,<3" },
     { name = "pandas", specifier = ">=3.0.3" },
     { name = "pillow", specifier = ">=12.3.0" },
     { name = "prometheus-client", specifier = ">=0.21" },
