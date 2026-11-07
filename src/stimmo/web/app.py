@@ -1811,7 +1811,85 @@ async def _dispatch(scope, receive, send):
     await app(scope, receive, send)
 
 
-application = _metrics.instrument(_dispatch)
+# ---------------------------------------------------------------------------
+# Baseline security headers, applied at the same ASGI layer as the metrics
+# middleware so every response — including the /mcp branch above — carries
+# them, not just FastAPI-routed ones.
+#
+# The CSP is scoped to what this app actually loads, verified by grepping
+# web/templates/ and web/static/ rather than guessed:
+#   - script-src/style-src need 'unsafe-inline': form.html, result.html,
+#     zone_detail.html and bookmarklet.html all carry real inline <script>
+#     logic (not just the application/ld+json blocks, which CSP never
+#     restricts), and base.html's @font-face/theme rules are an inline
+#     <style> block. There's no nonce plumbing through Jinja today, so
+#     'unsafe-inline' is the honest policy rather than one that breaks pages.
+#   - img-src needs 'data:': vendor/leaflet/leaflet.js embeds a 1x1
+#     data:image/gif fallback used by its drag handling.
+#   - img-src needs https://*.basemaps.cartocdn.com: the Leaflet tile layers
+#     in form.html, result.html and zone_detail.html point at Carto's
+#     {s}.basemaps.cartocdn.com subdomains.
+#   - script-src/connect-src include Cloudflare's beacon
+#     (static.cloudflareinsights.com / cloudflareinsights.com) because
+#     base.html emits it when STIMMO_CF_BEACON_TOKEN is set; harmless to list
+#     even when the token is unset and the tag never renders.
+#   - No Google Fonts origin: fonts are self-hosted under /static/fonts
+#     (see the @font-face rules in base.html) — grepped for and absent.
+#   - connect-src beyond 'self' is not needed for the app's own fetches
+#     (/api/geocode, /api/zones.geojson, /api/amenities, costs form submit)
+#     since those are same-origin; Nominatim/Overpass calls happen
+#     server-side (data/geocode.py, data/amenities.py), never from the
+#     browser.
+#   - frame-ancestors 'none' and object-src 'none': no legitimate framing or
+#     plugin content anywhere in the templates.
+# ---------------------------------------------------------------------------
+
+_CSP = (
+    "default-src 'self'; "
+    "script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; "
+    "style-src 'self' 'unsafe-inline'; "
+    "img-src 'self' data: https://*.basemaps.cartocdn.com; "
+    "font-src 'self'; "
+    "connect-src 'self' https://cloudflareinsights.com; "
+    "frame-ancestors 'none'; "
+    "base-uri 'self'; "
+    "form-action 'self'; "
+    "object-src 'none'"
+)
+
+_SECURITY_HEADERS: list[tuple[bytes, bytes]] = [
+    (b"strict-transport-security", b"max-age=31536000; includeSubDomains"),
+    (b"x-content-type-options", b"nosniff"),
+    (b"x-frame-options", b"DENY"),
+    (b"referrer-policy", b"strict-origin-when-cross-origin"),
+    (b"content-security-policy", _CSP.encode()),
+]
+
+
+def _with_security_headers(app_callable: Callable) -> Callable:
+    """Wrap an ASGI callable so every HTTP response carries the headers above.
+
+    Same shape as metrics.instrument: only acts on scope["type"] == "http" and
+    intercepts "http.response.start" to append headers, leaving status code and
+    body untouched.
+    """
+
+    async def _wrapped(scope, receive, send):
+        if scope.get("type") != "http":
+            await app_callable(scope, receive, send)
+            return
+
+        async def _send(message):
+            if message["type"] == "http.response.start":
+                message.setdefault("headers", []).extend(_SECURITY_HEADERS)
+            await send(message)
+
+        await app_callable(scope, receive, _send)
+
+    return _wrapped
+
+
+application = _metrics.instrument(_with_security_headers(_dispatch))
 
 
 def _error(request: Request, errors: list[str]) -> HTMLResponse:
