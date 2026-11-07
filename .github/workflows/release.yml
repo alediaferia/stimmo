@@ -9,9 +9,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6
 
-      - uses: astral-sh/setup-uv@v8.1.0
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
 
       - name: Install dependencies
         run: uv sync --all-groups
@@ -41,7 +41,7 @@ jobs:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6
 
       # Editorial neighborhood blurbs live in the separate private repo
       # alediaferia/stimmo-content (see src/stimmo/data/neighborhoods.py for why:
@@ -50,7 +50,7 @@ jobs:
       # default clean: true would otherwise delete this directory if the order
       # were reversed.
       - name: Check out private editorial content
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6
         with:
           repository: alediaferia/stimmo-content
           token: ${{ secrets.CONTENT_REPO_TOKEN }}
@@ -86,7 +86,7 @@ jobs:
       # own parser through it. (The overlay-only setup further down is then redundant, which is
       # harmless.)
       - name: Set up uv
-        uses: astral-sh/setup-uv@v8.1.0
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
 
       # Editorial guides (src/stimmo/data/guides.py) are Markdown files in the same private
       # repository, under content/guides/. Only that directory is ever staged; nothing else in
@@ -125,7 +125,7 @@ jobs:
       # private input isn't available.
       - name: Check out the private overlay repo
         if: env.OVERLAY_ENABLED == 'true'
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6
         with:
           repository: alediaferia/stimmo-growth
           token: ${{ secrets.OVERLAY_REPO_TOKEN }}
@@ -148,7 +148,7 @@ jobs:
       # through uv. The same installation serves the test run further down.
       - name: Set up uv for the overlay
         if: env.OVERLAY_ENABLED == 'true'
-        uses: astral-sh/setup-uv@v8.1.0
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
 
       # Delegates entirely to the overlay repo's own apply entrypoint rather
       # than reimplementing patch application here - it already knows how to
@@ -198,7 +198,7 @@ jobs:
           fi
 
       - name: Log in to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9  # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -206,7 +206,7 @@ jobs:
 
       - name: Docker metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051  # v5
         with:
           images: ghcr.io/alediaferia/stimmo
           tags: |
@@ -214,7 +214,7 @@ jobs:
             type=raw,value=${{ github.ref_name }}
 
       - name: Build and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8  # v6
         with:
           # Must stay the filesystem context (not the default git context, which
           # only sends tracked files) - the staged neighborhoods.json above is an
@@ -233,7 +233,7 @@ jobs:
       packages: read
     steps:
       - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2  # v1
         env:
           DEPLOY_GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEPLOY_GH_ACTOR: ${{ github.actor }}
@@ -276,7 +276,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6
 
       - name: Create GitHub Release
         env:
