@@ -23,6 +23,7 @@ from importlib.metadata import version as _pkg_version
 
 import requests
 
+from stimmo.data import amenity_index
 from stimmo.models import AmenityItem, AmenityScore
 from stimmo.web import metrics
 
@@ -298,7 +299,14 @@ def _score_from_data(data_1000: dict, lat: float, lon: float) -> AmenityScore:
 def _fetch_amenities_uncached(lat: float, lon: float) -> AmenityScore:
     """Fetch amenity data from Overpass (one query) without any caching.
 
+    With ``STIMMO_AMENITIES_BUNDLED`` on, the bundled OSM extract answers instead (no network).
     """
+    if amenity_index.bundled_enabled():
+        try:
+            data = amenity_index.elements_within(lat, lon, FAR_M)
+        except OSError as e:
+            raise AmenityFetchError(f"bundled amenity asset unavailable: {e}", attempts=0) from e
+        return _score_from_data(data, lat, lon)
     deadline = time.monotonic() + _FETCH_BUDGET
     return _score_from_data(_query(lat, lon, FAR_M, deadline=deadline), lat, lon)
 

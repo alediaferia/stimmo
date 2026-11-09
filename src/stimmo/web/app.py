@@ -23,7 +23,17 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import ValidationError
 
-from stimmo.data import amenities, geocode, guides, history, neighborhoods, ntn, omi, zones
+from stimmo.data import (
+    amenities,
+    amenity_index,
+    geocode,
+    guides,
+    history,
+    neighborhoods,
+    ntn,
+    omi,
+    zones,
+)
 from stimmo.data.importers import immobiliare
 from stimmo.i18n import (
     LANG_TO_LOCALE,
@@ -287,6 +297,9 @@ async def _lifespan(_app):
     # Same for the guides: a malformed file in STIMMO_CONTENT_DIR/guides raises here, at startup.
     # (scripts/check_guides.py keeps one from reaching an image in the first place.)
     guides.list_guides()
+    # Bundled amenity extract: parse it now rather than on the first estimate (flag-gated).
+    if amenity_index.bundled_enabled():
+        amenity_index.load()
     async with _get_mcp_sm().run():
         yield
 

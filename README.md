@@ -119,6 +119,10 @@ portal — attribution required.
 Live data: OpenStreetMap (Nominatim, Overpass) under ODbL — attribution
 required for any rendered output.
 
+The bundled amenity extract `src/stimmo/data/assets/amenities.csv.gz` is derived from
+OpenStreetMap (© OpenStreetMap contributors) and is licensed under the ODbL 1.0, not
+Apache-2.0 (see `src/stimmo/data/assets/amenities.LICENSE`).
+
 ## AI-assisted development
 
 This project is developed with help from Claude Code. See [CLAUDE.md](CLAUDE.md)
