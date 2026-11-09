@@ -146,7 +146,14 @@ def refresh_valori(allow_downgrade: bool = False) -> str:
     df.to_csv(out, index=False)
     print(f"    → {out} ({out.stat().st_size:,} bytes, {len(df)} rows)")
     manifest = ASSETS / "manifest.json"
-    manifest.write_text(f'{{"semester": "{latest_sem[0]}-{latest_sem[1]}"}}\n')
+    # Merge, don't overwrite: the manifest also carries other assets' keys (osm_snapshot).
+    try:
+        data = json.loads(manifest.read_text())
+    except (OSError, ValueError):
+        data = {}
+    data = data if isinstance(data, dict) else {}
+    data["semester"] = f"{latest_sem[0]}-{latest_sem[1]}"
+    manifest.write_text(json.dumps(data) + "\n")
     print(f"    → {manifest}")
 
     # Historical bundle: last N semesters concatenated with a `semester` column.
