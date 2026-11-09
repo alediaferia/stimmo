@@ -13,6 +13,7 @@ are alternative entry points to the same asset shape.
 
 from __future__ import annotations
 
+import json
 import re
 import sys
 from pathlib import Path
@@ -78,7 +79,14 @@ def import_valori(src: Path) -> tuple[pd.DataFrame, str]:
     print(f"  valori: {csv.name} (semester {semester})")
     print(f"    → {out} ({out.stat().st_size:,} bytes, {len(df)} rows)")
     manifest = ASSETS / "manifest.json"
-    manifest.write_text(f'{{"semester": "{semester}"}}\n')
+    # Merge, don't overwrite: the manifest also carries other assets' keys (osm_snapshot).
+    try:
+        data = json.loads(manifest.read_text())
+    except (OSError, ValueError):
+        data = {}
+    data = data if isinstance(data, dict) else {}
+    data["semester"] = semester
+    manifest.write_text(json.dumps(data) + "\n")
     print(f"    → {manifest}")
     return df, semester
 

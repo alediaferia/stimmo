@@ -6,3 +6,6 @@ This product includes data from:
   redistributed via Comune di Milano CKAN portal under IODL 2.0.
 - OpenStreetMap contributors (https://www.openstreetmap.org/copyright),
   used live via Nominatim and Overpass APIs under the Open Database License (ODbL).
+- src/stimmo/data/assets/amenities.csv.gz is a derived database of OpenStreetMap data
+  (© OpenStreetMap contributors) and is licensed under the ODbL 1.0, not Apache-2.0; see
+  src/stimmo/data/assets/amenities.LICENSE. The source code remains Apache-2.0.

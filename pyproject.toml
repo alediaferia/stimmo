@@ -51,6 +51,9 @@ requires = ["uv_build>=0.11.26,<0.14.0"]
 build-backend = "uv_build"
 
 [dependency-groups]
+data = [
+    "osmium>=4.3.2",
+]
 dev = [
     "anyio[trio]>=4.14.1",
     "commitizen>=4.16.4",

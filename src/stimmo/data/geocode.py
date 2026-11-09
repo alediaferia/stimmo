@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import re
+import threading
 import time
 
 import requests
+
+from stimmo.web import metrics
 
 NOMINATIM = "https://nominatim.openstreetmap.org/search"
 UA = "stimmo/0.1 (https://github.com/alediaferia/stimmo; stimmo.it)"
@@ -21,15 +24,20 @@ UA = "stimmo/0.1 (https://github.com/alediaferia/stimmo; stimmo.it)"
 _STREET_TYPES = "via|viale|vicolo|piazza|piazzale|largo|corso|strada"
 _PRIVATE_QUALIFIER = re.compile(rf"^({_STREET_TYPES})\s+privat[ao]\s+", re.IGNORECASE)
 
-_last_call = 0.0
+_last_call = float("-inf")
+# Handlers run in a thread pool, so concurrent requests would race on `_last_call` and could
+# exceed Nominatim's 1 req/s policy.  The lock is held across the sleep on purpose: it
+# serialises callers, each leaving >= 1.1 s after the previous one.
+_throttle_lock = threading.Lock()
 
 
 def _throttle() -> None:
     global _last_call
-    delta = time.time() - _last_call
-    if delta < 1.1:
-        time.sleep(1.1 - delta)
-    _last_call = time.time()
+    with _throttle_lock:
+        delta = time.monotonic() - _last_call
+        if delta < 1.1:
+            time.sleep(1.1 - delta)
+        _last_call = time.monotonic()
 
 
 def _variants(address: str) -> list[str]:
@@ -48,21 +56,22 @@ def _query(address: str, city: str) -> tuple[float, float] | None:
     # Bias + restrict to the Milano comune bbox so suburbs with the same street
     # name aren't picked.
     milano_viewbox = "9.04,45.54,9.28,45.38"  # left,top,right,bottom
-    r = requests.get(
-        NOMINATIM,
-        params={
-            "q": q,
-            "format": "json",
-            "limit": 1,
-            "countrycodes": "it",
-            "viewbox": milano_viewbox,
-            "bounded": 1,
-        },
-        headers={"User-Agent": UA},
-        timeout=15,
-    )
-    r.raise_for_status()
-    items = r.json()
+    with metrics.time_upstream("nominatim"):
+        r = requests.get(
+            NOMINATIM,
+            params={
+                "q": q,
+                "format": "json",
+                "limit": 1,
+                "countrycodes": "it",
+                "viewbox": milano_viewbox,
+                "bounded": 1,
+            },
+            headers={"User-Agent": UA},
+            timeout=15,
+        )
+        r.raise_for_status()
+        items = r.json()
     if not items:
         return None
     return float(items[0]["lat"]), float(items[0]["lon"])

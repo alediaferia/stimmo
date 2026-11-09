@@ -85,6 +85,8 @@
 
   {% if amenity_status == "failed" %}
   <p class="verdict-sub" style="color:var(--warn);font-size:13px;margin-top:6px">⚠ {% trans %}Amenity data could not be retrieved — the estimate above does not account for proximity to metro, parks, or services.{% endtrans %}</p>
+  {% elif amenity_status == "deferred" %}
+  <p class="verdict-sub" id="amenity-deferred-note" style="color:var(--warn);font-size:13px;margin-top:6px">⚠ {% trans %}This verdict does not include the amenity adjustment yet (up to 2.5 %). It will update when nearby services have loaded.{% endtrans %}</p>
   {% endif %}
 
   <div class="gauge">
@@ -288,14 +290,22 @@
           <button id="amenity-retry-btn" type="button" class="btn" style="padding:6px 14px;font-size:13px">{% trans %}Retry amenity lookup{% endtrans %}</button>
         </div>
       </div>
+      {% elif amenity_status == "deferred" %}
+      <div id="amenity-loading" class="note" role="status" aria-live="polite" aria-busy="true" style="border-left-color:var(--warn);margin:0">
+        <b><span class="amen-spinner" aria-hidden="true"></span><span id="amenity-loading-title">{% trans %}Loading nearby services…{% endtrans %}</span></b>
+        <p id="amenity-loading-msg" style="margin:6px 0 0">{% trans %}The verdict above currently excludes the amenity adjustment (up to 2.5 %). This page will update by itself when the data arrives.{% endtrans %}</p>
+        <div class="amen-skeleton" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      </div>
       {% else %}
       {% set score = est.amenity_score %}
       {% include "_amenity_card.html" %}
       {% endif %}
     </div>
 
-    {% if amenity_status == "failed" %}
-    <form id="recompute-form" method="post" action="/{{ lang }}/estimate" style="display:none">
+    {% if amenity_status in ("failed", "deferred") %}
+    <form id="recompute-form" method="post" action="/{{ lang }}/estimate"{% if amenity_status == "failed" %} style="display:none"{% else %} style="margin-top:12px"{% endif %}>
+      <input type="hidden" name="lat" value="{{ '%.6f' | format(lat) }}">
+      <input type="hidden" name="lon" value="{{ '%.6f' | format(lon) }}">
       <input type="hidden" name="address" value="{{ p.address | e }}">
       <input type="hidden" name="surface_m2" value="{{ p.surface_m2 }}">
       <input type="hidden" name="property_type" value="{{ p.property_type.value | e }}">
@@ -313,6 +323,9 @@
       <input type="hidden" name="has_second_bathroom" value="{{ 'on' if p.has_second_bathroom else 'off' }}">
       {% if p.room_count %}<input type="hidden" name="room_count" value="{{ p.room_count }}">{% endif %}
       <input type="hidden" name="asking_price_eur" value="{{ p.asking_price_eur }}">
+      {% if amenity_status == "deferred" %}
+      <button type="submit" id="recompute-btn" class="btn" style="padding:6px 14px;font-size:13px">{% trans %}Update the estimate with amenity data{% endtrans %}</button>
+      {% endif %}
     </form>
     {% endif %}
 
@@ -400,6 +413,61 @@
     try { document.execCommand('copy'); btn.textContent = '{% trans %}Copied!{% endtrans %}'; setTimeout(function () { btn.textContent = orig; }, 2000); } catch (e) { window.prompt('{% trans %}Copy this link:{% endtrans %}', url); }
     document.body.removeChild(ta);
   }
+})();
+</script>
+{% endif %}
+{% if amenity_status == "deferred" %}
+<style>
+.amen-spinner{display:inline-block;width:12px;height:12px;margin-right:8px;border:2px solid var(--ink-fade,#999);border-top-color:var(--warn,#c80);border-radius:50%;animation:amen-spin .8s linear infinite;vertical-align:-1px}
+.amen-skeleton{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.amen-skeleton i{display:block;height:44px;border-radius:6px;background:var(--ink-fade,#999);opacity:.18;animation:amen-pulse 1.4s ease-in-out infinite}
+@keyframes amen-spin{to{transform:rotate(360deg)}}
+@keyframes amen-pulse{50%{opacity:.07}}
+@media (prefers-reduced-motion:reduce){.amen-spinner,.amen-skeleton i{animation:none}}
+</style>
+<script>
+// Progressive enhancement: poll the non-blocking status endpoint with backoff; once the
+// data (or a definitive failure) is there, re-POST this page's own form to /estimate, which
+// reads the warm cache, runs the engine and returns the complete, consistent page.
+(function () {
+  var form = document.getElementById('recompute-form');
+  var loading = document.getElementById('amenity-loading');
+  var delays = [1500, 2500, 4000, 6000, 8000, 10000, 12000];
+  var step = 0;
+  var statusUrl = '/{{ lang }}/api/amenities/status?lat={{ "%.6f" | format(lat) }}&lon={{ "%.6f" | format(lon) }}';
+
+  function giveUp() {
+    loading.setAttribute('aria-busy', 'false');
+    var sk = loading.querySelector('.amen-skeleton'); if (sk) sk.remove();
+    var sp = loading.querySelector('.amen-spinner'); if (sp) sp.remove();
+    document.getElementById('amenity-loading-title').textContent = {{ _("Nearby services are taking longer than expected.")|tojson }};
+    document.getElementById('amenity-loading-msg').textContent = {{ _("The verdict above excludes the amenity adjustment. Use the button below to try again.")|tojson }};
+  }
+
+  function swap() {
+    fetch(form.action, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams(new FormData(form)).toString()
+    })
+      .then(function (r) { if (!r.ok) throw new Error('status ' + r.status); return r.text(); })
+      .then(function (html) { document.open(); document.write(html); document.close(); })
+      .catch(giveUp);
+  }
+
+  function poll() {
+    fetch(statusUrl, { cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error('status ' + r.status); return r.json(); })
+      .then(function (d) { if (d.status === 'pending') next(); else swap(); })
+      .catch(next);
+  }
+
+  function next() {
+    if (step >= delays.length) { giveUp(); return; }
+    setTimeout(poll, delays[step++]);
+  }
+
+  next();
 })();
 </script>
 {% endif %}
