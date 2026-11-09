@@ -190,6 +190,11 @@ of this repository.
 - `stimmo_dossier_interest_total` — Counter, labels: `event` (`view`/`click`), `lang` (`it`/`en`). `view` is counted in the `estimate` handler when the interest button renders, `click` in `dossier_interest`; nothing else is labelled, so no identifier can reach it.
 - `stimmo_share_events_total` — Counter, labels: `event` (`open`/`og_render`), `outcome` (`ok`/`invalid`/`error`). Incremented in the `share_view` and `og_image` handlers (not the dispatcher) because invalid/expired tokens are served as a normal 400/404 and would otherwise be indistinguishable from other failures in the HTTP counters.
 
+- `stimmo_upstream_duration_seconds` — Histogram, labels: `upstream` (`nominatim`/`overpass`), `outcome` (`ok`/`timeout`/`http_error`/`error`); buckets 0.1…45 s. Recorded with `metrics.time_upstream()` around the `requests` calls in `data/geocode.py` and `data/amenities.py`, never labelled by URL.
+- `stimmo_estimate_amenity_total` — Counter, label: `status` (`ok` fetched inside the budget / `cached` / `deferred` budget expired, page finished client-side / `failed`). Incremented in the `estimate` handler.
+
+Amenity budget (not a collector, but it shapes these): `estimate` waits at most `AMENITY_BUDGET_S` (5 s) via `amenities.resolve()` on a bounded 4-worker executor; on expiry it renders a "deferred" page (no share link) that polls `GET /{lang}/api/amenities/status` (JSON, non-HTML, so no SEO registry entry; route label is its function name) and then re-POSTs its own form for the complete page. See `docs/architecture.md`.
+
 Key invariants:
 
 - **Instrumented at the dispatcher, not FastAPI.** `_dispatch` in `web/app.py` is wrapped by `metrics.instrument()`; this is the only place that sees every request including `/mcp`.

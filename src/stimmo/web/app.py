@@ -4,6 +4,7 @@ import base64
 import binascii
 import hashlib
 import json
+import math
 import os
 import re
 from collections.abc import Callable, Collection, Iterable, Mapping
@@ -1393,6 +1394,26 @@ def bookmarklet_page(request: Request, lang: str = FPath(pattern=_LANG_RE)) -> H
     )
 
 
+# Hard wall-clock budget for the amenity lookup inside POST /{lang}/estimate.  Past it the
+# page renders without amenities (status "deferred") and finishes client-side.
+AMENITY_BUDGET_S = 5.0
+
+
+def _client_coords(lat: str, lon: str) -> tuple[float, float] | None:
+    """Coordinates the browser already holds from the address autocomplete, or None.
+
+    Accepted only when both parse as finite floats AND fall inside the Milano comune
+    (zone point-in-polygon); anything else makes the handler geocode as before.
+    """
+    try:
+        la, lo = float(lat), float(lon)
+    except (TypeError, ValueError):
+        return None
+    if not (math.isfinite(la) and math.isfinite(lo)):
+        return None
+    return (la, lo) if zones.zone_for_point(la, lo) is not None else None
+
+
 def _build_result_context(
     request: Request,
     lang: str,
@@ -1448,13 +1469,18 @@ def _build_result_context(
     # Build absolute share URL (works behind Cloudflare: use request.base_url for scheme+host).
     # New path: store the blob and emit a short /s/<id> link (no /{lang}/ prefix, D4).
     # The legacy long-token encode() is retained for the fallback decode path (D5).
-    blob = _share.encode_blob(prop, lat, lon, amen)
-    share_id = _share_store.put(blob)
-    base = str(request.base_url).rstrip("/")
-    share_url = f"{base}/s/{share_id}"
-    og_image_url = f"{base}/og/{share_id}.png"
-    # Legacy token kept for the retained /{lang}/s/{token} route (D5).
-    token = _share.encode(prop, lat, lon, amen)
+    # A "deferred" page shows an estimate that excludes the amenity adjustment and is about
+    # to be replaced by the full one, so it gets no share link: a link must reflect the
+    # verdict the visitor finally sees, and the replacement page mints it.
+    share_url = og_image_url = token = None
+    if amenity_status != "deferred":
+        blob = _share.encode_blob(prop, lat, lon, amen)
+        share_id = _share_store.put(blob)
+        base = str(request.base_url).rstrip("/")
+        share_url = f"{base}/s/{share_id}"
+        og_image_url = f"{base}/og/{share_id}.png"
+        # Legacy token kept for the retained /{lang}/s/{token} route (D5).
+        token = _share.encode(prop, lat, lon, amen)
 
     return {
         "p": prop,
@@ -1497,6 +1523,8 @@ def estimate(
     room_count: int | None = Form(None),
     asking_price_eur: float = Form(...),
     omi_condition_override: str = Form(""),
+    lat: str = Form(""),
+    lon: str = Form(""),
 ) -> HTMLResponse:
     _set_locale(request, lang)
 
@@ -1528,12 +1556,17 @@ def estimate(
     except (ValidationError, ValueError) as e:
         return _error(request, [str(e)])
 
-    try:
-        lat, lon = geocode.geocode(prop.address)
-    except LookupError as e:
-        return _error(request, [_("Geocoding failed: %(e)s") % {"e": e}])
+    client = _client_coords(lat, lon)
+    if client is not None:
+        lat_f, lon_f = client
+    else:
+        try:
+            lat_f, lon_f = geocode.geocode(prop.address)
+        except LookupError as e:
+            return _error(request, [_("Geocoding failed: %(e)s") % {"e": e}])
+    lat_s, lon_s = f"{lat_f:.6f}", f"{lon_f:.6f}"  # for the replay forms
 
-    z = zones.zone_for_point(lat, lon)
+    z = zones.zone_for_point(lat_f, lon_f)
     if z is None:
         return _error(request, [_("Address is outside the Milano comune — no OMI zone.")])
     zone_code, zone_name = z
@@ -1567,6 +1600,8 @@ def estimate(
                         has_second_bathroom=has_second_bathroom,
                         room_count=room_count,
                         asking_price_eur=asking_price_eur,
+                        lat=lat_s,
+                        lon=lon_s,
                     ),
                 },
             )
@@ -1577,21 +1612,19 @@ def estimate(
         return _error(request, [_("OMI lookup failed: %(e)s") % {"e": e}])
     quote.zone_descr = zone_name
 
-    amenity_status = "ok"
-    amenity_error: str | None = None
-    try:
-        amen = amenities.fetch_amenities(lat, lon)
-    except Exception as e:
-        amenity_status = "failed"
-        amenity_error = str(e)
-        amen = AmenityScore()
+    # Bounded wait: if Overpass is slow the page renders now, without the amenity
+    # adjustment, and the browser finishes it (see result.html / api_amenities_status).
+    res_status, res_score, amenity_error = amenities.resolve(lat_f, lon_f, AMENITY_BUDGET_S)
+    _metrics.ESTIMATE_AMENITY.labels(status=res_status).inc()
+    amenity_status = "ok" if res_status in ("ok", "cached") else res_status
+    amen = res_score if res_score is not None else AmenityScore()
 
     ctx = _build_result_context(
         request,
         lang,
         prop,
-        lat,
-        lon,
+        lat_f,
+        lon_f,
         amen,
         quote,
         zone_code,
@@ -1742,6 +1775,33 @@ def dossier_interest(request: Request, lang: str = FPath(pattern=_LANG_RE)) -> R
         raise HTTPException(status_code=403)
     _metrics.DOSSIER_INTEREST.labels(event="click", lang=lang).inc()
     return Response(status_code=204, headers={"Cache-Control": "no-store"})
+
+
+@app.get("/{lang}/api/amenities/status")
+def api_amenities_status(
+    request: Request,
+    lang: str = FPath(pattern=_LANG_RE),
+    lat: float = 0.0,
+    lon: float = 0.0,
+) -> Response:
+    """Non-blocking poll for a "deferred" result page: ``pending`` | ``ok`` | ``failed``.
+
+    JSON only, no pricing: once it says ``ok`` (or ``failed``) the page re-POSTs its own
+    form to ``/{lang}/estimate``, which now hits the warm cache and runs the engine.
+    Not HTML, so it needs no SEO decision; the metrics route label is this function's name.
+    """
+    _set_locale(request, lang)
+    if not (math.isfinite(lat) and math.isfinite(lon)) or zones.zone_for_point(lat, lon) is None:
+        raise HTTPException(status_code=400)
+    status, _score, error = amenities.peek(lat, lon)
+    body: dict = {"status": status}
+    if error:
+        body["error"] = error
+    return Response(
+        content=json.dumps(body),
+        media_type="application/json",
+        headers={"Cache-Control": "no-store"},
+    )
 
 
 @app.get("/{lang}/api/amenities")

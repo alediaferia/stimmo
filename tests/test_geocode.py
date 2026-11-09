@@ -7,6 +7,8 @@ with the qualifier dropped. See the module docstring in `data/geocode.py`.
 
 from __future__ import annotations
 
+import itertools
+
 import pytest
 
 from stimmo.data import geocode
@@ -127,3 +129,47 @@ def test_lookup_error_names_the_original_address(nominatim):
 )
 def test_variants(address: str, expected: list[str]):
     assert geocode._variants(address) == expected
+
+
+def test_throttle_is_serialised_by_a_lock(monkeypatch):
+    """Concurrent callers must not interleave: each leaves >= 1.1 s after the previous."""
+    import threading
+
+    stamps: list[float] = []
+    clock = [100.0]
+    monkeypatch.setattr(geocode.time, "monotonic", lambda: clock[0])
+
+    def fake_sleep(d):
+        clock[0] += d
+
+    monkeypatch.setattr(geocode.time, "sleep", fake_sleep)
+    monkeypatch.setattr(geocode, "_last_call", float("-inf"))
+
+    def worker():
+        geocode._throttle()
+        stamps.append(clock[0])
+
+    threads = [threading.Thread(target=worker) for _ in range(5)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    gaps = [b - a for a, b in itertools.pairwise(stamps)]
+    assert len(stamps) == 5 and all(g >= 1.1 - 1e-9 for g in gaps)
+
+
+def test_nominatim_call_is_timed_as_upstream(nominatim):
+    from stimmo.web import metrics
+
+    def count():
+        return sum(
+            s.value
+            for m in metrics.UPSTREAM_DURATION.collect()
+            for s in m.samples
+            if s.name.endswith("_count") and s.labels == {"upstream": "nominatim", "outcome": "ok"}
+        )
+
+    before = count()
+    nominatim.responses = lambda q: [{"lat": "45.4", "lon": "9.1"}]
+    geocode.geocode("Via Roma 1")
+    assert count() == before + 1

@@ -136,10 +136,10 @@ Do not pass raw model objects deep into templates and call methods on them. Pass
 `data/assets/` contains all OMI data (quotations, zone polygons, 8-semester history) and NTN transaction data. These files are committed to the repository and loaded at startup (the zones GeoJSON is cached via `@lru_cache`).
 
 The only live network calls are:
-- Nominatim geocoding (once per estimate, scoped to Milano).
-- Overpass amenity count (once per estimate, 500 m radius).
+- Nominatim geocoding (once per estimate, scoped to Milano). Skipped when the form carries the `lat`/`lon` the address autocomplete already resolved, provided they fall inside the Milano comune (zone point-in-polygon); anything else falls back to geocoding. Calls are serialised by a lock to honour Nominatim's 1 req/s policy.
+- Overpass amenity count: ONE query at 1000 m per estimate; the 500 m counts, the 500-1000 m ring and the map items are derived by haversine distance in Python. One attempt per endpoint (`overpass.openstreetmap.fr`, then `overpass-api.de` only while budget remains), ~4 s per call, no retry sleeps. Results are cached for 24 h (quantised to ~111 m).
 
-If either fails, the estimate degrades gracefully: geocoding failure returns an error page; Overpass failure returns a zero `AmenityScore` and sets `amenity_warning` in the template context (displayed as a `.note` callout).
+If either fails, the estimate degrades gracefully: geocoding failure returns an error page. The amenity lookup runs on a small bounded executor and the estimate handler waits at most `AMENITY_BUDGET_S` (5 s). Past that the page renders at once in a **deferred** state (verdict without the amenity adjustment, a visible loading panel with `aria-live`/`aria-busy`, no share link); the fetch keeps running in the background and warms the cache. A progressive-enhancement script polls `GET /{lang}/api/amenities/status` (JSON, non-blocking) with backoff and, once the data or a definitive failure is there, re-POSTs the page's own form to `/{lang}/estimate`, which reads the warm cache, runs the engine and returns the complete page (so the verdict, the amenity panel and the share link are always consistent). Without JavaScript the page stays correct and offers an "Update the estimate with amenity data" button. A failed lookup renders the existing "failed" state (zero `AmenityScore`, retry button); a failure is replayed for 60 s rather than re-hammering Overpass.
 
 Do not add any other runtime data fetch (e.g. portal price feeds, live OMI API). The bundled-data model makes the tool reproducible and offline-capable.
 

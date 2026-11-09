@@ -63,6 +63,9 @@
           <input class="input" id="address" name="address" type="text"
             value="{{ defaults.address or '' }}" required autofocus
             placeholder="Via …, Milano">
+          {# Coordinates from the autocomplete; the server re-validates them (inside Milano) and falls back to geocoding. #}
+          <input type="hidden" id="geo_lat" name="lat" value="">
+          <input type="hidden" id="geo_lon" name="lon" value="">
           <span class="hint" id="address_status">{% trans %}Street + civic number, Milano comune only.{% endtrans %}</span>
         </div>
 
@@ -339,8 +342,16 @@
     status.style.color = isError ? 'var(--bad)' : '';
   }
 
+  const latField = document.getElementById('geo_lat');
+  const lonField = document.getElementById('geo_lon');
+  function setCoords(lat, lon) {
+    latField.value = lat == null ? '' : String(lat);
+    lonField.value = lon == null ? '' : String(lon);
+  }
+
   async function lookup(q) {
     const mine = ++reqId;
+    setCoords(null, null);
     setStatus({{ _("Locating…") | tojson }}, false);
     try {
       const r = await fetch('/api/geocode?q=' + encodeURIComponent(q));
@@ -349,6 +360,7 @@
       if (!r.ok) { setStatus({{ _("Geocoding failed") | tojson }}, true); return; }
       const data = await r.json();
       if (mine !== reqId || !data.found) return;
+      setCoords(data.lat, data.lon);
       if (pin) pin.remove();
       pin = L.circleMarker([data.lat, data.lon], {
         radius: 6, color: 'oklch(0.22 0.012 250)', weight: 2,
@@ -367,6 +379,8 @@
 
   input.addEventListener('input', () => {
     const q = input.value.trim();
+    setCoords(null, null);  // edited by hand: the coordinates no longer match the text
+    reqId++;                // and any lookup still in flight is stale
     clearTimeout(timer);
     if (q.length < 4) { setStatus('', false); return; }
     timer = setTimeout(() => lookup(q), 700);

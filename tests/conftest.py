@@ -27,6 +27,20 @@ def _frozen_costs_clock(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(tools, "_today", lambda: COSTS_TODAY)
 
 
+@pytest.fixture(autouse=True)
+def _clean_amenity_state():
+    """Amenity cache / in-flight / failure memo are process-global; start each test clean."""
+    from stimmo.data import amenities
+
+    def _reset():
+        amenities._default_cache._store.clear()
+        amenities._failures.clear()
+
+    _reset()
+    yield
+    _reset()
+
+
 @asynccontextmanager
 async def run_lifespan(app):
     """Run the ASGI lifespan of *app* in a background asyncio task.
