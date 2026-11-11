@@ -55,7 +55,7 @@
    **tag-gated** via `release.yml` on `v[0-9]+.[0-9]+.[0-9]+`, so pushing `main` only runs CI,
    never deploys). The VPS volume (7b) MUST exist before the version tag ships the new image,
    else new `/s/<id>` links write to the ephemeral container layer and are wiped on the next
-   `compose pull`. Then `cz bump` → push the `vX.Y.Z` tag → `release.yml` builds + SSH-deploys.
+   `compose pull`. Then `cz bump` → push the `vX.Y.Z` tag → `release.yml` builds + pushes the image (the VPS pulls it via container-update; originally SSH-deployed).
 4. **Step 8 (prod e2e — `stimmo-e2e-validator`):** after deploy, validate against
    https://stimmo.it including durability (a link created pre-`compose pull` still resolves
    post-pull).

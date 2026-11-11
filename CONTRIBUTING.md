@@ -41,7 +41,7 @@ Common types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`. The `commit-ms
 ```sh
 uv run cz bump          # bumps version, updates CHANGELOG.md, creates git tag
 git push origin main    # push the bump commit
-git push origin vX.Y.Z  # push the tag — triggers the release workflow (build → deploy → GitHub Release)
+git push origin vX.Y.Z  # push the tag — triggers the release workflow (test → build/push image → GitHub Release; the VPS pulls `:latest` itself, see `deploy/README.md`)
 ```
 
 `cz bump` infers the semver increment from commits since the last tag (`feat` → minor, `fix` → patch, `BREAKING CHANGE` → major).

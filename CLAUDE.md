@@ -182,6 +182,10 @@ SEO strategy, Search Console tooling and competitive research live in the privat
 `stimmo-growth` repo — deliberately not here. Keep strategy, keyword research and traffic data out
 of this repository.
 
+### Deployment
+
+Pull model: `release.yml` (tag-triggered) tests, builds and pushes `ghcr.io/alediaferia/stimmo:latest` and `:vX.Y.Z`, then creates the GitHub Release. It has **no deploy job** and the `SSH_*` secrets are unused. On the VPS, `container-update@stimmo.timer` (~5 min) pins `:latest` to a digest, recreates `stimmo`, and rolls back if unhealthy, so pushing `:latest` is the production release. Runbook (deploy now, freeze, rollback): `deploy/README.md`.
+
 ### Observability
 
 `web/metrics.py` wraps the top-level ASGI dispatcher with a Prometheus middleware. Collectors:
