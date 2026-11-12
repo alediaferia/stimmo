@@ -6,8 +6,16 @@ on:
       - "v[0-9]+.[0-9]+.[0-9]+"
 
 jobs:
+  # Chooses self-hosted home-lab runners or GitHub-hosted for the test job (see
+  # runner-route.yml). build needs a Docker daemon and stays on ubuntu-latest.
+  route:
+    uses: ./.github/workflows/runner-route.yml
+    secrets:
+      RUNNER_ROUTER_TOKEN: ${{ secrets.RUNNER_ROUTER_TOKEN }}
+
   test:
-    runs-on: ubuntu-latest
+    needs: route
+    runs-on: ${{ fromJSON(needs.route.outputs.runs-on) }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6
 
