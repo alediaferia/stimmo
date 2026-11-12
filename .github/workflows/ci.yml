@@ -9,8 +9,20 @@ permissions:
   contents: read
 
 jobs:
+  # Runner routing. The test, translations and gitleaks jobs run on the self-hosted home-lab
+  # runners (labels self-hosted, homelab) when one is online, and on GitHub-hosted ubuntu-latest
+  # otherwise; fork PRs are always hosted. The decision is made by the reusable workflow
+  # runner-route.yml (read its header for the rules). RUNNER_ROUTER_TOKEN is a fine-grained PAT
+  # with Administration read-only on this repo; without it everything stays GitHub-hosted.
+  # Jobs that need Docker or are tiny API calls stay on ubuntu-latest.
+  route:
+    uses: ./.github/workflows/runner-route.yml
+    secrets:
+      RUNNER_ROUTER_TOKEN: ${{ secrets.RUNNER_ROUTER_TOKEN }}
+
   test:
-    runs-on: ubuntu-latest
+    needs: route
+    runs-on: ${{ fromJSON(needs.route.outputs.runs-on) }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
@@ -26,7 +38,8 @@ jobs:
   # This is intentionally a compile-only check — staleness detection (extract/update)
   # was removed because POT-Creation-Date timestamps made it permanently brittle.
   translations:
-    runs-on: ubuntu-latest
+    needs: route
+    runs-on: ${{ fromJSON(needs.route.outputs.runs-on) }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
@@ -36,7 +49,8 @@ jobs:
       - run: uv run pybabel compile -d src/stimmo/locale
 
   gitleaks:
-    runs-on: ubuntu-latest
+    needs: route
+    runs-on: ${{ fromJSON(needs.route.outputs.runs-on) }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6
         with:

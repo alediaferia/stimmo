@@ -1,0 +1,110 @@
+# Reusable workflow: decide where the calling run's jobs execute.
+#
+# Picks the self-hosted runners on the home-lab machine when at least one runner carrying every
+# label in `labels` is online, and GitHub-hosted runners otherwise (machine off or asleep, token
+# missing or expired, API unreachable). It always picks GitHub-hosted for code that may come from
+# outside the repository (pull requests from forks and the events that can run their code), so
+# untrusted code never reaches the home-lab machine.
+#
+# Usage in a caller:
+#
+#   jobs:
+#     route:
+#       uses: ./.github/workflows/runner-route.yml
+#       secrets:
+#         RUNNER_ROUTER_TOKEN: ${{ secrets.RUNNER_ROUTER_TOKEN }}
+#     test:
+#       needs: route
+#       runs-on: ${{ fromJSON(needs.route.outputs.runs-on) }}
+#
+# RUNNER_ROUTER_TOKEN is a fine-grained personal access token with "Administration: Read-only" on
+# this repository and nothing else: listing a repository's runners needs it, and GITHUB_TOKEN
+# cannot be granted it. Without the secret every job runs GitHub-hosted, which is the safe
+# default (forks and Dependabot never receive it).
+#
+# Canonical copy: ~/dev/gh-runners/workflow-templates/runner-route.yml. Copy it verbatim into each
+# repository that uses the home-lab runners.
+
+name: Runner route
+
+on:
+  workflow_call:
+    inputs:
+      labels:
+        description: JSON array of labels the self-hosted runner must carry; also the runs-on value when one is online.
+        type: string
+        default: '["self-hosted", "homelab"]'
+      fallback:
+        description: JSON runs-on value used when no matching self-hosted runner is online.
+        type: string
+        default: '"ubuntu-latest"'
+    secrets:
+      RUNNER_ROUTER_TOKEN:
+        description: Fine-grained PAT with Administration read-only on this repository.
+        required: false
+    outputs:
+      runs-on:
+        description: JSON runs-on value; use it as fromJSON(needs.<job>.outputs.runs-on).
+        value: ${{ jobs.route.outputs.runs-on }}
+      self-hosted:
+        description: "'true' when the jobs go to the self-hosted runners, 'false' otherwise."
+        value: ${{ jobs.route.outputs.self-hosted }}
+
+permissions: {}
+
+jobs:
+  route:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      runs-on: ${{ steps.pick.outputs.runs-on }}
+      self-hosted: ${{ steps.pick.outputs.self-hosted }}
+    steps:
+      - name: Pick self-hosted or GitHub-hosted
+        id: pick
+        env:
+          TOKEN: ${{ secrets.RUNNER_ROUTER_TOKEN }}
+          LABELS: ${{ inputs.labels }}
+          FALLBACK: ${{ inputs.fallback }}
+          REPO: ${{ github.repository }}
+          EVENT: ${{ github.event_name }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        run: |
+          set -euo pipefail
+          labels=$(jq -ce 'if type == "array" and length > 0 then . else error("labels must be a non-empty JSON array") end' <<<"$LABELS")
+          fallback=$(jq -ce . <<<"$FALLBACK")
+
+          hosted() {
+            echo "::notice title=Runner route::GitHub-hosted: $1"
+            { echo "runs-on=$fallback"; echo "self-hosted=false"; } >> "$GITHUB_OUTPUT"
+            exit 0
+          }
+
+          # Code that may come from outside the repository never runs on the home-lab machine.
+          case "$EVENT" in
+            pull_request | pull_request_review | pull_request_review_comment)
+              [ "$HEAD_REPO" = "$REPO" ] || hosted "pull request from a fork" ;;
+            pull_request_target | workflow_run | issue_comment)
+              hosted "event $EVENT can run code from outside the repository" ;;
+          esac
+
+          [ -n "$TOKEN" ] || hosted "RUNNER_ROUTER_TOKEN is not available to this run"
+
+          body=$(curl -fsS --max-time 15 \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/$REPO/actions/runners?per_page=100") \
+            || hosted "runner API unreachable or token rejected"
+
+          online=$(jq --argjson want "$labels" '
+            [ .runners[]
+              | select(.status == "online")
+              | [.labels[].name | ascii_downcase] as $have
+              | select(all($want[] | ascii_downcase; IN($have[]))) ]
+            | length' <<<"$body") || hosted "unexpected runner API response"
+
+          [ "$online" -gt 0 ] || hosted "no self-hosted runner with $labels is online"
+
+          echo "::notice title=Runner route::self-hosted: $online runner(s) with $labels online"
+          { echo "runs-on=$labels"; echo "self-hosted=true"; } >> "$GITHUB_OUTPUT"
