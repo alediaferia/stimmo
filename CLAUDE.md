@@ -57,7 +57,7 @@ The engine is intentionally thin (`valuation/engine.py`): it asks `adjustments.c
 - **OMI band is the spine.** Italian per-transaction sale data is not public; the estimate is an OMI `Compr_min`–`Compr_max` band with a multiplier on top. Don't introduce "comparable listings" logic — the absence is by design.
 - **Data is bundled, not fetched at runtime.** `data/assets/` carries OMI quotations, zone polygons (for point-in-polygon), and `milano_omi_history.csv` (8 semesters for the trend panel). The only live calls are Nominatim (`data/geocode.py`) and Overpass (`data/amenities.py`).
 - **Milano comune only.** `data/zones.py` point-in-polygon will reject addresses in the metropolitan belt — this is expected, not a bug.
-- **Refreshing data:** `scripts/refresh_omi.py` rewrites `data/assets/` from the CKAN API. After running it, bump `SEMESTER` in `data/omi.py` if the semester advanced.
+- **Refreshing data:** `scripts/refresh_omi.py` rewrites `data/assets/` from the CKAN API. The semester is derived from `manifest.json` (no constant to bump). CKAN lags Agenzia Entrate: a newer semester (e.g. 2026-1) is a manual Forniture OMI download fed to `scripts/import_omi_agenziaentrate.py <dir>` (see `docs/updating-omi-data.md`), and `refresh_omi.py --backfill YYYY-S` inserts one missing history semester from CKAN without touching valori/zones/manifest.
 
 ### Purchase-cost calculator
 

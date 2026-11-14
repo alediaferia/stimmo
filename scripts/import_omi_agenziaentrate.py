@@ -1,11 +1,15 @@
 """Import OMI assets from an Agenzia Entrate publication directory into bundled assets.
 
-Usage: uv run python scripts/import_omi_agenziaentrate.py <source-dir>
+Usage: uv run python scripts/import_omi_agenziaentrate.py <source-dir> [--semester YYYY-S]
 
 Where <source-dir> contains:
   - *_VALORI.csv  (market values, semicolon-sep, title row + header row)
   - *_ZONE.csv    (zone metadata, semicolon-sep, title row + header row)
-  - F205.kml      (zone polygons, KML format)
+  - F205.kml      (zone polygons; falls back to any other *.kml, then to a *.kmz)
+
+The semester is read from the VALORI title row ("Semestre YYYY/S"). If that row has a
+different shape, pass --semester to state it explicitly (a mismatch with a readable title
+is an error).
 
 Rewrites the same three asset paths that refresh_omi.py targets; the two scripts
 are alternative entry points to the same asset shape.
@@ -13,6 +17,7 @@ are alternative entry points to the same asset shape.
 
 from __future__ import annotations
 
+import argparse
 import json
 import re
 import sys
@@ -58,18 +63,23 @@ def _semester_key(s: str) -> tuple[int, int]:
     return (int(m.group(1)), int(m.group(2))) if m else (0, 0)
 
 
-def _detect_semester(csv_path: Path) -> str:
+def _detect_semester(csv_path: Path, override: str | None = None) -> str:
+    if override is not None and not re.fullmatch(r"\d{4}-[12]", override):
+        raise SystemExit(f"--semester expects YYYY-1 or YYYY-2, got {override!r}")
     with open(csv_path, encoding="utf-8") as fh:
         title = fh.readline().strip()
-    m = re.search(r"Semestre\s+(\d{4})/(\d)", title)
-    if not m:
-        raise SystemExit(f"Cannot detect semester from title row: {title!r}")
-    return f"{m.group(1)}-{m.group(2)}"
+    m = re.search(r"Semestre\s+(\d{4})/([12])", title)
+    detected = f"{m.group(1)}-{m.group(2)}" if m else None
+    if detected and override and detected != override:
+        raise SystemExit(f"--semester {override} contradicts the file title row ({detected})")
+    if detected or override:
+        return detected or override  # type: ignore[return-value]
+    raise SystemExit(f"Cannot detect semester from title row: {title!r} (pass --semester YYYY-S)")
 
 
-def import_valori(src: Path) -> tuple[pd.DataFrame, str]:
+def import_valori(src: Path, semester_override: str | None = None) -> tuple[pd.DataFrame, str]:
     csv = _find_file(src, "*_VALORI.csv")
-    semester = _detect_semester(csv)
+    semester = _detect_semester(csv, semester_override)
     df = pd.read_csv(csv, sep=";", skiprows=1, dtype=str)
     df = df.loc[:, ~df.columns.str.startswith("Unnamed")]
     df = df.drop(columns=[c for c in ("Loc_min", "Loc_max", "Sup_NL_loc") if c in df.columns])
@@ -107,6 +117,11 @@ def update_history(new_df: pd.DataFrame, semester: str) -> None:
         [existing, new_with_sem.reindex(columns=canonical_with_sem)],
         ignore_index=True,
     )
+    # Keep the file in semester order (stable within a semester): a backfilled or re-imported
+    # semester must not leave it unsorted.
+    hist = hist.sort_values(
+        "semester", key=lambda col: col.map(_semester_key), kind="stable"
+    ).reset_index(drop=True)
     # Keep last HISTORY_SEMESTERS semesters
     all_sems = sorted(hist["semester"].dropna().unique(), key=_semester_key)
     keep = set(all_sems[-HISTORY_SEMESTERS:])
@@ -117,10 +132,20 @@ def update_history(new_df: pd.DataFrame, semester: str) -> None:
     print(f"    → {hist_path} ({hist_path.stat().st_size:,} bytes, {len(hist)} rows total)")
 
 
+def _find_polygons(src: Path) -> Path:
+    """Zone polygon file: F205.kml, else any *.kml, else any *.kmz (read natively by GDAL)."""
+    exact = src / "F205.kml"
+    if exact.exists():
+        return exact
+    for pattern in ("*.kml", "*.kmz"):
+        matches = sorted(m for m in src.glob(pattern) if m.is_file())
+        if matches:
+            return matches[0]
+    raise SystemExit(f"No zone polygon file (F205.kml / *.kml / *.kmz) found in {src}")
+
+
 def import_zones(src: Path, old_zone_codes: set[str]) -> None:
-    kml = src / "F205.kml"
-    if not kml.exists():
-        raise SystemExit(f"F205.kml not found in {src}")
+    kml = _find_polygons(src)
     zone_csv = _find_file(src, "*_ZONE.csv")
 
     # Build zone_code → description from ZONE.csv
@@ -137,7 +162,7 @@ def import_zones(src: Path, old_zone_codes: set[str]) -> None:
         gdf = gpd.read_file(kml, engine="pyogrio")
     except Exception as exc:
         raise SystemExit(
-            f"Failed to read KML with pyogrio: {exc}\n"
+            f"Failed to read {kml.name} with pyogrio: {exc}\n"
             "Ensure pyogrio is installed with LIBKML driver support (check: pyogrio.list_drivers())."
         ) from exc
 
@@ -165,11 +190,12 @@ def import_zones(src: Path, old_zone_codes: set[str]) -> None:
     print(f"    → {out} ({out.stat().st_size:,} bytes, {len(gdf)} zones)")
 
 
-def main() -> int:
-    if len(sys.argv) < 2:
-        print(f"Usage: {sys.argv[0]} <source-dir>", file=sys.stderr)
-        return 1
-    src = Path(sys.argv[1]).resolve()
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("source_dir")
+    parser.add_argument("--semester", metavar="YYYY-S", help="state the semester explicitly")
+    args = parser.parse_args(argv)
+    src = Path(args.source_dir).resolve()
     if not src.is_dir():
         print(f"Error: {src} is not a directory", file=sys.stderr)
         return 1
@@ -183,7 +209,7 @@ def main() -> int:
         old_df = pd.read_csv(old_valori, dtype=str)
         old_zone_codes = set(old_df["Zona"].dropna())
 
-    df, semester = import_valori(src)
+    df, semester = import_valori(src, args.semester)
     update_history(df, semester)
     import_zones(src, old_zone_codes)
 

@@ -13,7 +13,7 @@ Agenzia delle Entrate publishes new data before Comune di Milano mirrors it on C
 3. Download the ZIP archive. It will contain at minimum:
    - `QIP_<id>_<semester>_VALORI.csv` — market values
    - `QIP_<id>_<semester>_ZONE.csv` — zone metadata
-   - `F205.kml` — zone polygons
+   - `F205.kml` — zone polygons (the importer also accepts any other `*.kml`, or a `*.kmz`, if the file is named differently)
 
 ## Step 2 — Unpack the archive
 
@@ -49,13 +49,9 @@ The script rewrites three bundled asset files in place:
 
 It also logs any zone codes that appeared or disappeared vs. the previous semester — review these before committing.
 
-## Step 4 — Bump the SEMESTER constant
+## Step 4 — Semester constant
 
-Open [src/stimmo/data/omi.py](../src/stimmo/data/omi.py) and update line 17:
-
-```python
-SEMESTER = "2025-2"  # ← new value
-```
+Nothing to bump: `data/omi.py` reads the semester from `manifest.json`, which the importer rewrites (merging, so other keys such as `osm_snapshot` survive). Pass `--semester YYYY-S` to the importer only if the VALORI title row is not in the usual "Semestre YYYY/S" form.
 
 ## Step 5 — Verify
 
@@ -73,7 +69,19 @@ Delete the staging directory — it is large and contains no information not alr
 rm -rf src/stimmo/data/assets/omi-<year>-h<half>/
 ```
 
+## Backfilling a missing history semester
+
+If CKAN mirrors a semester that is absent from `milano_omi_history.csv` (e.g. 2025-1), insert just that one:
+
+```sh
+uv run python scripts/refresh_omi.py --backfill 2025-1
+```
+
+It only edits `milano_omi_history.csv` (sorted, trimmed to the newest 8); `milano_omi_valori.csv`, the zones GeoJSON and `manifest.json` are untouched.
+
 ## Notes
+
+- NTN sales volumes (`milano_ntn_*.csv`) are refreshed by `refresh_omi.py` from two Agenzia Entrate ZIP URLs hard-coded in the script (`NTN_DEFINITIVE`, `NTN_PROVISIONAL`); a new year's file needs its URL added there first. The OMI semester importer does not touch them.
 
 - `scripts/refresh_omi.py` and `scripts/import_omi_agenziaentrate.py` target the same output files — run one or the other, never both for the same semester.
 - Forniture OMI requires a registered account (codice fiscale login). Comune di Milano CKAN does not.

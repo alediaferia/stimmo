@@ -74,8 +74,9 @@ uv run python scripts/refresh_omi.py
 ```
 
 The script discovers the latest "Compravendita" + "Zone e Perimetri" datasets
-via the CKAN API and rewrites both files in place. Bump the `SEMESTER`
-constant in `src/stimmo/data/omi.py` if it advanced.
+via the CKAN API and rewrites both files in place. The semester is read from
+`manifest.json`. See `docs/updating-omi-data.md` for the manual Agenzia Entrate
+path (newer semesters) and `--backfill`.
 
 ## "Recent closing prices"
 

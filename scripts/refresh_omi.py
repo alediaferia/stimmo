@@ -5,6 +5,19 @@ datasets via the CKAN API and rewrites the bundled CSV / GeoJSON in place.
 
 Run: `uv run python scripts/refresh_omi.py`
 
+Backfill one missing history semester (e.g. the 2025-1 gap, see below) without touching
+`milano_omi_valori.csv`, the zones GeoJSON or `manifest.json`:
+
+    `uv run python scripts/refresh_omi.py --backfill 2025-1`
+
+It inserts that semester from CKAN into `milano_omi_history.csv`, keeps the file sorted and
+trimmed to the newest 8 semesters, and does nothing else. Use it when CKAN mirrors a semester
+that the Agenzia Entrate import skipped.
+
+When the Agenzia Entrate publishes a semester before CKAN mirrors it (2026-1 on 2026-10-16),
+it is available only via the Fisconline/Entratel "Forniture dati OMI" service: download it by
+hand and run `scripts/import_omi_agenziaentrate.py` (see docs/updating-omi-data.md).
+
 Provenance of the currently bundled assets (established 2026-09-06)
 -------------------------------------------------------------------
 The bundled 2025-2 vintage did **not** come from this script — it came from
@@ -126,6 +139,41 @@ def _guard_downgrade(
         f"likely came from scripts/import_omi_agenziaentrate.py; use that importer instead. "
         f"Pass --allow-downgrade to overwrite anyway (deliberate rollback)."
     )
+
+
+def merge_history(existing: pd.DataFrame, new: pd.DataFrame, label: str) -> pd.DataFrame:
+    """Insert semester `label` into the history frame: replace any rows already tagged with it,
+    sort by semester (stable within a semester) and keep the newest HISTORY_SEMESTERS."""
+    new = new.copy()
+    new["semester"] = label
+    new = new.reindex(columns=list(existing.columns))
+    merged = pd.concat([existing[existing["semester"] != label], new], ignore_index=True)
+    merged["_k"] = merged["semester"].map(lambda v: _semester_key(str(v)) or (0, 0))
+    merged = merged.sort_values("_k", kind="stable").drop(columns="_k")
+    keep = sorted(merged["semester"].unique(), key=lambda v: _semester_key(v) or (0, 0))
+    return merged[merged["semester"].isin(keep[-HISTORY_SEMESTERS:])].reset_index(drop=True)
+
+
+def backfill_semester(label: str, assets_dir: Path | None = None) -> None:
+    """Fetch semester `label` ("YYYY-S") from CKAN into milano_omi_history.csv only."""
+    key = _semester_key(label)
+    if key is None or not re.fullmatch(r"\d{4}-[12]", label):
+        raise SystemExit(f"--backfill expects YYYY-1 or YYYY-2, got {label!r}")
+    assets_dir = assets_dir if assets_dir is not None else ASSETS
+    pkgs = _ckan_search("quotazioni immobiliari OMI compravendita")
+    match = [
+        p for p in pkgs if "compravendita-semestre" in p["name"] and _semester_key(p["name"]) == key
+    ]
+    if not match:
+        raise SystemExit(f"No CKAN compravendita package for semester {label}")
+    hpath = assets_dir / "milano_omi_history.csv"
+    existing = pd.read_csv(hpath, dtype=str)
+    new = _fetch_semester(match[0])
+    merged = merge_history(existing, new, label)
+    merged.to_csv(hpath, index=False)
+    sems = ", ".join(sorted(merged["semester"].unique(), key=lambda v: _semester_key(v) or (0, 0)))
+    print(f"  history: +{label} ({len(new)} rows); kept {sems}")
+    print(f"    → {hpath} ({len(merged)} rows total)")
 
 
 def refresh_valori(allow_downgrade: bool = False) -> str:
@@ -284,7 +332,17 @@ def main(argv: list[str] | None = None) -> int:
         help="overwrite bundled assets even when CKAN's newest semester is older "
         "than the bundled one (deliberate rollback)",
     )
+    parser.add_argument(
+        "--backfill",
+        metavar="YYYY-S",
+        help="only insert this one semester from CKAN into milano_omi_history.csv "
+        "(sorted, trimmed to the newest 8); valori, zones and manifest are untouched",
+    )
     args = parser.parse_args(argv)
+
+    if args.backfill:
+        backfill_semester(args.backfill)
+        return 0
 
     ASSETS.mkdir(parents=True, exist_ok=True)
     print("Refreshing bundled OMI assets …")
