@@ -29,12 +29,34 @@ def _frozen_costs_clock(monkeypatch: pytest.MonkeyPatch):
 
 @pytest.fixture(autouse=True)
 def _clean_amenity_state():
-    """Amenity cache / in-flight / failure memo are process-global; start each test clean."""
+    """Amenity cache / in-flight / failure memo are process-global; start each test clean.
+
+    A test that patches ``fetch_amenities`` to block on a gate/event and only releases it
+    in its own teardown (e.g. ``slow_amenities`` in test_estimate_route.py) can leave a
+    background Future still running at that point: fixture teardown is LIFO, so this
+    autouse fixture's own reset runs *after* that gate was just released, while the
+    executor thread may still be mid-flight. If we clear the cache before that thread's
+    ``_run_background`` finishes, its trailing ``_default_cache.put()`` lands after the
+    reset and leaks a stale cache entry into the next test. Draining every in-flight
+    Future (outside the lock, to avoid deadlocking with `_run_background`'s own
+    lock-guarded ``finally``) before clearing state closes that race.
+    """
     from stimmo.data import amenities
 
+    def _drain_inflight() -> None:
+        with amenities._state_lock:
+            futures = list(amenities._inflight.values())
+        for fut in futures:
+            try:
+                fut.result(timeout=2)
+            except Exception:
+                pass  # failure/timeout is fine here — we only need it to stop running
+
     def _reset():
+        _drain_inflight()
         amenities._default_cache._store.clear()
         amenities._failures.clear()
+        amenities._inflight.clear()
 
     _reset()
     yield
